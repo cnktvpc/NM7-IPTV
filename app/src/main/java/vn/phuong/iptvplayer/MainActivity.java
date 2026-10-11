@@ -241,7 +241,10 @@ public final class MainActivity extends Activity {
 
     private void rebuildGroups(){
         java.util.LinkedHashMap<String,Integer> counts=new java.util.LinkedHashMap<>();
-        for(Channel channel:allChannels)counts.put(channel.group(),counts.getOrDefault(channel.group(),0)+1);
+        for(Channel channel:allChannels){
+            Integer currentCount=counts.get(channel.group());
+            counts.put(channel.group(),currentCount==null?1:currentCount+1);
+        }
         if(!selectedGroup.isEmpty()&&!counts.containsKey(selectedGroup))selectedGroup="";
         groupRow.removeAllViews();
         addGroupButton("Tất cả ("+allChannels.size()+")","");
@@ -297,7 +300,7 @@ public final class MainActivity extends Activity {
                         ||(activeSection==2&&isRecentLiveEvent(event));
                 boolean queryMatch=query.isEmpty()||event.title().toLowerCase(Locale.ROOT).contains(query)
                         ||event.group().toLowerCase(Locale.ROOT).contains(query)
-                        ||event.sources().stream().anyMatch(source->source.url().toLowerCase(Locale.ROOT).contains(query));
+                        ||liveSourceMatches(event,query);
                 if(sectionMatch&&queryMatch)filtered.add(event);
             }
             if(activeSection==2)filtered.sort((a,b)->Integer.compare(
@@ -320,6 +323,10 @@ public final class MainActivity extends Activity {
         if(activeSection==2)filtered.sort((a,b)->Integer.compare(AppPreferences.recentRank(this,a),AppPreferences.recentRank(this,b)));
         adapter.submit(filtered);
         updateSummary();
+    }
+    private boolean liveSourceMatches(LiveEvent event,String query){
+        for(Channel source:event.sources())if(source.url().toLowerCase(Locale.ROOT).contains(query))return true;
+        return false;
     }
     private boolean isRecentLiveEvent(LiveEvent event){
         for(Channel source:event.sources())if(AppPreferences.isRecent(this,source))return true;
