@@ -1,19 +1,18 @@
 # NM7 IPTV Mobile — STABLE BASELINE 1.10.128 — 2026-10-08
 
-## Ứng viên Mobile tiếp theo — 1.10.132 LauTV-style Live Events (CI PASS, chờ test thiết bị)
+## Ứng viên phát triển — 1.10.133 Dedicated Live Feed (chưa chuyển stable)
 
-- **Mục tiêu:** đưa mục `⚽ LIVE (n)` vào hàng chip trên màn hình Kênh, theo mẫu LauTV trong video người dùng cung cấp.
-- **Nhánh:** `work/mobile-live-events-v132`; dựa trên nhánh candidate Mobile 1.10.130 tại commit `d62f9ea5b106ab3b7e1cb47ffdc0642d466abc48`.
-- **Version:** 1.10.132 / `versionCode 148`. Candidate riêng, chưa stable; nhánh `stable/mobile-1.10.128` giữ nguyên.
-- **Thẻ Live:** một sự kiện có tiêu đề, logo, badge LIVE, nhóm và số server. Nhiều entry cùng trận được gộp; server phụ có thể đến từ entry `Server 1/2` hoặc metadata `#NM7-ALT-URL:`.
-- **Điều khiển:** nhấn thẻ phát bằng inline player Mobile hiện có; nút số server mở bộ chọn máy chủ chính/dự phòng; yêu thích và máy chủ đã chọn được lưu cục bộ.
-- **Nguồn dữ liệu:** playlist M3U đang dùng. Nhận diện nhóm LIVE/Event/Sự kiện và trận `vs` trong nhóm thể thao; không thay URL playlist mặc định và không đụng dự án NM7 TV Android/Web.
-- **CI PASS:** [Run 38156013028](https://github.com/phuongnm7/iptv-player-android/actions/runs/38156013028), mã `de28e3b3f11f6129c13716f948340fc3fecc17c0`. Build Mobile + full unit test suite thành công; không đưa vào stable.
-- **Artifact:** `NM7-IPTV-Mobile-1.10.132-LIVE-EVENTS`, ID `11707969756`. APK SHA-256: `6b56db820849d902af8a94ddcd98bb2e3bf734de48a59db174f9e0445b737b84`.
-- **Chưa runtime PASS:** CI không thay thế việc cài APK trên điện thoại thật. Cần xác nhận chip LIVE, card sự kiện, chọn server, phát inline và yêu thích trước khi chốt STABLE.
-
----
-
+- **Nhánh làm việc:** `work/mobile-live-feed-lau-style-20261012`.
+- **Phiên bản ứng viên:** 1.10.133 / `versionCode 149`. Nhánh stable `stable/mobile-1.10.128` không thay đổi.
+- **Phạm vi:** chỉ NM7 IPTV Mobile. Không đổi NM7 TV Android, NM7 Web, default playlist của IPTV, hoặc Cloudflare Worker.
+- **Nguồn Live độc lập:** `https://thethaonm7.phuongnm7-iptv.workers.dev/playlist.m3u`. Mục Live không lấy danh sách trận từ nguồn playlist do người dùng đang chọn.
+- **Nhận diện:** phân tích giờ/ngày, trạng thái trận và cặp đội; chỉ hiển thị fixture được đánh dấu đang diễn ra (🟢) và trong cửa sổ thời gian 180 phút. Trận sắp diễn ra (🟡), trận cũ hoặc entry không nhận diện được giờ/trận không được đưa vào Live.
+- **Gộp sự kiện:** hợp nhất tên đội có biến thể phổ biến giữa các provider, giờ đá lệch nhẹ, tên bình luận viên và định dạng HLS/FLV; mỗi URL duy nhất trở thành một server của cùng một trận.
+- **Thẻ sự kiện:** ưu tiên logo từ metadata của feed, tên trận đã chuẩn hóa, trạng thái LIVE, môn thể thao, số server và yêu thích.
+- **Player:** có thể đổi server ngay trong inline player Mobile; player Activity dự phòng cũng có nút chọn server. Lựa chọn server và yêu thích được lưu cục bộ. Feed cache riêng và làm mới mỗi 5 phút.
+- **Khả năng phục hồi:** nếu mạng lỗi, dùng M3U Live cache riêng và vẫn lọc theo thời gian hiện tại; không ghi dữ liệu Live vào playlist/session của người dùng.
+- **Kiểm thử:** thêm unit tests cho lọc trận đang diễn ra, loại trận cũ/chưa bắt đầu, gộp server khác provider/transport và khôi phục lựa chọn nguồn. Kết quả build/test đang được xác minh; chưa được xem là runtime PASS trước khi kiểm tra trên thiết bị.
+- **Quy tắc phát hành:** candidate không tự động thành stable; không merge hoặc đổi stable nếu chưa qua CI và chưa kiểm thử thực tế.
 
 > **1.10.128 là mốc ổn định chính thức hiện tại.** Mọi bản Mobile tiếp theo phải lấy đúng commit nền dưới đây; không tự ý quay lại baseline cũ.
 
