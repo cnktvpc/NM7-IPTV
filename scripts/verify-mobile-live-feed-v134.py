@@ -40,6 +40,7 @@ checks = [
     ("the regular playlist default remains owned by the existing source store", "PlaylistSourceStore.DEFAULT_URL" in main and "DEFAULT_URL" in playlist_store),
     ("tests cover provider time skew, alternate timestamp order, merge/filtering and server restore", all(v in tests for v in ("dedicatedFeedGroupsProviderAndTransportVariantsIntoOneFreshLiveMatch", "dedicatedFeedDoesNotDependOnUserPlaylistLiveGroups", "dedicatedFeedMergesSameFixtureWithProviderKickoffSkewAndLongRunningLiveStatus", "dedicatedFeedAcceptsDateBeforeTimeAndTextLiveMarker", "restoredLiveEventPreservesServerLabelsAndSelectedUrl"))),
     ("server picker renders selectable source rows without the broken message/list combination", "setItems(labels" in main and "Do not combine a message panel with a choice list" in main),
+    ("M3U fixture tests use valid Java escaped newlines and quotes", r"\\n" not in tests and r'\\"' not in tests),
     ("version is 1.10.134 / code 149", 'versionName = "1.10.134"' in gradle and "versionCode = 150" in gradle),
     ("temporary inspection files have been removed", not Path(".github/workflows/inspect-live-feed.yml").exists() and not Path("LIVE_FEED_INSPECTION.md").exists() and not Path("LIVE_BRANCH_PROBE.txt").exists()),
 ]
