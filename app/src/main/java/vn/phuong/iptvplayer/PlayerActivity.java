@@ -301,7 +301,11 @@ public final class PlayerActivity extends Activity {
     private void scheduleRecovery(String reason,boolean fromEnd){
         if(!playbackContextActive()||isFinishing()||isDestroyed())return;
         recoveryHandler.removeCallbacks(resetRecoveryAttempts);
-        if(recoveryAttempts>=MAX_RECOVERY_ATTEMPTS){showError(reason+". Đã thử nối lại "+MAX_RECOVERY_ATTEMPTS+" lần.\nBấm thử lại để tiếp tục.");return;}
+        if(recoveryAttempts>=MAX_RECOVERY_ATTEMPTS){
+            if(tryAdvanceStreamCandidate(reason))return;
+            showError(reason+". Đã thử nối lại "+MAX_RECOVERY_ATTEMPTS+" lần.\nBấm thử lại để tiếp tục.");
+            return;
+        }
         int attempt=++recoveryAttempts;
         if(fromEnd)position=0;else rememberPosition();
         resumePlayback=true;
@@ -319,10 +323,7 @@ public final class PlayerActivity extends Activity {
                     return;
                 }catch(RuntimeException ignored){}
             }
-            releasePlayer();startPlayer();
-        },delay);
-    }
-    private void chooseQuality(){            if(attempt>=3&&tryAdvanceStreamCandidate(reason))return;
+            if(attempt>=3&&tryAdvanceStreamCandidate(reason))return;
             releasePlayer();startPlayer();
         },delay);
     }
