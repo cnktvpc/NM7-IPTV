@@ -64,6 +64,7 @@ public class LiveEventTest {
 
         assertEquals(1, event.selectedIndex());
         assertEquals(two.url(), event.primary().url());
-        assertEquals(0, event.withPreferredUrl("https://unknown.example/a.m3u8").selectedIndex());
+        LiveEvent fresh = LiveEvent.fromChannels(Arrays.asList(one, two)).get(0);
+        assertEquals(0, fresh.withPreferredUrl("https://unknown.example/a.m3u8").selectedIndex());
     }
 }
