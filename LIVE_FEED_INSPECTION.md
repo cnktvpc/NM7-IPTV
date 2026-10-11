@@ -1,0 +1,171 @@
+# Temporary Live feed inspection
+
+- Bytes: 326060
+- Header: #EXTM3U
+- Entries: 1005
+
+## Groups
+
+- 115 — Sút Bóng TV
+- 111 — 🌟SPORTS VIP🌟
+- 93 — Cola TV
+- 85 — VIP | 4K ULTRA HD
+- 60 — VIP | UEFA CHAMPIONS LEAGUE
+- 56 — VIP | LA LIGA
+- 54 — Xôi Lạc Z TV
+- 44 — ┃UK┃ EPL PREMIER LEAGUE TEAMS
+- 44 — VIP | PREMIER LEAGUE
+- 42 — Phá Làng TV
+- 40 — VIP | BUNDESLIGA
+- 37 — EU | UK | SKY SPORTS+
+- 28 — EU | UK | TNT SPORTS
+- 26 — Gà Vàng 33 TV
+- 26 — S8 TV
+- 24 — Vua Sân Cỏ TV
+- 24 — Bia Ôm TV
+- 24 — Giờ Vàng TV
+- 23 — Xôi Gấc TV
+- 18 — Gà Vàng 24h TV
+- 11 — ┃UK┃ EPL PREMIER LEAGUE REPLAY
+- 10 — Chuối Chiên TV
+- 8 — Sao Kê TV
+- 1 — Updated 12/10 00:10
+- 1 — Updated: 24/09
+
+## Entry titles sample (stream URLs intentionally omitted)
+
+- [Vua Sân Cỏ TV] 🟢 22:15 11/10 ⚽ Stade Rennais FC vs AJ Auxerre (Trần Hoàng) (logo=True)
+- [Vua Sân Cỏ TV] 🟢 22:30 11/10 ⚽ Liverpool vs Manchester City (18+) (logo=True)
+- [Vua Sân Cỏ TV] 🟢 22:30 11/10 ⚽ Liverpool vs Manchester City (Lê Lợi) (logo=True)
+- [Vua Sân Cỏ TV] 🟢 22:30 11/10 ⚽ SC Freiburg vs Schalke 04 (Phổ Nghi) (logo=True)
+- [Vua Sân Cỏ TV] 🟢 23:00 11/10 ⚽ Besiktas JK vs Kocaelispor (Lê Hoàn) (logo=True)
+- [Vua Sân Cỏ TV] 🟢 23:00 11/10 ⚽ Sassuolo vs AC Milan (Ngô Quyền) (logo=True)
+- [Vua Sân Cỏ TV] 🟢 23:30 11/10 ⚽ RCD Mallorca vs UD Las Palmas (Nguyễn Ánh) (logo=True)
+- [Vua Sân Cỏ TV] 🟢 23:30 11/10 ⚽ Real Betis vs CA Osasuna (Nguyễn Đảm) (logo=True)
+- [Vua Sân Cỏ TV] 🟢 00:00 12/10 ⚽ Benfica vs Vitoria Guimaraes (Triệu Hằng) (logo=True)
+- [Vua Sân Cỏ TV] 🟡 01:00 12/10 ⚽ Al Shabab FC vs Al Taawoun (Lưu Triệt) (logo=True)
+- [Vua Sân Cỏ TV] 01:45 12/10 ⚽ Cagliari vs Juventus (Trần Cảnh) (logo=True)
+- [Vua Sân Cỏ TV] 01:45 12/10 ⚽ Troyes vs Marseille (Nguyễn Ánh) (logo=True)
+- [Vua Sân Cỏ TV] 02:00 12/10 ⚽ Atlético Mineiro _ MG vs Santos Fc _ SP (Lưu Bang) (logo=True)
+- [Vua Sân Cỏ TV] 02:00 12/10 ⚽ Cadiz vs Sporting Gijon (Tôn Quyền) (logo=True)
+- [Vua Sân Cỏ TV] 02:00 12/10 ⚽ Racing Santander vs Valencia CF (Lê Lợi) (logo=True)
+- [Vua Sân Cỏ TV] 06:00 12/10 ⚽ St. Louis City SC vs Los Angeles Galaxy (Doanh Chính) (logo=True)
+- [Vua Sân Cỏ TV] 07:30 12/10 ⚽ Talleres Cordoba vs CA Independiente (Tào Duệ) (logo=True)
+- [Vua Sân Cỏ TV] 17:00 12/10 ⚽ FC Livyi Bereh vs Zorya (Huyền Diệp) (logo=True)
+- [Vua Sân Cỏ TV] 19:00 12/10 ⚽ Real Valladolid CF vs Albacete Balompié SAD (Nguyễn Đảm) (logo=True)
+- [Vua Sân Cỏ TV] 20:45 12/10 ⚽ Pakhtakor vs Al Qadsiah (Tôn Quyền) (logo=True)
+- [Vua Sân Cỏ TV] 23:00 12/10 ⚽ Al-Wasl SC vs Al-Ahli SFC (Dương Kiên) (logo=True)
+- [Vua Sân Cỏ TV] 23:00 12/10 ⚽ Tractor S.C. vs Al Shamal (Lưu Bang) (logo=True)
+- [Vua Sân Cỏ TV] 23:30 12/10 ⚽ Atalanta vs Venezia (Trần Cảnh) (logo=True)
+- [Vua Sân Cỏ TV] 23:30 12/10 ⚽ Real Oviedo vs Eibar (Trần Hoàng) (logo=True)
+- [Cola TV] 🟢 22:15 11/10 ⚽ Stade Rennais vs AJ Auxerre (BLV POCARI) [flv] (logo=True)
+- [Cola TV] 🟢 22:15 11/10 ⚽ Stade Rennais vs AJ Auxerre (BLV POCARI) [hls 2] (logo=True)
+- [Cola TV] 🟢 22:15 11/10 ⚽ Stade Rennais vs AJ Auxerre (BLV POCARI) [hls] (logo=True)
+- [Cola TV] 🟢 22:30 11/10 ⚽ Liverpool vs Manchester City (BLV C2) [flv] (logo=True)
+- [Cola TV] 🟢 22:30 11/10 ⚽ Liverpool vs Manchester City (BLV C2) [hls 2] (logo=True)
+- [Cola TV] 🟢 22:30 11/10 ⚽ Liverpool vs Manchester City (BLV C2) [hls] (logo=True)
+- [Cola TV] 🟢 22:30 11/10 ⚽ Liverpool vs Manchester City (BLV GIÀ LÀNG) [flv] (logo=True)
+- [Cola TV] 🟢 22:30 11/10 ⚽ Liverpool vs Manchester City (BLV GIÀ LÀNG) [hls 2] (logo=True)
+- [Cola TV] 🟢 22:30 11/10 ⚽ Liverpool vs Manchester City (BLV GIÀ LÀNG) [hls] (logo=True)
+- [Cola TV] 🟢 22:30 11/10 ⚽ Liverpool vs Manchester City (BLV REVIVE) [flv] (logo=True)
+- [Cola TV] 🟢 22:30 11/10 ⚽ Liverpool vs Manchester City (BLV REVIVE) [hls 2] (logo=True)
+- [Cola TV] 🟢 22:30 11/10 ⚽ Liverpool vs Manchester City (BLV REVIVE) [hls] (logo=True)
+- [Cola TV] 🟢 22:30 11/10 ⚽ SC Freiburg vs FC Schalke 04 (BLV SODA) [flv] (logo=True)
+- [Cola TV] 🟢 22:30 11/10 ⚽ SC Freiburg vs FC Schalke 04 (BLV SODA) [hls 2] (logo=True)
+- [Cola TV] 🟢 22:30 11/10 ⚽ SC Freiburg vs FC Schalke 04 (BLV SODA) [hls] (logo=True)
+- [Cola TV] 🟢 23:00 11/10 ⚽ Besiktas JK vs CLB Kocaelispor (BLV MOUNTAIN DEW) [flv] (logo=True)
+- [Cola TV] 🟢 23:00 11/10 ⚽ Besiktas JK vs CLB Kocaelispor (BLV MOUNTAIN DEW) [hls 2] (logo=True)
+- [Cola TV] 🟢 23:00 11/10 ⚽ Besiktas JK vs CLB Kocaelispor (BLV MOUNTAIN DEW) [hls] (logo=True)
+- [Cola TV] 🟢 23:00 11/10 ⚽ Midtjylland vs FC Copenhagen (BLV SPRITE) [flv] (logo=True)
+- [Cola TV] 🟢 23:00 11/10 ⚽ Midtjylland vs FC Copenhagen (BLV SPRITE) [hls 2] (logo=True)
+- [Cola TV] 🟢 23:00 11/10 ⚽ Midtjylland vs FC Copenhagen (BLV SPRITE) [hls] (logo=True)
+- [Cola TV] 🟢 23:00 11/10 ⚽ U.S. Sassuolo Calcio vs AC Milan (BLV MONSTER) [flv] (logo=True)
+- [Cola TV] 🟢 23:00 11/10 ⚽ U.S. Sassuolo Calcio vs AC Milan (BLV MONSTER) [hls 2] (logo=True)
+- [Cola TV] 🟢 23:00 11/10 ⚽ U.S. Sassuolo Calcio vs AC Milan (BLV MONSTER) [hls] (logo=True)
+- [Cola TV] 🟢 23:30 11/10 ⚽ Real Betis Balompié vs Osasuna (BLV HỔ VẰN) [flv] (logo=True)
+- [Cola TV] 🟢 23:30 11/10 ⚽ Real Betis Balompié vs Osasuna (BLV HỔ VẰN) [hls 2] (logo=True)
+- [Cola TV] 🟢 23:30 11/10 ⚽ Real Betis Balompié vs Osasuna (BLV HỔ VẰN) [hls] (logo=True)
+- [Cola TV] 🟢 00:00 12/10 ⚽ Benfica vs Vitoria Guimaraes (BLV ROCKSTAR) [flv] (logo=True)
+- [Cola TV] 🟢 00:00 12/10 ⚽ Benfica vs Vitoria Guimaraes (BLV ROCKSTAR) [hls 2] (logo=True)
+- [Cola TV] 🟢 00:00 12/10 ⚽ Benfica vs Vitoria Guimaraes (BLV ROCKSTAR) [hls] (logo=True)
+- [Cola TV] 🟡 00:45 12/10 ⚽ CLB San Lorenzo vs Dep. Riestra (BLV 247) [flv] (logo=True)
+- [Cola TV] 🟡 00:45 12/10 ⚽ CLB San Lorenzo vs Dep. Riestra (BLV 247) [hls 2] (logo=True)
+- [Cola TV] 🟡 00:45 12/10 ⚽ CLB San Lorenzo vs Dep. Riestra (BLV 247) [hls] (logo=True)
+- [Cola TV] 🟡 01:00 12/10 ⚽ Al-Shabab vs Al-Taawoun (BLV MONSTER) [flv] (logo=True)
+- [Cola TV] 🟡 01:00 12/10 ⚽ Al-Shabab vs Al-Taawoun (BLV MONSTER) [hls 2] (logo=True)
+- [Cola TV] 🟡 01:00 12/10 ⚽ Al-Shabab vs Al-Taawoun (BLV MONSTER) [hls] (logo=True)
+- [Cola TV] 01:45 12/10 ⚽ CLB Cagliari vs Juventus F.C. (BLV C2) [flv] (logo=True)
+- [Cola TV] 01:45 12/10 ⚽ CLB Cagliari vs Juventus F.C. (BLV C2) [hls 2] (logo=True)
+- [Cola TV] 01:45 12/10 ⚽ CLB Cagliari vs Juventus F.C. (BLV C2) [hls] (logo=True)
+- [Cola TV] 01:45 12/10 ⚽ CLB Cagliari vs Juventus F.C. (BLV REVIVE) [flv] (logo=True)
+- [Cola TV] 01:45 12/10 ⚽ CLB Cagliari vs Juventus F.C. (BLV REVIVE) [hls 2] (logo=True)
+- [Cola TV] 01:45 12/10 ⚽ CLB Cagliari vs Juventus F.C. (BLV REVIVE) [hls] (logo=True)
+- [Cola TV] 01:45 12/10 ⚽ Troyes AC vs Olympique de Marseille (BLV 7UP) [flv] (logo=True)
+- [Cola TV] 01:45 12/10 ⚽ Troyes AC vs Olympique de Marseille (BLV 7UP) [hls 2] (logo=True)
+- [Cola TV] 01:45 12/10 ⚽ Troyes AC vs Olympique de Marseille (BLV 7UP) [hls] (logo=True)
+- [Cola TV] 02:00 12/10 ⚽ CLB Atletico Mineiro vs CLB Santos (BLV SPRITE) [flv] (logo=True)
+- [Cola TV] 02:00 12/10 ⚽ CLB Atletico Mineiro vs CLB Santos (BLV SPRITE) [hls 2] (logo=True)
+- [Cola TV] 02:00 12/10 ⚽ CLB Atletico Mineiro vs CLB Santos (BLV SPRITE) [hls] (logo=True)
+- [Cola TV] 02:00 12/10 ⚽ CLB Racing Santander vs Valencia CF (BLV PEPSI) [flv] (logo=True)
+- [Cola TV] 02:00 12/10 ⚽ CLB Racing Santander vs Valencia CF (BLV PEPSI) [hls 2] (logo=True)
+- [Cola TV] 02:00 12/10 ⚽ CLB Racing Santander vs Valencia CF (BLV PEPSI) [hls] (logo=True)
+- [Cola TV] 02:30 12/10 ⚽ Arouca vs Estrela (BLV HỔ VẰN) [flv] (logo=True)
+- [Cola TV] 02:30 12/10 ⚽ Arouca vs Estrela (BLV HỔ VẰN) [hls 2] (logo=True)
+- [Cola TV] 02:30 12/10 ⚽ Arouca vs Estrela (BLV HỔ VẰN) [hls] (logo=True)
+- [Cola TV] 03:30 12/10 ⚽ CLB Flamengo vs Fluminense RJ (BLV AQUA) [flv] (logo=True)
+- [Cola TV] 03:30 12/10 ⚽ CLB Flamengo vs Fluminense RJ (BLV AQUA) [hls 2] (logo=True)
+- [Cola TV] 03:30 12/10 ⚽ CLB Flamengo vs Fluminense RJ (BLV AQUA) [hls] (logo=True)
+- [Cola TV] 03:30 12/10 ⚽ Gremio vs Sport Club Internacional (BLV MOUNTAIN DEW) [flv] (logo=True)
+- [Cola TV] 03:30 12/10 ⚽ Gremio vs Sport Club Internacional (BLV MOUNTAIN DEW) [hls 2] (logo=True)
+- [Cola TV] 03:30 12/10 ⚽ Gremio vs Sport Club Internacional (BLV MOUNTAIN DEW) [hls] (logo=True)
+- [Cola TV] 03:30 12/10 ⚽ Palmeiras vs CLB Corinthians Paulista (BLV 247) [flv] (logo=True)
+- [Cola TV] 03:30 12/10 ⚽ Palmeiras vs CLB Corinthians Paulista (BLV 247) [hls 2] (logo=True)
+- [Cola TV] 03:30 12/10 ⚽ Palmeiras vs CLB Corinthians Paulista (BLV 247) [hls] (logo=True)
+- [Cola TV] 05:30 12/10 ⚽ Bahia vs CLB Mirassol (BLV BÍ ĐAO) [flv] (logo=True)
+- [Cola TV] 05:30 12/10 ⚽ Bahia vs CLB Mirassol (BLV BÍ ĐAO) [hls 2] (logo=True)
+- [Cola TV] 05:30 12/10 ⚽ Bahia vs CLB Mirassol (BLV BÍ ĐAO) [hls] (logo=True)
+- [Cola TV] 05:30 12/10 🏀 Cleveland Cavaliers vs Orlando Magic (BLV POCARI) [flv] (logo=True)
+- [Cola TV] 05:30 12/10 🏀 Cleveland Cavaliers vs Orlando Magic (BLV POCARI) [hls 2] (logo=True)
+- [Cola TV] 05:30 12/10 🏀 Cleveland Cavaliers vs Orlando Magic (BLV POCARI) [hls] (logo=True)
+- [Cola TV] 06:00 12/10 ⚽ Atletico San Luis vs Santos Laguna (BLV AQUA) [flv] (logo=True)
+- [Cola TV] 06:00 12/10 ⚽ Atletico San Luis vs Santos Laguna (BLV AQUA) [hls 2] (logo=True)
+- [Cola TV] 06:00 12/10 ⚽ Atletico San Luis vs Santos Laguna (BLV AQUA) [hls] (logo=True)
+- [Cola TV] 06:00 12/10 ⚽ Thành phố St. Louis SC vs CLB LA Galaxy (BLV MOUNTAIN DEW) [flv] (logo=True)
+- [Cola TV] 06:00 12/10 ⚽ Thành phố St. Louis SC vs CLB LA Galaxy (BLV MOUNTAIN DEW) [hls 2] (logo=True)
+- [Cola TV] 06:00 12/10 ⚽ Thành phố St. Louis SC vs CLB LA Galaxy (BLV MOUNTAIN DEW) [hls] (logo=True)
+- [Cola TV] 06:00 12/10 🏀 Charlotte Hornets vs Milwaukee Bucks (BLV ROCKSTAR) [flv] (logo=True)
+- [Cola TV] 06:00 12/10 🏀 Charlotte Hornets vs Milwaukee Bucks (BLV ROCKSTAR) [hls 2] (logo=True)
+- [Cola TV] 06:00 12/10 🏀 Charlotte Hornets vs Milwaukee Bucks (BLV ROCKSTAR) [hls] (logo=True)
+- [Cola TV] 06:10 12/10 ⚽ CLB Boyaca Chico vs Cucuta (BLV BÍ ĐAO) [flv] (logo=True)
+- [Cola TV] 06:10 12/10 ⚽ CLB Boyaca Chico vs Cucuta (BLV BÍ ĐAO) [hls 2] (logo=True)
+- [Cola TV] 06:10 12/10 ⚽ CLB Boyaca Chico vs Cucuta (BLV BÍ ĐAO) [hls] (logo=True)
+- [Cola TV] 06:10 12/10 ⚽ Pachuca vs Necaxa (BLV SAMURAI) [flv] (logo=True)
+- [Cola TV] 06:10 12/10 ⚽ Pachuca vs Necaxa (BLV SAMURAI) [hls 2] (logo=True)
+- [Cola TV] 06:10 12/10 ⚽ Pachuca vs Necaxa (BLV SAMURAI) [hls] (logo=True)
+- [Cola TV] 08:00 12/10 🏀 Denver Nuggets vs Chicago Bulls (BLV Cozy) [flv] (logo=True)
+- [Cola TV] 08:00 12/10 🏀 Denver Nuggets vs Chicago Bulls (BLV Cozy) [hls 2] (logo=True)
+- [Cola TV] 08:00 12/10 🏀 Denver Nuggets vs Chicago Bulls (BLV Cozy) [hls] (logo=True)
+- [Cola TV] 08:15 12/10 ⚽ CLB America de Cali vs Medellin Independiente (BLV BÍ ĐAO) [flv] (logo=True)
+- [Cola TV] 08:15 12/10 ⚽ CLB America de Cali vs Medellin Independiente (BLV BÍ ĐAO) [hls 2] (logo=True)
+- [Cola TV] 08:15 12/10 ⚽ CLB America de Cali vs Medellin Independiente (BLV BÍ ĐAO) [hls] (logo=True)
+- [Cola TV] 08:15 12/10 ⚽ U.N.A.M._ Pumas vs Cruz Azul (BLV GIÀ LÀNG) [flv] (logo=True)
+- [Cola TV] 08:15 12/10 ⚽ U.N.A.M._ Pumas vs Cruz Azul (BLV GIÀ LÀNG) [hls 2] (logo=True)
+- [Cola TV] 08:15 12/10 ⚽ U.N.A.M._ Pumas vs Cruz Azul (BLV GIÀ LÀNG) [hls] (logo=True)
+- [Gà Vàng 24h TV] 🟢 22:15 11/10 ⚽ Rennes vs Auxerre (Thichduthu) [flv] (logo=True)
+- [Gà Vàng 24h TV] 🟢 22:15 11/10 ⚽ Rennes vs Auxerre (Thichduthu) [hls] (logo=True)
+- [Gà Vàng 24h TV] 🟢 22:30 11/10 ⚽ Freiburg vs Schalke 04 (Đoàn Dự) [flv] (logo=True)
+
+## EXTINF metadata examples (URL omitted)
+
+- #EXTINF:-1 tvg-logo="[url]" group-title="Vua Sân Cỏ TV" , 🟢 22:15 11/10 ⚽ Stade Rennais FC vs AJ Auxerre (Trần Hoàng)
+- #EXTINF:-1 tvg-logo="[url]" group-title="Vua Sân Cỏ TV" , 🟢 22:30 11/10 ⚽ Liverpool vs Manchester City (18+)
+- #EXTINF:-1 tvg-logo="[url]" group-title="Vua Sân Cỏ TV" , 🟢 22:30 11/10 ⚽ Liverpool vs Manchester City (Lê Lợi)
+- #EXTINF:-1 tvg-logo="[url]" group-title="Vua Sân Cỏ TV" , 🟢 22:30 11/10 ⚽ SC Freiburg vs Schalke 04 (Phổ Nghi)
+- #EXTINF:-1 tvg-logo="[url]" group-title="Vua Sân Cỏ TV" , 🟢 23:00 11/10 ⚽ Besiktas JK vs Kocaelispor (Lê Hoàn)
+- #EXTINF:-1 tvg-logo="[url]" group-title="Vua Sân Cỏ TV" , 🟢 23:00 11/10 ⚽ Sassuolo vs AC Milan (Ngô Quyền)
+- #EXTINF:-1 tvg-logo="[url]" group-title="Vua Sân Cỏ TV" , 🟢 23:30 11/10 ⚽ RCD Mallorca vs UD Las Palmas (Nguyễn Ánh)
+- #EXTINF:-1 tvg-logo="[url]" group-title="Vua Sân Cỏ TV" , 🟢 23:30 11/10 ⚽ Real Betis vs CA Osasuna (Nguyễn Đảm)
+- #EXTINF:-1 tvg-logo="[url]" group-title="Vua Sân Cỏ TV" , 🟢 00:00 12/10 ⚽ Benfica vs Vitoria Guimaraes (Triệu Hằng)
+- #EXTINF:-1 tvg-logo="[url]" group-title="Vua Sân Cỏ TV" , 🟡 01:00 12/10 ⚽ Al Shabab FC vs Al Taawoun (Lưu Triệt)
+- #EXTINF:-1 tvg-logo="[url]" group-title="Vua Sân Cỏ TV" , 01:45 12/10 ⚽ Cagliari vs Juventus (Trần Cảnh)
+- #EXTINF:-1 tvg-logo="[url]" group-title="Vua Sân Cỏ TV" , 01:45 12/10 ⚽ Troyes vs Marseille (Nguyễn Ánh)
