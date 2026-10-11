@@ -1,0 +1,46 @@
+name: Temporary dedicated Live feed inspection
+on:
+  push:
+    branches:
+      - work/mobile-live-feed-lau-style-20261012
+    paths:
+      - .github/workflows/inspect-live-feed.yml
+permissions:
+  contents: read
+jobs:
+  inspect-live-feed:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch and summarize dedicated Live M3U (do not print stream URLs)
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error --retry 2 --connect-timeout 15 --max-time 45 \
+            -H 'Accept: text/plain, application/vnd.apple.mpegurl, */*' \
+            -H 'Cache-Control: no-cache' \
+            'https://thethaonm7.phuongnm7-iptv.workers.dev/playlist.m3u' -o /tmp/live-feed.m3u
+          python3 - <<'PY'
+          import re, collections
+          from pathlib import Path
+          text = Path('/tmp/live-feed.m3u').read_text(encoding='utf-8-sig', errors='replace')
+          print('bytes=', len(text.encode('utf-8')))
+          print('header=', next((x.strip()[:250] for x in text.splitlines() if x.strip()), '<empty>'))
+          lines = text.splitlines()
+          entries=[]
+          pending=None
+          for line in lines:
+              line=line.strip()
+              if line.startswith('#EXTINF:'):
+                  m=re.search(r'group-title=["\']([^"\']*)["\']', line, re.I)
+                  name=line.split(',',1)[1].strip() if ',' in line else ''
+                  logo=bool(re.search(r'(?:tvg-logo|logo|icon)=["\'][^"\']+["\']', line, re.I))
+                  entries.append({'group':m.group(1).strip() if m else '(no group)', 'name':name, 'logo':logo, 'meta':line[:450]})
+          print('entries=',len(entries))
+          groups=collections.Counter(x['group'] for x in entries)
+          print('groups:')
+          for g,n in groups.most_common(): print(f'  {n:4} | {g}')
+          print('first 80 title/group samples (no stream URLs):')
+          for x in entries[:80]: print(f'  [{x["group"]}] {x["name"]} | logo={x["logo"]}')
+          print('sample EXTINF metadata (first 8):')
+          for x in entries[:8]: print('  '+x['meta'])
+          PY
