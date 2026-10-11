@@ -1,11 +1,9 @@
 package vn.phuong.iptvplayer;
 
 import java.text.Normalizer;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+import java.util.TimeZone;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -32,7 +30,7 @@ public final class LiveEvent {
     private static final Pattern TIME_DATE = Pattern.compile(
             "(?<!\\d)([01]?\\d|2[0-3]):([0-5]\\d)\\s+(\\d{1,2})/(\\d{1,2})(?:/(\\d{2,4}))?");
     private static final Pattern MATCH_SPLIT = Pattern.compile("(?i)\\s+(?:vs?\\.?|versus)\\s+");
-    private static final ZoneId FEED_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+    private static final TimeZone FEED_TIME_ZONE = TimeZone.getTimeZone("Asia/Ho_Chi_Minh");
     private static final long LIVE_MAX_AGE_MS = 180L * 60L * 1000L;
     private static final long PRE_KICKOFF_TOLERANCE_MS = 15L * 60L * 1000L;
     private static final long SOURCE_TIME_SKEW_MS = 3L * 60L * 60L * 1000L;
@@ -194,8 +192,11 @@ public final class LiveEvent {
                     representative = entryByUrl(fixture.entries, sources.get(0).url());
                 }
             }
-            String dateKey = LocalDateTime.ofInstant(
-                    java.time.Instant.ofEpochMilli(activeKickoff), FEED_ZONE).toLocalDate().toString();
+            Calendar matchDate = Calendar.getInstance(FEED_TIME_ZONE, Locale.ROOT);
+            matchDate.setTimeInMillis(activeKickoff);
+            String dateKey = String.format(Locale.ROOT, "%04d-%02d-%02d",
+                    matchDate.get(Calendar.YEAR), matchDate.get(Calendar.MONTH) + 1,
+                    matchDate.get(Calendar.DAY_OF_MONTH));
             String stableKey = fixture.homeKey + "_vs_" + fixture.awayKey;
             String id = dateKey + "|" + stableKey;
             String sport = fixture.sport;
@@ -236,30 +237,38 @@ public final class LiveEvent {
             int minute = Integer.parseInt(schedule.group(2));
             int day = Integer.parseInt(schedule.group(3));
             int month = Integer.parseInt(schedule.group(4));
-            LocalDate nowDate = java.time.Instant.ofEpochMilli(nowMillis).atZone(FEED_ZONE).toLocalDate();
-            int year;
+            Calendar now = Calendar.getInstance(FEED_TIME_ZONE, Locale.ROOT);
+            now.setTimeInMillis(nowMillis);
+            int currentYear = now.get(Calendar.YEAR);
+            Integer explicitYear = null;
             if (schedule.group(5) != null) {
-                year = Integer.parseInt(schedule.group(5));
-                if (year < 100) year += year < 70 ? 2000 : 1900;
-            } else {
-                // Choose the nearest year to handle year-end fixture lists without
-                // incorrectly aging a December fixture by twelve months in January.
-                year = nowDate.getYear();
+                int value = Integer.parseInt(schedule.group(5));
+                explicitYear = value < 100 ? (value < 70 ? 2000 + value : 1900 + value) : value;
             }
-            LocalDateTime local = LocalDateTime.of(year, month, day, hour, minute);
-            if (schedule.group(5) == null) {
-                LocalDateTime best = local;
-                long bestDelta = Math.abs(java.time.Duration.between(nowDate.atStartOfDay(), local).toMillis());
-                for (int candidateYear : new int[]{year - 1, year + 1}) {
-                    try {
-                        LocalDateTime candidate = LocalDateTime.of(candidateYear, month, day, hour, minute);
-                        long delta = Math.abs(java.time.Duration.between(nowDate.atStartOfDay(), candidate).toMillis());
-                        if (delta < bestDelta) { best = candidate; bestDelta = delta; }
-                    } catch (DateTimeParseException ignored) { }
+            int[] candidateYears = explicitYear == null
+                    ? new int[]{currentYear, currentYear - 1, currentYear + 1}
+                    : new int[]{explicitYear};
+            long bestTime = 0L;
+            long bestDelta = Long.MAX_VALUE;
+            for (int year : candidateYears) {
+                Calendar candidate = new GregorianCalendar(FEED_TIME_ZONE, Locale.ROOT);
+                candidate.clear();
+                candidate.setLenient(false);
+                candidate.set(year, month - 1, day, hour, minute, 0);
+                candidate.set(Calendar.MILLISECOND, 0);
+                long candidateTime;
+                try {
+                    candidateTime = candidate.getTimeInMillis();
+                } catch (IllegalArgumentException invalidDate) {
+                    continue;
                 }
-                local = best;
+                long delta = Math.abs(candidateTime - nowMillis);
+                if (delta < bestDelta) {
+                    bestDelta = delta;
+                    bestTime = candidateTime;
+                }
             }
-            return local.atZone(FEED_ZONE).toInstant().toEpochMilli();
+            return bestTime;
         } catch (RuntimeException ignored) {
             return 0L;
         }
