@@ -17,7 +17,10 @@
 
 ## Xác minh và giới hạn
 - CI candidate: run đầu `38155235658` dừng ở verifier pull-to-refresh cũ do script dùng chung còn hard-code version 1.10.130; đây là kiểm tra version của nhánh trước, chưa tới bước build/test Live. Đã tách version guard khỏi verifier chung; workflow Live có guard 1.10.132/148 riêng và chạy full unit-test suite.
-- Trạng thái ở mốc ghi chú này: chờ chạy lại CI sau điều chỉnh verifier; chưa tuyên bố build/test PASS, chưa chuyển sang stable.
+- **CI đã PASS cho mã nguồn `de28e3b3f11f6129c13716f948340fc3fecc17c0`** — [Run 38156013028](https://github.com/phuongnm7/iptv-player-android/actions/runs/38156013028). Build Mobile và `:app:testMobileDebugUnitTest` đều thành công; verifier Live và verifier baseline pull-to-refresh đều qua.
+- Artifact: `NM7-IPTV-Mobile-1.10.132-LIVE-EVENTS`, ID `11707969756`; hạn lưu đến 2026-11-10. SHA-256 gói artifact ZIP: `475b191b0e279263eccf0bd1a1cdfdc04f42351dbdd9ce2fd9d3129a9109e8cd`.
+- APK đã giải nén từ artifact và kiểm tra ZIP integrity thành công. SHA-256 APK: `6b56db820849d902af8a94ddcd98bb2e3bf734de48a59db174f9e0445b737b84`.
+- Trạng thái phát hành: **CI PASS, vẫn là candidate; chưa stable**. Chưa có thiết bị Android thật điều khiển trong môi trường build, nên cần cài thử và kiểm tra Live/đổi server/inline playback trên điện thoại trước khi chốt ổn định.
 - CI xanh không chứng minh nguồn sự kiện có dữ liệu hoặc luồng phát được trên thiết bị thật. Sau khi có APK đạt CI, phải cài và kiểm tra chip LIVE xuất hiện với playlist thực tế, số server, chọn server, inline playback, favorite, rồi mới cân nhắc chốt ổn định.
 - Mục Live chỉ dùng nội dung có trong playlist NM7 hiện tại; nếu playlist không có nhóm/sự kiện theo các quy tắc nhận diện trên thì sẽ hiện trạng thái rỗng và không tự tìm/nhập một feed ngoài.
 
