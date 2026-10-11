@@ -77,11 +77,11 @@ jobs:
           set -euxo pipefail
           python3 scripts/verify-mobile-lautv-live-v131.py
 
-      - name: Verify 1.10.130 build configuration
+      - name: Verify 1.10.131 build configuration
         run: |
           set -euxo pipefail
-          test "$(grep -c 'versionName = "1.10.130"' app/build.gradle.kts)" -eq 1
-          test "$(grep -c 'versionCode = 146' app/build.gradle.kts)" -eq 1
+          test "$(grep -c 'versionName = "1.10.131"' app/build.gradle.kts)" -eq 1
+          test "$(grep -c 'versionCode = 147' app/build.gradle.kts)" -eq 1
 
       - name: Check Mobile lifecycle regression guards
         run: |
