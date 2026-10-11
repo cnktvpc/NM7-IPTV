@@ -166,6 +166,9 @@ public final class LiveEvent {
             List<String> labels = new ArrayList<>();
             Set<String> seenUrls = new LinkedHashSet<>();
             for (FeedEntry entry : fixture.entries) {
+                // Do not offer an ended (red) provider or an expired/future schedule
+                // as a "server" just because its team names resemble this fixture.
+                if (!isFresh(entry.kickoffMillis, nowMillis) || entry.channel.name().contains("🔴")) continue;
                 if (!seenUrls.add(entry.channel.url())) continue;
                 String name = fixture.title;
                 Channel source = copyWithUrl(entry.channel, entry.channel.url(), name);
@@ -323,6 +326,10 @@ public final class LiveEvent {
         aliases.put("st louis city", "st louis city");
         aliases.put("atletico mineiro", "atletico mineiro");
         aliases.put("rennais", "rennes");
+        aliases.put("dep la coruna", "deportivo la coruna");
+        aliases.put("dep la cor", "deportivo la coruna");
+        aliases.put("deportivo de la coruna", "deportivo la coruna");
+        aliases.put("deportivo la coruna", "deportivo la coruna");
         aliases.put("sc freiburg", "freiburg");
         aliases.put("freiburg im breisgau", "freiburg");
         aliases.put("real betis balompie", "real betis");
