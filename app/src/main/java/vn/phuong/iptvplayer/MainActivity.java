@@ -40,6 +40,18 @@ public final class MainActivity extends Activity {
     private final ExecutorService io = SessionStore.IO;
     private final M3uParser parser = new M3uParser();
     private final List<Channel> allChannels = new ArrayList<>();
+    // Independent event feed: deliberately separate from allChannels/currentSource/session.
+    private List<LiveEvent> liveFeedEvents = new ArrayList<>();
+    private boolean liveFeedLoading;
+    private String liveFeedError = "";
+    private final android.os.Handler liveFeedHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private static final long LIVE_FEED_REFRESH_MS = 5L * 60L * 1000L;
+    private final Runnable liveFeedRefresh = new Runnable() {
+        @Override public void run() {
+            loadLiveFeed();
+            liveFeedHandler.postDelayed(this, LIVE_FEED_REFRESH_MS);
+        }
+    };
     private ChannelAdapter adapter;
     private LiveEventAdapter liveAdapter;
     private ListView channelList;
@@ -59,6 +71,8 @@ public final class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setupViews();
         restoreSession();
+        loadLiveFeed();
+        liveFeedHandler.postDelayed(liveFeedRefresh, LIVE_FEED_REFRESH_MS);
         epgHandler.post(epgTick);
         maybeShowSettings(getIntent());
     }
@@ -90,7 +104,11 @@ public final class MainActivity extends Activity {
             },80L);
         }
     }
-    @Override protected void onDestroy(){epgHandler.removeCallbacksAndMessages(null);super.onDestroy();}
+    @Override protected void onDestroy(){
+        epgHandler.removeCallbacksAndMessages(null);
+        liveFeedHandler.removeCallbacksAndMessages(null);
+        super.onDestroy();
+    }
 
     private void setupViews() {
         setContentView(R.layout.activity_main); Insets.apply(findViewById(R.id.mainRoot)); applyWallpaper();
@@ -248,7 +266,7 @@ public final class MainActivity extends Activity {
         if(!selectedGroup.isEmpty()&&!counts.containsKey(selectedGroup))selectedGroup="";
         groupRow.removeAllViews();
         addGroupButton("Tất cả ("+allChannels.size()+")","");
-        addGroupButton("⚽ LIVE ("+LiveEvent.fromChannels(allChannels).size()+")",LIVE_GROUP_TAG);
+        addGroupButton("⚽ LIVE ("+liveFeedEvents.size()+")",LIVE_GROUP_TAG);
         for(java.util.Map.Entry<String,Integer> entry:counts.entrySet()){
             String group=entry.getKey();
             String normalized=group.trim().toLowerCase(Locale.ROOT);
@@ -283,9 +301,8 @@ public final class MainActivity extends Activity {
         }
     }
     private List<LiveEvent> liveEventsWithSelectedServers(){
-        List<LiveEvent> events=LiveEvent.fromChannels(allChannels);
-        List<LiveEvent> prepared=new ArrayList<>(events.size());
-        for(LiveEvent event:events)prepared.add(event.withPreferredUrl(LiveEventStore.selectedUrl(this,event.id())));
+        List<LiveEvent> prepared=new ArrayList<>(liveFeedEvents.size());
+        for(LiveEvent event:liveFeedEvents)prepared.add(event.withPreferredUrl(LiveEventStore.selectedUrl(this,event.id())));
         return prepared;
     }
     private void filter(){
@@ -333,28 +350,31 @@ public final class MainActivity extends Activity {
         return false;
     }
     private void playLiveEvent(LiveEvent event){
-        if(liveAdapter!=null)liveAdapter.setPlayingEvent(event.id());
-        Channel selected=event.primary();
-        if(!MobileInlinePlayerProviderV2.playLiveChannel(selected))play(selected);
+        if(event==null||event.sources().isEmpty())return;
+        LiveEvent selectedEvent=event.withPreferredUrl(LiveEventStore.selectedUrl(this,event.id()));
+        LivePlaybackSession.setActive(selectedEvent);
+        if(liveAdapter!=null)liveAdapter.setPlayingEvent(selectedEvent.id());
+        Channel selected=selectedEvent.primary();
+        if(!MobileInlinePlayerProviderV2.playLiveChannel(selected))play(selected,selectedEvent);
     }
     private void showLiveServerPicker(LiveEvent event){
         List<Channel> sources=event.sources();
         if(sources.size()<=1){playLiveEvent(event);return;}
         String[] labels=new String[sources.size()];
         for(int i=0;i<sources.size();i++){
-            String role=i==0?"Chính":"Dự phòng";
-            labels[i]="Server "+(i+1)+" ("+role+")"
-                    +(i==event.selectedIndex()?"\n✓ Đang sử dụng":"\nNhấn để chuyển sang máy chủ này");
+            labels[i]=event.sourceLabel(i)+(i==event.selectedIndex()?"\n✓ Đang chọn":"\nNhấn để phát nguồn này");
         }
         new AlertDialog.Builder(this).setTitle("Chọn máy chủ phát sóng")
                 .setMessage("Nếu luồng hiện tại gặp sự cố hoặc bị gián đoạn, hãy chọn máy chủ thay thế.")
                 .setSingleChoiceItems(labels,event.selectedIndex(),(dialog,which)->{
                     Channel source=sources.get(which);
                     LiveEventStore.setSelectedUrl(this,event.id(),source.url());
+                    LiveEvent selectedEvent=event.withPreferredUrl(source.url());
+                    LivePlaybackSession.setActive(selectedEvent);
                     if(liveAdapter!=null)liveAdapter.setPlayingEvent(event.id());
                     dialog.dismiss();
                     filter();
-                    if(!MobileInlinePlayerProviderV2.playLiveChannel(source))play(source);
+                    playLiveEvent(selectedEvent);
                 }).setNegativeButton("Đóng",null).show();
     }
     private void showLiveEventActions(LiveEvent event){
@@ -370,7 +390,24 @@ public final class MainActivity extends Activity {
         }).setNegativeButton("Đóng",null).show();
     }
     private void updateSummary(){}
-    private void play(Channel c){SharedPlaybackSession.setTab(this,SharedPlaybackSession.TAB_IPTV);PlayerActivity.cancelYoutubeHandoff();AppPreferences.recordRecent(this,c);Intent i=new Intent(this,PlayerActivity.class);i.putExtra(PlayerActivity.EXTRA_NAME,c.name());i.putExtra(PlayerActivity.EXTRA_URL,c.url());Bundle h=new Bundle();for(java.util.Map.Entry<String,String> e:c.headers().entrySet())h.putString(e.getKey(),e.getValue());i.putExtra(PlayerActivity.EXTRA_HEADERS,h);i.putExtra(PlayerActivity.EXTRA_MIME,c.mimeHint());i.putStringArrayListExtra(PlayerActivity.EXTRA_OPTIONS,new ArrayList<>(c.options()));startActivity(i);}
+    private void play(Channel c){play(c,null);}
+    private void play(Channel c,LiveEvent liveEvent){
+        SharedPlaybackSession.setTab(this,SharedPlaybackSession.TAB_IPTV);
+        PlayerActivity.cancelYoutubeHandoff();
+        if(liveEvent==null)LivePlaybackSession.clearIfNotLiveSource(c);
+        else LivePlaybackSession.setActive(liveEvent.withPreferredUrl(c.url()));
+        AppPreferences.recordRecent(this,c);
+        Intent i=new Intent(this,PlayerActivity.class);
+        i.putExtra(PlayerActivity.EXTRA_NAME,c.name());
+        i.putExtra(PlayerActivity.EXTRA_URL,c.url());
+        Bundle h=new Bundle();
+        for(java.util.Map.Entry<String,String> e:c.headers().entrySet())h.putString(e.getKey(),e.getValue());
+        i.putExtra(PlayerActivity.EXTRA_HEADERS,h);
+        i.putExtra(PlayerActivity.EXTRA_MIME,c.mimeHint());
+        i.putStringArrayListExtra(PlayerActivity.EXTRA_OPTIONS,new ArrayList<>(c.options()));
+        if(liveEvent!=null)i.putExtra(PlayerActivity.EXTRA_LIVE_EVENT,LivePlaybackSession.encode(liveEvent.withPreferredUrl(c.url())));
+        startActivity(i);
+    }
     private void selectSection(int s){activeSection=s;updateSectionButtons();filter();}
     private void updateSectionButtons(){int[] ids={R.id.btnAllChannels,R.id.btnFavorites,R.id.btnRecent};for(int i=0;i<ids.length;i++){View b=findViewById(ids[i]);b.setAlpha(i==activeSection?1f:.62f);b.setSelected(i==activeSection);}if(txtEmpty!=null)txtEmpty.setText(liveOnly?(activeSection==1?"Chưa có sự kiện Live yêu thích":activeSection==2?"Chưa có sự kiện Live đã xem":"Không tìm thấy sự kiện LIVE"):(activeSection==1?"Chưa có kênh yêu thích":activeSection==2?"Chưa có kênh đã xem":"Không tìm thấy kênh"));}
     private void saveSession(){try{SessionStore.save(getApplicationContext(),SessionStore.snapshot(allChannels),currentSource,epgUrl,duplicateCount,missingUrlCount);}catch(Exception ignored){}}
