@@ -69,17 +69,17 @@ public class LiveEventTest {
     }
 
     @Test public void dedicatedFeedGroupsProviderAndTransportVariantsIntoOneFreshLiveMatch() {
-        String m3u = "#EXTM3U\\n"
-                + "#EXTINF:-1 tvg-logo=\\"https://logo.example/rennes.png\\" group-title=\\"Vua Sân Cỏ TV\\", 🟢 22:15 11/10 ⚽ Stade Rennais FC vs AJ Auxerre (Trần Hoàng)\\n"
-                + "https://stream.example/rennes-primary.m3u8\\n"
-                + "#EXTINF:-1 tvg-logo=\\"https://logo.example/rennes2.png\\" group-title=\\"Cola TV\\", 🟡 22:15 11/10 ⚽ Rennes vs Auxerre (BLV POCARI) [hls]\\n"
-                + "https://stream.example/rennes-hls.m3u8\\n"
-                + "#EXTINF:-1 group-title=\\"Cola TV\\", 🟡 22:15 11/10 ⚽ Rennes vs Auxerre (BLV POCARI) [flv]\\n"
-                + "https://stream.example/rennes-flv.m3u8\\n"
-                + "#EXTINF:-1 group-title=\\"Vua Sân Cỏ TV\\", 🟢 20:00 10/10 ⚽ Old Team vs Old Opponent (BLV A)\\n"
-                + "https://stream.example/old-match.m3u8\\n"
-                + "#EXTINF:-1 group-title=\\"Sút Bóng TV\\", 🟡 02:00 12/10 ⚽ Future Team vs Future Opponent (BLV B)\\n"
-                + "https://stream.example/future-match.m3u8\\n";
+        String m3u = "#EXTM3U\n"
+                + "#EXTINF:-1 tvg-logo=\"https://logo.example/rennes.png\" group-title=\"Vua Sân Cỏ TV\", 🟢 22:15 11/10 ⚽ Stade Rennais FC vs AJ Auxerre (Trần Hoàng)\n"
+                + "https://stream.example/rennes-primary.m3u8\n"
+                + "#EXTINF:-1 tvg-logo=\"https://logo.example/rennes2.png\" group-title=\"Cola TV\", 🟡 22:15 11/10 ⚽ Rennes vs Auxerre (BLV POCARI) [hls]\n"
+                + "https://stream.example/rennes-hls.m3u8\n"
+                + "#EXTINF:-1 group-title=\"Cola TV\", 🟡 22:15 11/10 ⚽ Rennes vs Auxerre (BLV POCARI) [flv]\n"
+                + "https://stream.example/rennes-flv.m3u8\n"
+                + "#EXTINF:-1 group-title=\"Vua Sân Cỏ TV\", 🟢 20:00 10/10 ⚽ Old Team vs Old Opponent (BLV A)\n"
+                + "https://stream.example/old-match.m3u8\n"
+                + "#EXTINF:-1 group-title=\"Sút Bóng TV\", 🟡 02:00 12/10 ⚽ Future Team vs Future Opponent (BLV B)\n"
+                + "https://stream.example/future-match.m3u8\n";
         long now = java.time.LocalDateTime.of(2026, 10, 12, 0, 30)
                 .atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toInstant().toEpochMilli();
         List<Channel> channels = new M3uParser().parse(m3u, LiveFeedRepository.FEED_URL).channels;
@@ -98,11 +98,11 @@ public class LiveEventTest {
     }
 
     @Test public void dedicatedFeedDoesNotDependOnUserPlaylistLiveGroups() {
-        String m3u = "#EXTM3U\\n"
-                + "#EXTINF:-1 group-title=\\"Provider A\\", 🟢 23:30 11/10 ⚽ Liverpool vs Manchester City (BLV C2) [hls]\\n"
-                + "https://stream.example/liverpool-hls.m3u8\\n"
-                + "#EXTINF:-1 group-title=\\"Provider B\\", 🟢 23:30 11/10 ⚽ Liverpool vs Manchester City (BLV GIÀ LÀNG) [flv]\\n"
-                + "https://stream.example/liverpool-flv.m3u8\\n";
+        String m3u = "#EXTM3U\n"
+                + "#EXTINF:-1 group-title=\"Provider A\", 🟢 23:30 11/10 ⚽ Liverpool vs Manchester City (BLV C2) [hls]\n"
+                + "https://stream.example/liverpool-hls.m3u8\n"
+                + "#EXTINF:-1 group-title=\"Provider B\", 🟢 23:30 11/10 ⚽ Liverpool vs Manchester City (BLV GIÀ LÀNG) [flv]\n"
+                + "https://stream.example/liverpool-flv.m3u8\n";
         long now = java.time.LocalDateTime.of(2026, 10, 12, 0, 20)
                 .atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toInstant().toEpochMilli();
         List<Channel> channels = new M3uParser().parse(m3u, LiveFeedRepository.FEED_URL).channels;
