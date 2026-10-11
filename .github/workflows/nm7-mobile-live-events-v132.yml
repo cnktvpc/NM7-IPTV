@@ -31,6 +31,24 @@ jobs:
           persist-credentials: false
           submodules: false
 
+      - name: Publish CI status (running)
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch="$GITHUB_REF_NAME"
+          report_dir="$(mktemp -d)"
+          git clone --quiet --depth 1 --branch "$branch" "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git" "$report_dir"
+          cd "$report_dir"
+          printf '# NM7 IPTV Mobile 1.10.133 — CI result\n\n- Status: **RUNNING**\n- Branch: `%s`\n- Source commit: `%s`\n- Workflow run: https://github.com/%s/actions/runs/%s\n\nBuild and full unit tests are in progress.\n' "$branch" "$GITHUB_SHA" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > LIVE_FEED_CI_RESULT.md
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add LIVE_FEED_CI_RESULT.md
+          git commit -m "ci: mark Mobile Live feed build as running"
+          git push origin "HEAD:refs/heads/$branch"
+
       - name: Restore pinned SmartTube phone source
         run: |
           set -euxo pipefail
@@ -264,6 +282,7 @@ jobs:
 
       - name: Publish build result and artifact link
         if: success()
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -298,4 +317,23 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add LIVE_FEED_CI_RESULT.md
           git commit -m "ci: publish successful Mobile Live feed build result"
+          git push origin "HEAD:refs/heads/$branch"
+
+      - name: Publish failed CI result
+        if: failure()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch="$GITHUB_REF_NAME"
+          report_dir="$(mktemp -d)"
+          git clone --quiet --depth 1 --branch "$branch" "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git" "$report_dir"
+          cd "$report_dir"
+          printf '# NM7 IPTV Mobile 1.10.133 — CI result\n\n- Status: **FAILED**\n- Branch: `%s`\n- Source commit: `%s`\n- Workflow run: https://github.com/%s/actions/runs/%s\n\nCheck this run for the failing build or unit-test step.\n' "$branch" "$GITHUB_SHA" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > LIVE_FEED_CI_RESULT.md
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add LIVE_FEED_CI_RESULT.md
+          git commit -m "ci: publish failed Mobile Live feed build result"
           git push origin "HEAD:refs/heads/$branch"
