@@ -9,10 +9,12 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -98,6 +100,7 @@ public final class MainActivity extends Activity {
         list.setAdapter(adapter); list.setItemsCanFocus(false); list.setEmptyView(txtEmpty); list.setOnItemClickListener((p,v,i,id)->play(adapter.getItem(i))); list.setOnItemLongClickListener((p,v,i,id)->{showChannelActions(adapter.getItem(i));return true;});
         findViewById(R.id.btnLoadUrl).setOnClickListener(v->loadFromUrl()); findViewById(R.id.btnReloadUrl).setOnClickListener(v->reloadPlaylistUrl()); findViewById(R.id.btnOpenFile).setOnClickListener(v->openFilePicker());
         findViewById(R.id.btnPlayUrl).setOnClickListener(v->playDirect());
+        findViewById(R.id.btnXtream).setOnClickListener(v->showXtreamLogin());
         findViewById(R.id.btnAllChannels).setOnClickListener(v->selectSection(0)); findViewById(R.id.btnFavorites).setOnClickListener(v->selectSection(1)); findViewById(R.id.btnRecent).setOnClickListener(v->selectSection(2)); findViewById(R.id.btnClearFilters).setOnClickListener(v->{inputSearch.setText("");selectedGroup="";updateGroupButtons();filter();});
         inputSearch.addTextChangedListener(new TextWatcher(){@Override public void beforeTextChanged(CharSequence s,int st,int c,int a){}@Override public void onTextChanged(CharSequence s,int st,int b,int c){filter();}@Override public void afterTextChanged(Editable e){}});
         rebuildGroups(); setImportExpanded(allChannels.isEmpty()); updateSectionButtons(); applyInterfaceMode(list);
@@ -200,7 +203,57 @@ public final class MainActivity extends Activity {
         });
     }
 
-    private void openFilePicker(){Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.addCategory(Intent.CATEGORY_OPENABLE);i.setType("*/*");startActivityForResult(i,OPEN_M3U);}
+    private void openFilePicker(){Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);
+    private void showXtreamLogin(){
+        LinearLayout form=new LinearLayout(this);
+        form.setOrientation(LinearLayout.VERTICAL);
+        form.setPadding(dp(22),dp(8),dp(22),0);
+        EditText server=new EditText(this);
+        server.setHint("Máy chủ, ví dụ http://example.com:8080");
+        server.setSingleLine(true);
+        server.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_URI);
+        EditText username=new EditText(this);
+        username.setHint("Tên đăng nhập");
+        username.setSingleLine(true);
+        EditText password=new EditText(this);
+        password.setHint("Mật khẩu");
+        password.setSingleLine(true);
+        password.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        Spinner output=new Spinner(this);
+        ArrayAdapter<String> formats=new ArrayAdapter<>(this,android.R.layout.simple_spinner_item,
+                new String[]{"M3U8 / HLS","TS / MPEG-TS"});
+        formats.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        output.setAdapter(formats);
+        TextView note=new TextView(this);
+        note.setText("NM7 tạo URL get.php chuẩn Xtream Codes và tải playlist như nguồn M3U. Đường dẫn chứa thông tin đăng nhập sẽ được giữ trong nguồn/session trên thiết bị. Chỉ sử dụng tài khoản và máy chủ bạn được phép truy cập.");
+        note.setTextSize(12);
+        note.setTextColor(getColor(R.color.text_secondary));
+        note.setPadding(0,dp(8),0,dp(8));
+        form.addView(server,new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,dp(52)));
+        form.addView(username,new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,dp(52)));
+        form.addView(password,new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,dp(52)));
+        form.addView(output,new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,dp(48)));
+        form.addView(note,new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT));
+        AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Đăng nhập Xtream Codes").setView(form)
+                .setPositiveButton("Tải kênh",null).setNegativeButton("Hủy",null).create();
+        dialog.setOnShowListener(v->dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(button->{
+            try{
+                String playlist=XtreamM3uSource.buildPlaylistUrl(
+                        server.getText().toString(),username.getText().toString(),password.getText().toString(),
+                        output.getSelectedItemPosition()==0?"m3u8":"ts");
+                inputUrl.setText(playlist);
+                setImportExpanded(true);
+                dialog.dismiss();
+                loadFromUrl(playlist,false);
+            }catch(Exception error){
+                server.setError(readable(error));
+                server.requestFocus();
+            }
+        }));
+        dialog.show();
+    }
+
+i.addCategory(Intent.CATEGORY_OPENABLE);i.setType("*/*");startActivityForResult(i,OPEN_M3U);}
     @Override protected void onActivityResult(int request,int result,Intent data){super.onActivityResult(request,result,data);if(result!=RESULT_OK||data==null||data.getData()==null)return;Uri uri=data.getData();if(request==OPEN_M3U)readLocalFile(uri);if(request==PICK_WALLPAPER){io.execute(()->{try{WallpaperStore.importPhoto(getApplicationContext(),uri);ui(()->{applyWallpaper();toast("Đã đổi hình nền");});}catch(Exception e){ui(()->toast("Không mở được hình nền: "+readable(e)));}});}}
     private void readLocalFile(Uri uri){int requestGeneration=++playlistRequestGeneration;setLoading(true);io.execute(()->{try(InputStream s=getContentResolver().openInputStream(uri)){if(s==null)throw new Exception("Không thể mở tệp");M3uParser.Result r=parser.parse(readText(s),"");ui(()->{if(requestGeneration==playlistRequestGeneration)showPlaylist(r,uri.toString());});}catch(Exception e){ui(()->{if(requestGeneration==playlistRequestGeneration)showError("Không đọc được tệp: "+readable(e));});}});}
     private String readText(InputStream s)throws Exception{ByteArrayOutputStream b=new ByteArrayOutputStream();byte[] chunk=new byte[8192];int total=0,n;while((n=s.read(chunk))!=-1){total+=n;if(total>MAX_PLAYLIST_BYTES)throw new Exception("Playlist lớn hơn 8 MB. Với link video, dùng Phát URL.");b.write(chunk,0,n);}return b.toString(StandardCharsets.UTF_8.name());}

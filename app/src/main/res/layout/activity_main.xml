@@ -18,6 +18,7 @@
                 <Button android:id="@+id/btnOpenFile" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:layout_marginStart="6dp" android:background="@drawable/button_secondary" android:text="@string/open_file" android:textSize="12sp" android:textAllCaps="false" android:textColor="@color/text_primary" />
             </LinearLayout>
             <Button android:id="@+id/btnPlayUrl" android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginTop="6dp" android:background="@drawable/button_secondary" android:text="▶ Phát URL trực tiếp" android:textAllCaps="false" android:textColor="@color/accent" />
+            <Button android:id="@+id/btnXtream" android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginTop="6dp" android:background="@drawable/button_secondary" android:text="＋ Đăng nhập Xtream Codes" android:textAllCaps="false" android:textColor="@color/text_primary" />
         </LinearLayout>
     </ScrollView>
     <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:layout_marginTop="4dp">

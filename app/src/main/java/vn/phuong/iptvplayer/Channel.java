@@ -3,6 +3,7 @@ package vn.phuong.iptvplayer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -170,6 +171,19 @@ public final class Channel {
     public String originalExtInf() { return originalExtInf; }
     public void setOriginalExtInf(String line) { originalExtInf = line; }
     public List<String> options() { return options; }
+
+    /** Primary-first unique stream URLs; alternate URLs survive the existing session/export pipeline. */
+    public List<String> streamCandidates() {
+        LinkedHashSet<String> candidates = new LinkedHashSet<>();
+        if (!url.isEmpty()) candidates.add(url);
+        final String prefix = "#NM7-ALT-URL:";
+        for (String option : options) {
+            if (option == null || !option.regionMatches(true, 0, prefix, 0, prefix.length())) continue;
+            String candidate = option.substring(prefix.length()).trim();
+            if (M3uParser.isNetworkUrl(candidate)) candidates.add(candidate);
+        }
+        return new ArrayList<>(candidates);
+    }
 
     public String mimeHint() {
         for (String option : options) {

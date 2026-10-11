@@ -330,3 +330,15 @@ Source 1.10.103 đã được đưa vào build chain. **Chưa đánh dấu PASS*
 1. thời gian mở video YouTube;
 2. vuốt/chuyển tab Browse liên tục;
 3. video 4K trong cùng điều kiện như video test đã gửi.
+
+
+## NM7 IPTV Mobile 1.10.131 — LauTV Live compatibility candidate
+
+Candidate branch: `work/mobile-lautv-live-v131`, based on `work/mobile-youtube-pull-refresh-v130`. This is a test-only branch; the stable branch is not modified.
+
+- Adds a Xtream Codes login form with validated HTTP(S) server URL and encoded credentials, supporting M3U8/TS output.
+- Accepts alternate stream metadata (`backup-url`, `fallback-url`, `alt-url`) and preserves candidates through NM7's existing M3U/session pipeline.
+- Reuses Media3/ExoPlayer and tries alternate candidates after fatal stream errors or repeated recovery attempts.
+- Preserves EPG, playlist cache, NM7 default source and YouTube pull-to-refresh.
+- Dedicated CI runs structural checks, unit tests and a Mobile debug APK build. Do not treat as stable until tested on a real device.
+- Portal-specific football-event scraping and Stalker/MAG are outside this candidate and require separate source/API validation.

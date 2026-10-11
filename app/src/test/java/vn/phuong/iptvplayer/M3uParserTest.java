@@ -170,6 +170,19 @@ public class M3uParserTest {
                 result.channels.get(2).effectiveLogoUrl());
     }
 
+    @Test public void parsesAndPreservesAlternateStreamUrls() {
+        M3uParser parser = new M3uParser();
+        String input = "#EXTM3U\n"
+                + "#EXTINF:-1 group-title=\"Sports\" backup-url=\"https://backup.example/live.m3u8\",Sports\n"
+                + "https://primary.example/live.m3u8\n";
+        M3uParser.Result first = parser.parse(input, "");
+        assertEquals(1, first.channels.size());
+        assertEquals(java.util.Arrays.asList("https://primary.example/live.m3u8", "https://backup.example/live.m3u8"),
+                first.channels.get(0).streamCandidates());
+        M3uParser.Result restored = parser.parse(parser.exportAll(first.channels), "");
+        assertEquals(first.channels.get(0).streamCandidates(), restored.channels.get(0).streamCandidates());
+    }
+
     @Test public void readsXmlTvUrlFromPlaylistHeader() {
         M3uParser.Result r = new M3uParser().parse("#EXTM3U url-tvg=\"guide/epg.xml.gz\"\n"
                 + "#EXTINF:-1 tvg-id=\"vtv1.vn\",VTV1 HD\nhttps://example.test/live/vtv1.m3u8\n",

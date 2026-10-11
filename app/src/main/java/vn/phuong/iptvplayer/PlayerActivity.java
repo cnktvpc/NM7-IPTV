@@ -59,6 +59,7 @@ public final class PlayerActivity extends Activity {
     public static final String EXTRA_NAME = "name", EXTRA_URL = "url";
     public static final String EXTRA_USER_AGENT = "user_agent", EXTRA_REFERER = "referer", EXTRA_ORIGIN = "origin";
     public static final String EXTRA_HEADERS = "headers", EXTRA_MIME = "mime", EXTRA_OPTIONS = "options";
+    public static final String EXTRA_CANDIDATES = "stream_candidates";
     private ExoPlayer player;
     private PlayerView playerView;
     private TextView status;
@@ -66,6 +67,8 @@ public final class PlayerActivity extends Activity {
     private String url, name, mime;
     private String drmSystem = "", drmLicense = "";
     private ArrayList<String> options = new ArrayList<>();
+    private final ArrayList<String> streamCandidates = new ArrayList<>();
+    private int streamCandidateIndex;
     private Bundle currentHeaders = new Bundle();
     private long position;
     private boolean resumePlayback = true;
@@ -151,6 +154,7 @@ public final class PlayerActivity extends Activity {
         Bundle passedHeaders = getIntent().getBundleExtra(EXTRA_HEADERS);
         if (passedHeaders != null) currentHeaders = passedHeaders;
         DrmSpec initialDrm = DrmSpec.fromOptions(options); drmSystem = initialDrm.system; drmLicense = initialDrm.license;
+        initializeStreamCandidates();
         if (state != null) {
             position = state.getLong("position"); resumePlayback = state.getBoolean("playing", true);
             quality = state.getInt("quality", Integer.MAX_VALUE); resizeMode = state.getInt("resize", AspectRatioFrameLayout.RESIZE_MODE_FIT);
@@ -176,6 +180,49 @@ public final class PlayerActivity extends Activity {
     private boolean playbackContextActive(){return activityStarted||backgroundPlaybackActive;}
     private static DefaultLoadControl stableLoadControl(){return new DefaultLoadControl.Builder().setBufferDurationsMs(15_000,60_000,500,1_500).setBackBuffer(10_000,true).setPrioritizeTimeOverSizeThresholds(true).build();}
     private void startPlayer() {
+    private void initializeStreamCandidates() {
+        streamCandidates.clear();
+        ArrayList<String> supplied = getIntent() == null ? null : getIntent().getStringArrayListExtra(EXTRA_CANDIDATES);
+        if (supplied != null) {
+            for (String candidate : supplied) {
+                if (candidate != null && M3uParser.isNetworkUrl(candidate)
+                        && !streamCandidates.contains(candidate)) streamCandidates.add(candidate);
+            }
+        }
+        if (url != null && M3uParser.isNetworkUrl(url) && !streamCandidates.contains(url)) streamCandidates.add(0, url);
+        streamCandidateIndex = streamCandidates.indexOf(url);
+        if (streamCandidateIndex < 0) {
+            streamCandidates.add(0, url);
+            streamCandidateIndex = 0;
+        }
+    }
+
+    private boolean tryAdvanceStreamCandidate(String reason) {
+        if (streamCandidateIndex + 1 >= streamCandidates.size()) return false;
+        streamCandidateIndex++;
+        url = streamCandidates.get(streamCandidateIndex);
+        position = 0;
+        resumePlayback = true;
+        recoveryAttempts = 0;
+        bufferingSinceMs = 0;
+        resolvingClearKey = false;
+        resolvingStreamMime = false;
+        recoveryHandler.removeCallbacksAndMessages(null);
+        if (getIntent() != null) {
+            getIntent().putExtra(EXTRA_URL, url);
+            getIntent().putStringArrayListExtra(EXTRA_CANDIDATES, new ArrayList<>(streamCandidates));
+        }
+        TextView source = findViewById(R.id.txtPlayerUrl);
+        if (source != null) source.setText(url);
+        if (status != null) status.setText(reason + " • đang thử URL dự phòng " +
+                (streamCandidateIndex + 1) + "/" + streamCandidates.size());
+        findViewById(R.id.playerError).setVisibility(View.GONE);
+        releasePlayer();
+        startPlayer();
+        return true;
+    }
+
+
         if (player != null) return; String scheme = Uri.parse(url).getScheme();
         if (scheme == null || !(scheme.matches("(?i)https?|rtsp|udp|rtmp"))) { showError("Bản này chưa hỗ trợ giao thức " + scheme + ". Không thể bảo đảm mọi giao thức IPTV."); return; }
         try {
@@ -199,6 +246,7 @@ public final class PlayerActivity extends Activity {
                 @Override public void onPlayerError(PlaybackException e){
                     if(e.errorCode==PlaybackException.ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED&&mime.isEmpty()&&!resolvingStreamMime){resolveRedirectedMime(e);return;}
                     if(isTransientPlaybackError(e)){scheduleRecovery("Luồng tạm gián đoạn",false);return;}
+                    if(tryAdvanceStreamCandidate("Nguồn phát lỗi; chuyển sang nguồn dự phòng"))return;
                     showError(e.getErrorCodeName()+"\nKiểm tra URL, quyền truy cập và codec của thiết bị.");
                 }
                 @Override public void onVideoSizeChanged(VideoSize s){status.setText(s.width+" × "+s.height+" • độ phân giải thực tế");}
@@ -275,6 +323,10 @@ public final class PlayerActivity extends Activity {
             releasePlayer();startPlayer();
         },delay);
     }
+    private void chooseQuality(){            if(attempt>=3&&tryAdvanceStreamCandidate(reason))return;
+            releasePlayer();startPlayer();
+        },delay);
+    }
     private void chooseQuality(){String[] l={"Tự động / tối đa theo thiết bị","Full HD — tối đa 1080p","2K/QHD — tối đa 1440p","4K UHD — tối đa 2160p"};int[] h={Integer.MAX_VALUE,1080,1440,2160};new AlertDialog.Builder(this).setTitle("Giới hạn chất lượng").setItems(l,(d,i)->{quality=h[i];applyQuality();}).setNegativeButton("Đóng",null).show();}
     private void applyQuality(){if(player==null)return;int w=quality==Integer.MAX_VALUE?Integer.MAX_VALUE:quality*16/9;player.setTrackSelectionParameters(player.getTrackSelectionParameters().buildUpon().setViewportSize(Integer.MAX_VALUE,Integer.MAX_VALUE,true).setMaxVideoSize(w,quality).build());}
     private void chooseFormat(){String[] l={"Tự nhận diện","HLS / M3U8","DASH / MPD","SmoothStreaming","MPEG-TS"};String[] t={"",MimeTypes.APPLICATION_M3U8,MimeTypes.APPLICATION_MPD,MimeTypes.APPLICATION_SS,MimeTypes.VIDEO_MP2T};new AlertDialog.Builder(this).setTitle("Định dạng nguồn (khi URL không có đuôi)").setItems(l,(d,i)->{mime=t[i];position=0;resumePlayback=true;releasePlayer();startPlayer();}).setNegativeButton("Đóng",null).show();}
@@ -322,7 +374,7 @@ public final class PlayerActivity extends Activity {
     private boolean isCurrentChannel(Channel c){if(!c.url().equals(url)||!c.options().equals(options))return false;if(currentHeaders.size()!=c.headers().size())return false;for(Map.Entry<String,String> e:c.headers().entrySet())if(!e.getValue().equals(currentHeaders.getString(e.getKey())))return false;return true;}
     private void showQuickChannels(){quickPanel.setVisibility(View.VISIBLE);filterQuickChannels();if(quickAdapter.getCount()>0)quickChannelList.post(()->quickChannelList.requestFocus());else if(quickGroupRow.getChildCount()>0)quickGroupRow.getChildAt(0).requestFocus();}
     private void hideQuickChannels(){quickPanel.setVisibility(View.GONE);playerView.requestFocus();}
-    private void switchChannel(Channel c){if(c==null)return;hideQuickChannels();if(isCurrentChannel(c))return;name=c.name();url=c.url();mime=c.mimeHint();options=new ArrayList<>(c.options());DrmSpec d=DrmSpec.fromOptions(options);drmSystem=d.system;drmLicense=d.license;currentHeaders=new Bundle();for(Map.Entry<String,String> e:c.headers().entrySet())currentHeaders.putString(e.getKey(),e.getValue());getIntent().putExtra(EXTRA_NAME,name);getIntent().putExtra(EXTRA_URL,url);getIntent().putExtra(EXTRA_HEADERS,currentHeaders);getIntent().putExtra(EXTRA_MIME,mime);getIntent().putStringArrayListExtra(EXTRA_OPTIONS,options);((TextView)findViewById(R.id.txtPlayerTitle)).setText(name);((TextView)findViewById(R.id.txtPlayerUrl)).setText(url);findViewById(R.id.playerError).setVisibility(View.GONE);AppPreferences.recordRecent(this,c);quickCurrentId=AppPreferences.id(c);position=0;resumePlayback=true;resolvingClearKey=false;resolvingStreamMime=false;recoveryAttempts=0;recoveryHandler.removeCallbacksAndMessages(null);releasePlayer();filterQuickChannels();startPlayer();}
+    private void switchChannel(Channel c){if(c==null)return;hideQuickChannels();if(isCurrentChannel(c))return;name=c.name();url=c.url();mime=c.mimeHint();options=new ArrayList<>(c.options());DrmSpec d=DrmSpec.fromOptions(options);options=new ArrayList<>(c.options());streamCandidates.clear();streamCandidates.addAll(c.streamCandidates());streamCandidateIndex=0;getIntent().putStringArrayListExtra(EXTRA_CANDIDATES,new ArrayList<>(streamCandidates));DrmSpec d=DrmSpec.fromOptions(options);drmSystem=d.system;drmLicense=d.license;currentHeaders=new Bundle();for(Map.Entry<String,String> e:c.headers().entrySet())currentHeaders.putString(e.getKey(),e.getValue());getIntent().putExtra(EXTRA_NAME,name);getIntent().putExtra(EXTRA_URL,url);getIntent().putExtra(EXTRA_HEADERS,currentHeaders);getIntent().putExtra(EXTRA_MIME,mime);getIntent().putStringArrayListExtra(EXTRA_OPTIONS,options);((TextView)findViewById(R.id.txtPlayerTitle)).setText(name);((TextView)findViewById(R.id.txtPlayerUrl)).setText(url);findViewById(R.id.playerError).setVisibility(View.GONE);AppPreferences.recordRecent(this,c);quickCurrentId=AppPreferences.id(c);position=0;resumePlayback=true;resolvingClearKey=false;resolvingStreamMime=false;recoveryAttempts=0;recoveryHandler.removeCallbacksAndMessages(null);releasePlayer();filterQuickChannels();startPlayer();}
     private boolean switchRelative(int delta){for(int i=0;i<quickChannels.size();i++)if(isCurrentChannel(quickChannels.get(i))){switchChannel(quickChannels.get((i+delta+quickChannels.size())%quickChannels.size()));playerView.hideController();return true;}return false;}
     @Override public boolean dispatchKeyEvent(KeyEvent event){int key=event.getKeyCode();if(event.getAction()==KeyEvent.ACTION_UP&&key==consumedRemoteKey){consumedRemoteKey=KeyEvent.KEYCODE_UNKNOWN;return true;}if(event.getAction()==KeyEvent.ACTION_DOWN){if(event.getRepeatCount()>0&&key==consumedRemoteKey)return true;boolean panel=quickPanel!=null&&quickPanel.getVisibility()==View.VISIBLE;if(key==KeyEvent.KEYCODE_BACK&&panel){hideQuickChannels();consumedRemoteKey=key;return true;}if(AppPreferences.isTvInterface(this)&&!panel){boolean controller=playerView.isControllerFullyVisible();boolean handled=false;if(key==KeyEvent.KEYCODE_BACK&&controller){playerView.hideController();playerView.requestFocus();handled=true;}else if((key==KeyEvent.KEYCODE_DPAD_CENTER||key==KeyEvent.KEYCODE_ENTER||key==KeyEvent.KEYCODE_NUMPAD_ENTER)&&!controller){playerView.showController();handled=true;}else if(!controller&&key==KeyEvent.KEYCODE_DPAD_LEFT){showQuickChannels();handled=true;}else if(!controller&&(key==KeyEvent.KEYCODE_DPAD_UP||key==KeyEvent.KEYCODE_DPAD_DOWN)){handled=switchRelative(key==KeyEvent.KEYCODE_DPAD_UP?1:-1);}else if(key==KeyEvent.KEYCODE_MENU){AppPreferences.setShowPlayerSource(this,!AppPreferences.showPlayerSource(this));findViewById(R.id.txtPlayerUrl).setVisibility(AppPreferences.showPlayerSource(this)?View.VISIBLE:View.GONE);handled=true;}if(handled){consumedRemoteKey=key;return true;}}}return super.dispatchKeyEvent(event);}
     private int dp(int value){return Math.round(value*getResources().getDisplayMetrics().density);} private void acquireMulticast(){WifiManager wifi=(WifiManager)getApplicationContext().getSystemService(WIFI_SERVICE);if(wifi!=null){multicastLock=wifi.createMulticastLock("iptv-stream");multicastLock.setReferenceCounted(false);multicastLock.acquire();}}

@@ -1,3 +1,29 @@
+# TIẾN ĐỘ — NM7 IPTV MOBILE 1.10.131 — LAUTV LIVE COMPATIBILITY CANDIDATE
+
+## Baseline và an toàn
+- Baseline: nhánh `work/mobile-youtube-pull-refresh-v130`, version 1.10.130.
+- Nhánh riêng: `work/mobile-lautv-live-v131`.
+- Không sửa hoặc chuyển nhánh stable; không triển khai production.
+- Candidate: **1.10.131**, versionCode **147**. Chưa phải bản ổn định; cần kiểm thử thiết bị.
+
+## Hạng mục tích hợp
+- Thêm form đăng nhập Xtream Codes, sinh endpoint chuẩn `get.php?type=m3u_plus`, output M3U8 hoặc TS; xác thực URL máy chủ và encode credentials.
+- Mở rộng M3U parser đọc metadata URL dự phòng như `backup-url`, `fallback-url`, `alt-url`, `stream-url-2` và dạng gạch dưới.
+- Lưu URL ứng viên ở metadata nội bộ của kênh, giữ thứ tự, khử trùng lặp và tương thích pipeline export/session hiện có.
+- Dùng Media3/ExoPlayer hiện tại; thử URL kế tiếp sau lỗi không thể phục hồi hoặc nhiều lần recovery. Không bỏ qua TLS và không suy ra/giải mã DRM keys.
+- Giữ EPG/XMLTV, playlist cache, nguồn mặc định NM7 và YouTube/pull-to-refresh. Quy tắc không thay playlist bởi dữ liệu rỗng đã có trong `MainActivity.showPlaylist` được giữ nguyên.
+
+## Kiểm tra
+- Thêm unit tests cho Xtream URL encoding/validation và M3U alternate URL round-trip.
+- CI riêng chạy verifier, unit tests, build APK Mobile debug và upload artifact.
+- Build xanh không đồng nghĩa runtime PASS; cần cài APK và thử nguồn chính/dự phòng trên thiết bị.
+
+## Giới hạn
+- Scraper sự kiện bóng đá và Stalker/MAG chưa nằm trong candidate đầu tiên: chúng phụ thuộc API/portal cụ thể, cần xác minh nguồn hợp lệ và kiểm thử riêng; không sao chép URL hoặc thông tin truy cập của LauTV.
+- CI không thay thế kiểm thử phát video trên Android thật.
+
+---
+
 # TIẾN ĐỘ — NM7 IPTV MOBILE 1.10.130 — YOUTUBE HOME PULL-TO-REFRESH REDO
 
 ## Vì sao phải làm lại
