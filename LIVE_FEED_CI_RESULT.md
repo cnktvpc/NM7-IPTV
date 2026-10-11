@@ -1,8 +1,8 @@
-# NM7 IPTV Mobile 1.10.133 — CI result
+# NM7 IPTV Mobile 1.10.134 — CI result
 
-- Status: **FAILED**
+- Status: **RUNNING**
 - Branch: `work/mobile-live-feed-lau-style-20261012`
-- Source commit: `4a89f170568ce3f1962e3f1d1621d63606763111`
-- Workflow run: https://github.com/phuongnm7/iptv-player-android/actions/runs/38184673661
+- Source commit: `4e5be9ef961ab020435b7b98d3b7bb8dfb388923`
+- Workflow run: https://github.com/phuongnm7/iptv-player-android/actions/runs/38185345082
 
-Check this run for the failing build or unit-test step.
+Build and full unit tests are in progress.
