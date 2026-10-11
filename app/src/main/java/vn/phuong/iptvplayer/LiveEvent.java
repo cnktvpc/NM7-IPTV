@@ -298,6 +298,10 @@ public final class LiveEvent {
         normalized = NON_WORD.matcher(normalized).replaceAll(" ").trim().replaceAll("\\s+", " ");
         normalized = normalized.replaceAll("(?i)\\b(?:fc|cf|sc|afc|clb|club|ca|rcd|ud|cd|ac|us|ss|jk|f\\.?c\\.?|s\\.?c\\.?)\\b", " ");
         normalized = normalized.replaceAll("\\s+", " ").trim();
+        normalized = normalized.replaceFirst("^thanh pho\\s+", "");
+        if (normalized.equals("st louis city")) normalized = "st louis";
+        if (normalized.equals("sport internacional")) normalized = "internacional";
+        if (normalized.equals("santos sp")) normalized = "santos";
         Map<String, String> aliases = new LinkedHashMap<>();
         aliases.put("stade rennais", "rennes");
         aliases.put("los angeles galaxy", "la galaxy");
