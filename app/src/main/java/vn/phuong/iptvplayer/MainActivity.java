@@ -41,13 +41,16 @@ public final class MainActivity extends Activity {
     private final M3uParser parser = new M3uParser();
     private final List<Channel> allChannels = new ArrayList<>();
     private ChannelAdapter adapter;
+    private LiveEventAdapter liveAdapter;
+    private ListView channelList;
     private EditText inputUrl, inputSearch;
     private LinearLayout groupRow;
     private TextView txtEmpty;
     private ProgressBar progress;
     private int duplicateCount, missingUrlCount, activeSection;
     private String currentSource = "", selectedGroup = "", epgUrl = "";
-    private boolean loading, importExpanded = true;
+    private boolean loading, importExpanded = true, liveOnly;
+    private static final String LIVE_GROUP_TAG = "__NM7_LIVE_EVENTS__";
     private int wallpaperGeneration, playlistRequestGeneration;
     private final android.os.Handler epgHandler=new android.os.Handler(android.os.Looper.getMainLooper());
     private final Runnable epgTick=new Runnable(){@Override public void run(){if(adapter!=null)adapter.notifyDataSetChanged();epgHandler.postDelayed(this,60_000);}};
@@ -93,14 +96,29 @@ public final class MainActivity extends Activity {
         setContentView(R.layout.activity_main); Insets.apply(findViewById(R.id.mainRoot)); applyWallpaper();
         inputUrl=findViewById(R.id.inputUrl); inputSearch=findViewById(R.id.inputSearch); groupRow=findViewById(R.id.groupRow);
         txtEmpty=findViewById(R.id.txtEmpty); progress=findViewById(R.id.progress);
-        ListView list=findViewById(R.id.listChannels);
+        channelList=findViewById(R.id.listChannels);
         adapter=new ChannelAdapter(this,new ChannelAdapter.Listener(){@Override public void onSelectionChanged(){updateSummary();}@Override public void onFavoriteChanged(Channel c,boolean f){toast(f?"Đã thêm vào Yêu thích":"Đã bỏ khỏi Yêu thích");if(activeSection==1)filter();else adapter.notifyDataSetChanged();}});
-        list.setAdapter(adapter); list.setItemsCanFocus(false); list.setEmptyView(txtEmpty); list.setOnItemClickListener((p,v,i,id)->play(adapter.getItem(i))); list.setOnItemLongClickListener((p,v,i,id)->{showChannelActions(adapter.getItem(i));return true;});
+        liveAdapter=new LiveEventAdapter(this,adapter,new LiveEventAdapter.Listener(){
+            @Override public void onServersRequested(LiveEvent event){showLiveServerPicker(event);}
+            @Override public void onFavoriteChanged(LiveEvent event,boolean favorite){toast(favorite?"Đã thêm sự kiện Live vào Yêu thích":"Đã bỏ sự kiện Live khỏi Yêu thích");if(activeSection==1)filter();}
+        });
+        channelList.setAdapter(adapter); channelList.setItemsCanFocus(false); channelList.setEmptyView(txtEmpty);
+        channelList.setOnItemClickListener((p,v,i,id)->{
+            Object item=p.getAdapter().getItem(i);
+            if(item instanceof LiveEvent)playLiveEvent((LiveEvent)item);
+            else if(item instanceof Channel)play((Channel)item);
+        });
+        channelList.setOnItemLongClickListener((p,v,i,id)->{
+            Object item=p.getAdapter().getItem(i);
+            if(item instanceof LiveEvent){showLiveEventActions((LiveEvent)item);return true;}
+            if(item instanceof Channel){showChannelActions((Channel)item);return true;}
+            return false;
+        });
         findViewById(R.id.btnLoadUrl).setOnClickListener(v->loadFromUrl()); findViewById(R.id.btnReloadUrl).setOnClickListener(v->reloadPlaylistUrl()); findViewById(R.id.btnOpenFile).setOnClickListener(v->openFilePicker());
         findViewById(R.id.btnPlayUrl).setOnClickListener(v->playDirect());
         findViewById(R.id.btnAllChannels).setOnClickListener(v->selectSection(0)); findViewById(R.id.btnFavorites).setOnClickListener(v->selectSection(1)); findViewById(R.id.btnRecent).setOnClickListener(v->selectSection(2)); findViewById(R.id.btnClearFilters).setOnClickListener(v->{inputSearch.setText("");selectedGroup="";updateGroupButtons();filter();});
         inputSearch.addTextChangedListener(new TextWatcher(){@Override public void beforeTextChanged(CharSequence s,int st,int c,int a){}@Override public void onTextChanged(CharSequence s,int st,int b,int c){filter();}@Override public void afterTextChanged(Editable e){}});
-        rebuildGroups(); setImportExpanded(allChannels.isEmpty()); updateSectionButtons(); applyInterfaceMode(list);
+        rebuildGroups(); setImportExpanded(allChannels.isEmpty()); updateSectionButtons(); applyInterfaceMode(channelList);
     }
 
     private void restoreSession() {
@@ -221,14 +239,126 @@ public final class MainActivity extends Activity {
         if(!PlaylistSourceStore.isDefault(next)&&PlaylistSourceStore.isValid(next))try{PlaylistSourceStore.add(this,"",next);}catch(Exception ignored){}
     }
 
-    private void rebuildGroups(){Set<String> u=new LinkedHashSet<>();for(Channel c:allChannels)u.add(c.group());List<String> groups=new ArrayList<>(u);if(!selectedGroup.isEmpty()&&!u.contains(selectedGroup))selectedGroup="";groupRow.removeAllViews();addGroupButton(getString(R.string.all_groups),"");for(String g:groups)addGroupButton(g,g);updateGroupButtons();}
-    private void addGroupButton(String label,String value){Button b=new Button(this);b.setTag(value);b.setText(label);b.setTextSize(13);b.setAllCaps(false);b.setSingleLine(true);LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT,dp(46));p.setMarginEnd(dp(8));groupRow.addView(b,p);b.setOnClickListener(v->{selectedGroup=(String)v.getTag();updateGroupButtons();filter();findViewById(R.id.listChannels).requestFocus();});}
-    private void updateGroupButtons(){if(groupRow==null)return;for(int i=0;i<groupRow.getChildCount();i++){View c=groupRow.getChildAt(i);boolean active=selectedGroup.equals(c.getTag());c.setSelected(active);c.setBackgroundResource(active?R.drawable.button_primary:R.drawable.button_secondary);if(c instanceof Button)((Button)c).setTextColor(getColor(active?R.color.navy:R.color.text_primary));}}
-    private void filter(){if(adapter==null)return;String q=inputSearch.getText().toString().trim().toLowerCase(Locale.ROOT);List<Channel> f=new ArrayList<>();for(Channel c:allChannels){boolean gm=selectedGroup.isEmpty()||c.group().equals(selectedGroup),sm=activeSection==0||(activeSection==1&&AppPreferences.isFavorite(this,c))||(activeSection==2&&AppPreferences.isRecent(this,c)),qm=q.isEmpty()||c.name().toLowerCase(Locale.ROOT).contains(q)||c.group().toLowerCase(Locale.ROOT).contains(q)||c.url().toLowerCase(Locale.ROOT).contains(q);if(gm&&sm&&qm)f.add(c);}if(activeSection==2)f.sort((a,b)->Integer.compare(AppPreferences.recentRank(this,a),AppPreferences.recentRank(this,b)));adapter.submit(f);updateSummary();}
+    private void rebuildGroups(){
+        Set<String> uniqueGroups=new LinkedHashSet<>();
+        for(Channel channel:allChannels)uniqueGroups.add(channel.group());
+        List<String> groups=new ArrayList<>(uniqueGroups);
+        if(!selectedGroup.isEmpty()&&!uniqueGroups.contains(selectedGroup))selectedGroup="";
+        groupRow.removeAllViews();
+        addGroupButton("Tất cả ("+allChannels.size()+")","");
+        addGroupButton("⚽ LIVE ("+LiveEvent.fromChannels(allChannels).size()+")",LIVE_GROUP_TAG);
+        for(String group:groups)addGroupButton(group,group);
+        updateGroupButtons();
+    }
+    private void addGroupButton(String label,String value){
+        Button button=new Button(this);
+        button.setTag(value);button.setText(label);button.setTextSize(13);button.setAllCaps(false);button.setSingleLine(true);
+        LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT,dp(46));
+        params.setMarginEnd(dp(8));groupRow.addView(button,params);
+        button.setOnClickListener(view->{
+            String tag=(String)view.getTag();
+            if(LIVE_GROUP_TAG.equals(tag)){
+                liveOnly=true;selectedGroup="";activeSection=0;updateSectionButtons();
+            }else{
+                liveOnly=false;selectedGroup=tag;
+            }
+            updateGroupButtons();filter();channelList.requestFocus();
+        });
+    }
+    private void updateGroupButtons(){
+        if(groupRow==null)return;
+        for(int i=0;i<groupRow.getChildCount();i++){
+            View child=groupRow.getChildAt(i);
+            boolean active=liveOnly?LIVE_GROUP_TAG.equals(child.getTag()):selectedGroup.equals(child.getTag());
+            child.setSelected(active);child.setBackgroundResource(active?R.drawable.live_badge:R.drawable.button_secondary);
+            if(child instanceof Button)((Button)child).setTextColor(getColor(active?android.R.color.white:R.color.text_primary));
+        }
+    }
+    private List<LiveEvent> liveEventsWithSelectedServers(){
+        List<LiveEvent> events=LiveEvent.fromChannels(allChannels);
+        List<LiveEvent> prepared=new ArrayList<>(events.size());
+        for(LiveEvent event:events)prepared.add(event.withPreferredUrl(LiveEventStore.selectedUrl(this,event.id())));
+        return prepared;
+    }
+    private void filter(){
+        if(adapter==null)return;
+        String query=inputSearch.getText().toString().trim().toLowerCase(Locale.ROOT);
+        if(liveOnly){
+            if(channelList.getAdapter()!=liveAdapter)channelList.setAdapter(liveAdapter);
+            List<LiveEvent> filtered=new ArrayList<>();
+            for(LiveEvent event:liveEventsWithSelectedServers()){
+                boolean sectionMatch=activeSection==0
+                        ||(activeSection==1&&LiveEventStore.isFavorite(this,event.id()))
+                        ||(activeSection==2&&isRecentLiveEvent(event));
+                boolean queryMatch=query.isEmpty()||event.title().toLowerCase(Locale.ROOT).contains(query)
+                        ||event.group().toLowerCase(Locale.ROOT).contains(query)
+                        ||event.sources().stream().anyMatch(source->source.url().toLowerCase(Locale.ROOT).contains(query));
+                if(sectionMatch&&queryMatch)filtered.add(event);
+            }
+            if(activeSection==2)filtered.sort((a,b)->Integer.compare(
+                    AppPreferences.recentRank(this,a.primary()),AppPreferences.recentRank(this,b.primary())));
+            liveAdapter.submit(filtered);
+            updateSummary();
+            return;
+        }
+        if(channelList.getAdapter()!=adapter)channelList.setAdapter(adapter);
+        List<Channel> filtered=new ArrayList<>();
+        for(Channel channel:allChannels){
+            boolean groupMatch=selectedGroup.isEmpty()||channel.group().equals(selectedGroup);
+            boolean sectionMatch=activeSection==0||(activeSection==1&&AppPreferences.isFavorite(this,channel))
+                    ||(activeSection==2&&AppPreferences.isRecent(this,channel));
+            boolean queryMatch=query.isEmpty()||channel.name().toLowerCase(Locale.ROOT).contains(query)
+                    ||channel.group().toLowerCase(Locale.ROOT).contains(query)
+                    ||channel.url().toLowerCase(Locale.ROOT).contains(query);
+            if(groupMatch&&sectionMatch&&queryMatch)filtered.add(channel);
+        }
+        if(activeSection==2)filtered.sort((a,b)->Integer.compare(AppPreferences.recentRank(this,a),AppPreferences.recentRank(this,b)));
+        adapter.submit(filtered);
+        updateSummary();
+    }
+    private boolean isRecentLiveEvent(LiveEvent event){
+        for(Channel source:event.sources())if(AppPreferences.isRecent(this,source))return true;
+        return false;
+    }
+    private void playLiveEvent(LiveEvent event){
+        Channel selected=event.primary();
+        if(!MobileInlinePlayerProviderV2.playLiveChannel(selected))play(selected);
+    }
+    private void showLiveServerPicker(LiveEvent event){
+        List<Channel> sources=event.sources();
+        if(sources.size()<=1){playLiveEvent(event);return;}
+        String[] labels=new String[sources.size()];
+        for(int i=0;i<sources.size();i++){
+            String role=i==0?"Chính":"Dự phòng";
+            labels[i]="Server "+(i+1)+" ("+role+")"
+                    +(i==event.selectedIndex()?"\n✓ Đang sử dụng":"\nNhấn để chuyển sang máy chủ này");
+        }
+        new AlertDialog.Builder(this).setTitle("Chọn máy chủ phát sóng")
+                .setMessage("Nếu luồng hiện tại gặp sự cố hoặc bị gián đoạn, hãy chọn máy chủ thay thế.")
+                .setSingleChoiceItems(labels,event.selectedIndex(),(dialog,which)->{
+                    Channel source=sources.get(which);
+                    LiveEventStore.setSelectedUrl(this,event.id(),source.url());
+                    dialog.dismiss();
+                    filter();
+                    if(!MobileInlinePlayerProviderV2.playLiveChannel(source))play(source);
+                }).setNegativeButton("Đóng",null).show();
+    }
+    private void showLiveEventActions(LiveEvent event){
+        String favorite=LiveEventStore.isFavorite(this,event.id())?"Bỏ Yêu thích":"Thêm vào Yêu thích";
+        List<String> actions=new ArrayList<>();
+        actions.add("Phát sự kiện");
+        actions.add("Chọn máy chủ ("+event.sources().size()+")");
+        actions.add(favorite);
+        new AlertDialog.Builder(this).setTitle(event.title()).setItems(actions.toArray(new String[0]),(dialog,which)->{
+            if(which==0)playLiveEvent(event);
+            else if(which==1)showLiveServerPicker(event);
+            else{boolean now=LiveEventStore.toggleFavorite(this,event.id());toast(now?"Đã thêm sự kiện Live vào Yêu thích":"Đã bỏ sự kiện Live khỏi Yêu thích");filter();}
+        }).setNegativeButton("Đóng",null).show();
+    }
     private void updateSummary(){}
     private void play(Channel c){SharedPlaybackSession.setTab(this,SharedPlaybackSession.TAB_IPTV);PlayerActivity.cancelYoutubeHandoff();AppPreferences.recordRecent(this,c);Intent i=new Intent(this,PlayerActivity.class);i.putExtra(PlayerActivity.EXTRA_NAME,c.name());i.putExtra(PlayerActivity.EXTRA_URL,c.url());Bundle h=new Bundle();for(java.util.Map.Entry<String,String> e:c.headers().entrySet())h.putString(e.getKey(),e.getValue());i.putExtra(PlayerActivity.EXTRA_HEADERS,h);i.putExtra(PlayerActivity.EXTRA_MIME,c.mimeHint());i.putStringArrayListExtra(PlayerActivity.EXTRA_OPTIONS,new ArrayList<>(c.options()));startActivity(i);}
     private void selectSection(int s){activeSection=s;updateSectionButtons();filter();}
-    private void updateSectionButtons(){int[] ids={R.id.btnAllChannels,R.id.btnFavorites,R.id.btnRecent};for(int i=0;i<ids.length;i++){View b=findViewById(ids[i]);b.setAlpha(i==activeSection?1f:.62f);b.setSelected(i==activeSection);}if(txtEmpty!=null)txtEmpty.setText(activeSection==1?"Chưa có kênh yêu thích":activeSection==2?"Chưa có kênh đã xem":"Không tìm thấy kênh");}
+    private void updateSectionButtons(){int[] ids={R.id.btnAllChannels,R.id.btnFavorites,R.id.btnRecent};for(int i=0;i<ids.length;i++){View b=findViewById(ids[i]);b.setAlpha(i==activeSection?1f:.62f);b.setSelected(i==activeSection);}if(txtEmpty!=null)txtEmpty.setText(liveOnly?(activeSection==1?"Chưa có sự kiện Live yêu thích":activeSection==2?"Chưa có sự kiện Live đã xem":"Không tìm thấy sự kiện LIVE"):(activeSection==1?"Chưa có kênh yêu thích":activeSection==2?"Chưa có kênh đã xem":"Không tìm thấy kênh"));}
     private void saveSession(){try{SessionStore.save(getApplicationContext(),SessionStore.snapshot(allChannels),currentSource,epgUrl,duplicateCount,missingUrlCount);}catch(Exception ignored){}}
     private void setLoading(boolean v){loading=v;if(progress!=null)progress.setVisibility(v?View.VISIBLE:View.GONE);}
     private void setImportExpanded(boolean expanded){importExpanded=expanded;View section=findViewById(R.id.importPanel);if(section!=null)section.setVisibility(expanded?View.VISIBLE:View.GONE);}
