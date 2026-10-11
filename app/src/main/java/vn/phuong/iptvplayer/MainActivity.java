@@ -203,6 +203,32 @@ public final class MainActivity extends Activity {
         });
     }
 
+    private void showXtreamLogin(){
+        LinearLayout form=new LinearLayout(this);
+        form.setOrientation(LinearLayout.VERTICAL);
+        int pad=dp(16); form.setPadding(pad,pad,pad,pad);
+        EditText server=new EditText(this); server.setSingleLine(true); server.setHint("Server URL (https://example.com:8080)");
+        EditText username=new EditText(this); username.setSingleLine(true); username.setHint("Username");
+        EditText password=new EditText(this); password.setSingleLine(true); password.setHint("Password");
+        password.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        form.addView(server); form.addView(username); form.addView(password);
+        new AlertDialog.Builder(this).setTitle("Đăng nhập Xtream Codes").setView(form)
+            .setNegativeButton("Hủy",null).setPositiveButton("Tải danh sách",(dialog,which)->{
+                String base=server.getText().toString().trim();
+                String user=username.getText().toString().trim();
+                String pass=password.getText().toString();
+                if(base.isEmpty()||user.isEmpty()||pass.isEmpty()){toast("Nhập đủ server, username và password");return;}
+                try{
+                    URL parsed=new URL(base);
+                    if(!"http".equalsIgnoreCase(parsed.getProtocol())&&!"https".equalsIgnoreCase(parsed.getProtocol()))throw new Exception("invalid protocol");
+                    String root=parsed.getProtocol()+"://"+parsed.getAuthority()+parsed.getPath();
+                    while(root.endsWith("/"))root=root.substring(0,root.length()-1);
+                    String playlist=root+"/get.php?username="+java.net.URLEncoder.encode(user,"UTF-8")+"&password="+java.net.URLEncoder.encode(pass,"UTF-8")+"&type=m3u_plus&output=ts";
+                    inputUrl.setText(playlist);loadFromUrl();
+                }catch(Exception e){toast("Server URL không hợp lệ");}
+            }).show();
+    }
+
     private void openFilePicker(){Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.addCategory(Intent.CATEGORY_OPENABLE);i.setType("*/*");startActivityForResult(i,OPEN_M3U);}
 
     @Override protected void onActivityResult(int request,int result,Intent data){super.onActivityResult(request,result,data);if(result!=RESULT_OK||data==null||data.getData()==null)return;Uri uri=data.getData();if(request==OPEN_M3U)readLocalFile(uri);if(request==PICK_WALLPAPER){io.execute(()->{try{WallpaperStore.importPhoto(getApplicationContext(),uri);ui(()->{applyWallpaper();toast("Đã đổi hình nền");});}catch(Exception e){ui(()->toast("Không mở được hình nền: "+readable(e)));}});}}
