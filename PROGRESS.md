@@ -443,3 +443,11 @@ Cập nhật: 2026-09-08. Lưu file này trong GitHub riêng tư để nối l�
 - Các runner khác nhau có thể sinh debug keystore khác; trước khi gỡ bản cũ để cài bản có chữ ký khác, phải xuất playlist.
 - EPG toàn playlist, Xtream login, SRT/RTP URL/RTMPS, DRM và TV launcher chưa hỗ trợ.
 - Không coi việc biên dịch thành công là chứng minh phát 4K/mọi luồng. Không lưu secret trong nhật ký hoặc source.
+
+## 2026-10-11 — Bottom navigation and YouTube layout polish
+
+- Moved YouTube and IPTV navigation to a fixed bottom bar and added Tùy chọn beside them; Tùy chọn opens the existing application options dialog.
+- Kept the Phuongnm7 TV logo on IPTV and hides it when YouTube is selected. The YouTube website fills the content area without the old top tab row, status text or extra NM7 browser toolbar.
+- Bottom bar styling follows the reference: dark background and orange IPTV selection on IPTV; white background and black YouTube selection on YouTube. System bar icon colors adapt for contrast.
+- Android 15 smoke tests check the bottom tabs on both screens, logo visibility, return to IPTV and the bottom Tùy chọn action.
+- Scope remains `feature/mobile-revanced-youtube-from-1.10.25`; do not merge to main/stable until the user tests the APK.

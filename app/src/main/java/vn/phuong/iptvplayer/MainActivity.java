@@ -2,6 +2,7 @@ package vn.phuong.iptvplayer;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.graphics.Color;
 import android.annotation.SuppressLint;
 import android.window.OnBackInvokedDispatcher;
 import android.content.Intent;
@@ -51,10 +52,10 @@ public final class MainActivity extends Activity {
     private final List<Channel> allChannels = new ArrayList<>();
     private ChannelAdapter adapter;
     private EditText inputUrl, inputSearch;
-    private LinearLayout groupRow, iptvPanel, youtubePanel;
-    private Button btnTabIptv, btnTabYoutube, btnYoutubeBack, btnYoutubeForward, btnYoutubeReload, btnYoutubeHome;
-    private TextView txtYoutubeStatus;
-    private ProgressBar youtubeProgress;
+    private LinearLayout mainRoot, groupRow, iptvPanel, youtubePanel, bottomNav;
+    private View headerLogo, btnTabIptv, btnTabYoutube, btnTabOptions;
+    private TextView txtTabYoutubeIcon, txtTabYoutubeLabel, txtTabIptvIcon, txtTabIptvLabel;
+    private TextView txtTabOptionsIcon, txtTabOptionsLabel;
     private WebView youtubeWebView;
     private boolean youtubeTabActive, youtubePageLoaded;
     private TextView txtEmpty;
@@ -94,18 +95,19 @@ public final class MainActivity extends Activity {
             getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
                     OnBackInvokedDispatcher.PRIORITY_DEFAULT,this::handleBackNavigation);
         }
+        mainRoot=findViewById(R.id.mainRoot);
+        headerLogo=findViewById(R.id.headerLogo);
         iptvPanel=findViewById(R.id.iptvPanel); youtubePanel=findViewById(R.id.youtubePanel);
+        bottomNav=findViewById(R.id.bottomNav);
         btnTabIptv=findViewById(R.id.btnTabIptv); btnTabYoutube=findViewById(R.id.btnTabYoutube);
-        txtYoutubeStatus=findViewById(R.id.txtYoutubeStatus);
-        youtubeProgress=findViewById(R.id.youtubeProgress); youtubeWebView=findViewById(R.id.youtubeWebView);
-        btnYoutubeBack=findViewById(R.id.btnYoutubeBack); btnYoutubeForward=findViewById(R.id.btnYoutubeForward);
-        btnYoutubeReload=findViewById(R.id.btnYoutubeReload); btnYoutubeHome=findViewById(R.id.btnYoutubeHome);
+        btnTabOptions=findViewById(R.id.btnTabOptions);
+        txtTabYoutubeIcon=findViewById(R.id.txtTabYoutubeIcon); txtTabYoutubeLabel=findViewById(R.id.txtTabYoutubeLabel);
+        txtTabIptvIcon=findViewById(R.id.txtTabIptvIcon); txtTabIptvLabel=findViewById(R.id.txtTabIptvLabel);
+        txtTabOptionsIcon=findViewById(R.id.txtTabOptionsIcon); txtTabOptionsLabel=findViewById(R.id.txtTabOptionsLabel);
+        youtubeWebView=findViewById(R.id.youtubeWebView);
         btnTabIptv.setOnClickListener(v->showIptvTab());
         btnTabYoutube.setOnClickListener(v->showYouTubeTab());
-        btnYoutubeBack.setOnClickListener(v->{if(youtubeWebView.canGoBack())youtubeWebView.goBack();});
-        btnYoutubeForward.setOnClickListener(v->{if(youtubeWebView.canGoForward())youtubeWebView.goForward();});
-        btnYoutubeReload.setOnClickListener(v->{if(youtubeWebView.getUrl()==null)loadYouTubeHome();else youtubeWebView.reload();});
-        btnYoutubeHome.setOnClickListener(v->loadYouTubeHome());
+        btnTabOptions.setOnClickListener(v->showSettings());
         setupYouTubeWebView();
         inputUrl=findViewById(R.id.inputUrl); inputSearch=findViewById(R.id.inputSearch); groupRow=findViewById(R.id.groupRow);
         txtEmpty=findViewById(R.id.txtEmpty); progress=findViewById(R.id.progress);
@@ -117,7 +119,7 @@ public final class MainActivity extends Activity {
         findViewById(R.id.btnAllChannels).setOnClickListener(v->selectSection(0)); findViewById(R.id.btnFavorites).setOnClickListener(v->selectSection(1)); findViewById(R.id.btnRecent).setOnClickListener(v->selectSection(2)); findViewById(R.id.btnClearFilters).setOnClickListener(v->{inputSearch.setText("");selectedGroup="";updateGroupButtons();filter();});
         inputSearch.addTextChangedListener(new TextWatcher(){@Override public void beforeTextChanged(CharSequence s,int st,int c,int a){}@Override public void onTextChanged(CharSequence s,int st,int b,int c){filter();}@Override public void afterTextChanged(Editable e){}});
         rebuildGroups(); setImportExpanded(allChannels.isEmpty()); updateSectionButtons(); applyInterfaceMode(list);
-        updateTopTabButtons();
+        updateBottomNavigation();
     }
 
     private void restoreSession() {
@@ -349,16 +351,18 @@ public final class MainActivity extends Activity {
             youtubeWebView.onPause();
             youtubeWebView.pauseTimers();
         }
+        headerLogo.setVisibility(View.VISIBLE);
         iptvPanel.setVisibility(View.VISIBLE);
         youtubePanel.setVisibility(View.GONE);
-        updateTopTabButtons();
+        updateBottomNavigation();
     }
 
     private void showYouTubeTab(){
         youtubeTabActive=true;
+        headerLogo.setVisibility(View.GONE);
         iptvPanel.setVisibility(View.GONE);
         youtubePanel.setVisibility(View.VISIBLE);
-        updateTopTabButtons();
+        updateBottomNavigation();
         youtubeWebView.onResume();
         youtubeWebView.resumeTimers();
         if(!youtubePageLoaded){
@@ -367,14 +371,22 @@ public final class MainActivity extends Activity {
         }
     }
 
-    private void updateTopTabButtons(){
-        if(btnTabIptv==null||btnTabYoutube==null)return;
-        btnTabIptv.setBackgroundResource(youtubeTabActive?R.drawable.button_secondary:R.drawable.button_primary);
-        btnTabYoutube.setBackgroundResource(youtubeTabActive?R.drawable.button_primary:R.drawable.button_secondary);
-        btnTabIptv.setTextColor(getColor(youtubeTabActive?R.color.text_primary:R.color.navy));
-        btnTabYoutube.setTextColor(getColor(youtubeTabActive?R.color.navy:R.color.text_primary));
-        btnTabIptv.setSelected(!youtubeTabActive);
-        btnTabYoutube.setSelected(youtubeTabActive);
+    private void updateBottomNavigation(){
+        boolean youtube=youtubeTabActive;
+        int background=Color.parseColor(youtube?"#FFFFFF":"#17151B");
+        int inactive=Color.parseColor(youtube?"#77777C":"#87858E");
+        mainRoot.setBackgroundColor(background);
+        bottomNav.setBackgroundColor(background);
+        getWindow().setStatusBarColor(background);
+        getWindow().setNavigationBarColor(background);
+        getWindow().getDecorView().setSystemUiVisibility(youtube
+                ?View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR:0);
+        txtTabYoutubeIcon.setTextColor(youtube?Color.BLACK:inactive);
+        txtTabYoutubeLabel.setTextColor(youtube?Color.BLACK:inactive);
+        txtTabIptvIcon.setTextColor(youtube?inactive:Color.parseColor("#FF8800"));
+        txtTabIptvLabel.setTextColor(youtube?inactive:Color.WHITE);
+        txtTabOptionsIcon.setTextColor(inactive);
+        txtTabOptionsLabel.setTextColor(inactive);
     }
 
     private void setupYouTubeWebView(){
@@ -392,17 +404,7 @@ public final class MainActivity extends Activity {
         CookieManager cookies=CookieManager.getInstance();
         cookies.setAcceptCookie(true);
         cookies.setAcceptThirdPartyCookies(youtubeWebView,true);
-
-        youtubeWebView.setWebChromeClient(new WebChromeClient(){
-            @Override public void onProgressChanged(WebView view,int value){
-                youtubeProgress.setProgress(value);
-                youtubeProgress.setVisibility(value>=100?View.GONE:View.VISIBLE);
-                updateYouTubeNavigationButtons();
-            }
-            @Override public void onReceivedTitle(WebView view,String title){
-                if(title!=null&&!title.trim().isEmpty())txtYoutubeStatus.setText("YouTube • "+title);
-            }
-        });
+        youtubeWebView.setWebChromeClient(new WebChromeClient());
         youtubeWebView.setWebViewClient(new WebViewClient(){
             @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest request){
                 return shouldKeepYouTubeNavigationInsideApp(request.getUrl().toString());
@@ -410,24 +412,9 @@ public final class MainActivity extends Activity {
             @Override public boolean shouldOverrideUrlLoading(WebView view,String url){
                 return shouldKeepYouTubeNavigationInsideApp(url);
             }
-            @Override public void onPageStarted(WebView view,String url,android.graphics.Bitmap favicon){
-                txtYoutubeStatus.setText("Đang tải YouTube bên trong NM7…");
-                youtubeProgress.setVisibility(View.VISIBLE);
-                youtubeProgress.setProgress(0);
-                updateYouTubeNavigationButtons();
-            }
-            @Override public void onPageFinished(WebView view,String url){
-                String title=view.getTitle();
-                txtYoutubeStatus.setText(title==null||title.trim().isEmpty()?"YouTube đang chạy bên trong NM7.":"YouTube • "+title);
-                youtubeProgress.setProgress(100);
-                youtubeProgress.setVisibility(View.GONE);
-                updateYouTubeNavigationButtons();
-            }
             @Override public void onReceivedError(WebView view,WebResourceRequest request,WebResourceError error){
-                if(request.isForMainFrame()){
-                    txtYoutubeStatus.setText("Không tải được YouTube. Kiểm tra kết nối rồi bấm Tải lại.");
-                    youtubeProgress.setVisibility(View.GONE);
-                }
+                if(request.isForMainFrame())Toast.makeText(MainActivity.this,
+                        "Không tải được YouTube. Kiểm tra kết nối rồi thử lại.",Toast.LENGTH_LONG).show();
             }
         });
     }
@@ -435,25 +422,14 @@ public final class MainActivity extends Activity {
     private boolean shouldKeepYouTubeNavigationInsideApp(String target){
         Uri uri=Uri.parse(target);
         String scheme=uri.getScheme();
-        if(scheme==null||"http".equalsIgnoreCase(scheme)||"https".equalsIgnoreCase(scheme)
+        return scheme==null||"http".equalsIgnoreCase(scheme)||"https".equalsIgnoreCase(scheme)
                 ||"about".equalsIgnoreCase(scheme)||"data".equalsIgnoreCase(scheme)
-                ||"blob".equalsIgnoreCase(scheme)||"javascript".equalsIgnoreCase(scheme))return false;
-        txtYoutubeStatus.setText("Liên kết cần ứng dụng ngoài đã bị chặn để giữ YouTube trong NM7.");
-        return true;
+                ||"blob".equalsIgnoreCase(scheme)||"javascript".equalsIgnoreCase(scheme) ? false : true;
     }
 
     private void loadYouTubeHome(){
         youtubePageLoaded=true;
-        txtYoutubeStatus.setText("Đang mở YouTube trong NM7…");
         youtubeWebView.loadUrl(YOUTUBE_HOME_URL);
-    }
-
-    private void updateYouTubeNavigationButtons(){
-        if(youtubeWebView==null)return;
-        btnYoutubeBack.setEnabled(youtubeWebView.canGoBack());
-        btnYoutubeForward.setEnabled(youtubeWebView.canGoForward());
-        btnYoutubeBack.setAlpha(youtubeWebView.canGoBack()?1f:.45f);
-        btnYoutubeForward.setAlpha(youtubeWebView.canGoForward()?1f:.45f);
     }
 
     private void handleBackNavigation(){

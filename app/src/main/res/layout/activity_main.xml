@@ -1,13 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/mainRoot" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="12dp" android:background="@color/navy">
-    <ImageView android:layout_width="match_parent" android:layout_height="64dp"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/mainRoot" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="0dp" android:background="@color/navy">
+    <ImageView android:id="@+id/headerLogo" android:layout_width="match_parent" android:layout_height="68dp"
+        android:layout_marginTop="4dp" android:layout_marginBottom="4dp" android:paddingHorizontal="12dp"
         android:src="@drawable/nm7_main_logo" android:scaleType="centerInside"
         android:adjustViewBounds="true" android:contentDescription="Logo Phuongnm7 TV" />
-    <LinearLayout android:id="@+id/topTabRow" android:layout_width="match_parent" android:layout_height="46dp" android:layout_marginBottom="6dp">
-        <Button android:id="@+id/btnTabIptv" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:background="@drawable/button_primary" android:text="▣ TV / IPTV" android:textSize="14sp" android:textAllCaps="false" android:textColor="@color/navy" />
-        <Button android:id="@+id/btnTabYoutube" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:layout_marginStart="8dp" android:background="@drawable/button_secondary" android:text="▶ YouTube" android:contentDescription="Mở tab YouTube ReVanced" android:textSize="14sp" android:textAllCaps="false" android:textColor="@color/text_primary" />
-    </LinearLayout>
-    <LinearLayout android:id="@+id/iptvPanel" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="vertical">
+
+    <LinearLayout android:id="@+id/iptvPanel" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="vertical" android:paddingHorizontal="10dp">
     <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:layout_marginBottom="5dp">
         <Button android:id="@+id/btnAllChannels" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:background="@drawable/button_primary" android:text="Tất cả" android:textSize="12sp" android:textAllCaps="false" android:textColor="@color/navy" />
         <Button android:id="@+id/btnFavorites" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:layout_marginHorizontal="6dp" android:background="@drawable/button_secondary" android:text="★ Yêu thích" android:textSize="12sp" android:textAllCaps="false" android:textColor="@color/text_primary" />
@@ -36,15 +34,21 @@
         <TextView android:id="@+id/txtEmpty" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:padding="20dp" android:text="Chưa có kênh phù hợp." android:textColor="@color/text_secondary" android:visibility="gone" />
     </FrameLayout>
     </LinearLayout>
-    <LinearLayout android:id="@+id/youtubePanel" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="vertical" android:visibility="gone">
-        <TextView android:id="@+id/txtYoutubeStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingHorizontal="8dp" android:paddingVertical="6dp" android:text="YouTube chạy bên trong NM7." android:textSize="12sp" android:maxLines="1" android:ellipsize="end" android:textColor="@color/text_secondary" />
-        <LinearLayout android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginBottom="4dp" android:orientation="horizontal">
-            <Button android:id="@+id/btnYoutubeBack" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:background="@drawable/button_secondary" android:text="‹" android:contentDescription="Quay lại trang YouTube" android:textSize="18sp" android:textAllCaps="false" android:textColor="@color/text_primary" />
-            <Button android:id="@+id/btnYoutubeForward" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:layout_marginStart="4dp" android:background="@drawable/button_secondary" android:text="›" android:contentDescription="Đi tới trang YouTube" android:textSize="18sp" android:textAllCaps="false" android:textColor="@color/text_primary" />
-            <Button android:id="@+id/btnYoutubeHome" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:layout_marginStart="4dp" android:background="@drawable/button_secondary" android:text="⌂" android:contentDescription="Trang chủ YouTube" android:textSize="18sp" android:textAllCaps="false" android:textColor="@color/text_primary" />
-            <Button android:id="@+id/btnYoutubeReload" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:layout_marginStart="4dp" android:background="@drawable/button_secondary" android:text="↻" android:contentDescription="Tải lại YouTube" android:textSize="18sp" android:textAllCaps="false" android:textColor="@color/text_primary" />
+    <LinearLayout android:id="@+id/youtubePanel" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="vertical" android:background="@android:color/white" android:visibility="gone">
+        <WebView android:id="@+id/youtubeWebView" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@android:color/white" android:overScrollMode="never" />
+    </LinearLayout>
+    <LinearLayout android:id="@+id/bottomNav" android:layout_width="match_parent" android:layout_height="72dp" android:orientation="horizontal" android:gravity="center" android:baselineAligned="false" android:background="#17151B">
+        <LinearLayout android:id="@+id/btnTabYoutube" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:orientation="vertical" android:gravity="center" android:paddingTop="4dp" android:paddingBottom="2dp" android:clickable="true" android:focusable="true" android:contentDescription="Tab YouTube">
+            <TextView android:id="@+id/txtTabYoutubeIcon" android:layout_width="match_parent" android:layout_height="30dp" android:gravity="center" android:text="▶" android:textSize="25sp" android:textColor="@color/text_secondary" />
+            <TextView android:id="@+id/txtTabYoutubeLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:text="YouTube" android:textSize="12sp" android:textColor="@color/text_secondary" />
         </LinearLayout>
-        <ProgressBar android:id="@+id/youtubeProgress" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="3dp" android:max="100" android:progress="0" android:visibility="gone" />
-        <WebView android:id="@+id/youtubeWebView" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:background="@android:color/white" android:overScrollMode="never" />
+        <LinearLayout android:id="@+id/btnTabIptv" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:orientation="vertical" android:gravity="center" android:paddingTop="4dp" android:paddingBottom="2dp" android:clickable="true" android:focusable="true" android:contentDescription="Tab IPTV">
+            <TextView android:id="@+id/txtTabIptvIcon" android:layout_width="match_parent" android:layout_height="30dp" android:gravity="center" android:text="▣" android:textSize="25sp" android:textColor="@color/text_secondary" />
+            <TextView android:id="@+id/txtTabIptvLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:text="IPTV" android:textSize="12sp" android:textColor="@color/text_secondary" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/btnTabOptions" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:orientation="vertical" android:gravity="center" android:paddingTop="4dp" android:paddingBottom="2dp" android:clickable="true" android:focusable="true" android:contentDescription="Tùy chọn">
+            <TextView android:id="@+id/txtTabOptionsIcon" android:layout_width="match_parent" android:layout_height="30dp" android:gravity="center" android:text="⚙︎" android:textSize="25sp" android:textColor="@color/text_secondary" />
+            <TextView android:id="@+id/txtTabOptionsLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:text="Tùy chọn" android:textSize="12sp" android:textColor="@color/text_secondary" />
+        </LinearLayout>
     </LinearLayout>
 </LinearLayout>

@@ -1,5 +1,8 @@
 # iptv-player-android
 
+**Experimental Mobile UI note:** YouTube, IPTV and Tùy chọn are fixed in a bottom navigation bar on branch `feature/mobile-revanced-youtube-from-1.10.25`. The NM7 logo is visible on IPTV and hidden on YouTube; the YouTube website fills the content area above the bottom bar. Tùy chọn opens the existing options dialog. This experiment uses the YouTube website in WebView, not the native ReVanced client.
+
+
 Nm7 IPTV 1.7 — ứng dụng Android tiếng Việt cho mobile và Android TV, không quảng cáo, không phân tích hành vi, không máy chủ trung gian. Màn hình chính có thanh nhóm kênh cuộn ngang; khi đang xem trên TV, phím Trái mở danh sách kênh nhanh phủ lên video mà không dừng phát.
 
 Mốc công việc, lỗi đã sửa, kết quả xác minh và bước tiếp theo: [PROGRESS.md](PROGRESS.md). Đọc file này trước khi tiếp tục ở một phiên khác; không chỉ dựa vào lịch sử trò chuyện hay thư mục tạm.

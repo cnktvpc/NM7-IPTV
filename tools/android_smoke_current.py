@@ -211,7 +211,7 @@ run_adb("shell", "settings", "put", "system", "accelerometer_rotation", "0", che
 run_adb("shell", "settings", "put", "system", "user_rotation", "0", check=False)
 time.sleep(.8)
 root = launch_main()
-required = ["btnWallpaper", "btnAllChannels", "btnFavorites", "btnRecent"]
+required = ["headerLogo", "btnWallpaper", "btnAllChannels", "btnFavorites", "btnRecent", "bottomNav", "btnTabYoutube", "btnTabIptv", "btnTabOptions"]
 missing = [name for name in required if not has_id(root, name)]
 if missing:
     print_diagnostics()
@@ -220,10 +220,13 @@ if not (has_id(root, "listChannels") or has_id(root, "txtEmpty")):
     print_diagnostics()
     raise AssertionError("Neither the channel list nor its empty state is available")
 assert_consolidated_header(root, "Portrait UI")
-if not has_id(root, "btnTabIptv") or not has_id(root, "btnTabYoutube"):
+if not has_id(root, "btnTabIptv") or not has_id(root, "btnTabYoutube") or not has_id(root, "btnTabOptions"):
     print_diagnostics()
-    raise AssertionError("Top-level TV / IPTV and YouTube tabs are missing")
-print("PASS: portrait application launches and current IPTV interface is available")
+    raise AssertionError("Bottom YouTube / IPTV / Options navigation is incomplete")
+if has_id(root, "topTabRow"):
+    print_diagnostics()
+    raise AssertionError("Obsolete top navigation row is still present")
+print("PASS: portrait IPTV screen shows its logo and fixed bottom navigation")
 
 youtube_tab = next((n for n in root.iter("node") if n.get("resource-id") == PACKAGE + ":id/btnTabYoutube"), None)
 if not tap_node(youtube_tab):
@@ -231,12 +234,18 @@ if not tap_node(youtube_tab):
     raise AssertionError("Could not select the YouTube top-level tab")
 time.sleep(.5)
 youtube_root = hierarchy()
-if not has_id(youtube_root, "txtYoutubeStatus") or not has_id(youtube_root, "youtubeWebView"):
+if not has_id(youtube_root, "youtubeWebView"):
     print_diagnostics()
     raise AssertionError("YouTube tab did not show its in-app WebView")
-if has_id(youtube_root, "btnInstallGmsCore") or has_id(youtube_root, "btnInstallYoutube") or has_id(youtube_root, "btnOpenYoutube"):
+if has_id(youtube_root, "headerLogo"):
     print_diagnostics()
-    raise AssertionError("YouTube tab still exposes a separate-app installer/launcher")
+    raise AssertionError("NM7 logo is still visible above the YouTube page")
+if not has_id(youtube_root, "bottomNav") or not has_id(youtube_root, "btnTabOptions"):
+    print_diagnostics()
+    raise AssertionError("Bottom navigation disappeared in YouTube mode")
+if has_id(youtube_root, "btnYoutubeBack") or has_id(youtube_root, "btnYoutubeReload"):
+    print_diagnostics()
+    raise AssertionError("Extra NM7 toolbar remains above the YouTube website")
 foreground = adb("shell", "dumpsys", "activity", "activities")
 if PACKAGE not in foreground or ACTIVITY not in foreground:
     print_diagnostics()
@@ -252,6 +261,25 @@ root = hierarchy()
 if not has_id(root, "listChannels") and not has_id(root, "txtEmpty"):
     print_diagnostics()
     raise AssertionError("Returning to TV / IPTV did not restore the channel list")
+if not has_id(root, "headerLogo") or not has_id(root, "btnTabOptions"):
+    print_diagnostics()
+    raise AssertionError("Returning to IPTV did not restore the logo and bottom navigation")
+
+options_tab = next((n for n in root.iter("node") if n.get("resource-id") == PACKAGE + ":id/btnTabOptions"), None)
+if not tap_node(options_tab):
+    print_diagnostics()
+    raise AssertionError("Could not open Tùy chọn from bottom navigation")
+time.sleep(.4)
+options_root = hierarchy()
+if alert_title(options_root) != "Tùy chọn ứng dụng":
+    print_diagnostics()
+    raise AssertionError("Bottom Tùy chọn did not open the application options dialog")
+adb("shell", "input", "keyevent", "KEYCODE_BACK")
+time.sleep(.3)
+root = hierarchy()
+if not has_id(root, "listChannels"):
+    print_diagnostics()
+    raise AssertionError("Closing Tùy chọn did not return to IPTV")
 
 # Landscape layout regression. Resize the active activity in-place; restarting immediately after
 # changing emulator rotation can intermittently return CI to the launcher before UIAutomator attaches.
