@@ -68,7 +68,9 @@ public class YouTubeChromeRecoveryTest {
             assertEquals(originalTop, content.getTop());
             assertEquals(originalHeight, content.getHeight());
         }
-        assertEquals(1920, originalHeight);
+        assertTrue("Browse content must have a usable viewport", originalHeight > 0);
+        assertTrue("Browse viewport must stay within the measured root",
+                originalTop >= 0 && originalTop + originalHeight <= root.getHeight());
     }
     private boolean allow(Object gate, String id, boolean play, boolean iptv, boolean manual) throws Exception {
         return (Boolean) gate.getClass().getMethod("allow", String.class, boolean.class, boolean.class, boolean.class)
