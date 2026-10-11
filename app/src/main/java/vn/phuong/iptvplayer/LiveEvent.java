@@ -226,18 +226,50 @@ public final class LiveEvent {
         String awayKey = normalizeTeam(away);
         if (homeKey.isEmpty() || awayKey.isEmpty()) return null;
         boolean markedLive = raw.contains("🟢");
-        String sport;
-        if (raw.contains("🏀") || normalizeText(raw).contains("basketball")) sport = "Bóng rổ";
-        else if (raw.contains("🎾") || normalizeText(raw).contains("tennis")) sport = "Quần vợt";
-        else if (raw.contains("🏒") || normalizeText(raw).contains("hockey")) sport = "Khúc côn cầu";
-        else if (raw.contains("🏈") || raw.contains("🏉") || normalizeText(raw).contains("rugby")) sport = "Bóng bầu dục";
-        else if (raw.contains("⚾") || normalizeText(raw).contains("baseball")) sport = "Bóng chày";
-        else if (raw.contains("🏐") || normalizeText(raw).contains("volleyball")) sport = "Bóng chuyền";
-        else if (raw.contains("🥊") || normalizeText(raw).contains("mma")) sport = "Võ thuật";
-        else if (raw.contains("🎮") || normalizeText(raw).contains("esports")) sport = "Esports";
-        else sport = "Bóng đá";
+        String sport = classifySport(raw, homeKey, awayKey);
         String title = clean.replaceAll("\\s+", " ").trim();
         return new FeedEntry(channel, title, home, away, homeKey, awayKey, kickoff, markedLive, sport);
+    }
+
+    private static String classifySport(String raw, String homeKey, String awayKey) {
+        String normalized = normalizeText(raw);
+        if (raw.contains("🏀") || normalized.contains("basketball")) return "Bóng rổ";
+        if (raw.contains("🎾") || normalized.contains("tennis")) return "Quần vợt";
+        if (raw.contains("🏒") || normalized.contains("hockey")) return "Khúc côn cầu";
+        if (raw.contains("🏈") || raw.contains("🏉") || normalized.contains("rugby")
+                || normalized.contains("american football")) return "Bóng bầu dục";
+        if (raw.contains("⚾") || normalized.contains("baseball")) return "Bóng chày";
+        if (raw.contains("🏐") || normalized.contains("volleyball")) return "Bóng chuyền";
+        if (raw.contains("🥊") || normalized.contains("mma")) return "Võ thuật";
+        if (raw.contains("🎮") || normalized.contains("esports")) return "Esports";
+
+        // Some provider feeds use the same football emoji for every sport. Use
+        // recognizable team names as a fallback so NBA/NHL fixtures are not
+        // mislabeled as football when the feed omitted a sport marker.
+        String matchup = " " + homeKey + " vs " + awayKey + " ";
+        String[] basketballTeams = {
+                "atlanta hawks", "boston celtics", "brooklyn nets", "charlotte hornets",
+                "chicago bulls", "cleveland cavaliers", "dallas mavericks", "denver nuggets",
+                "detroit pistons", "golden state warriors", "houston rockets", "indiana pacers",
+                "la clippers", "los angeles clippers", "los angeles lakers", "la lakers",
+                "memphis grizzlies", "miami heat", "milwaukee bucks", "minnesota timberwolves",
+                "new orleans pelicans", "new york knicks", "oklahoma city thunder", "orlando magic",
+                "philadelphia 76ers", "phoenix suns", "portland trail blazers", "sacramento kings",
+                "san antonio spurs", "toronto raptors", "utah jazz", "washington wizards"
+        };
+        for (String team : basketballTeams) if (matchup.contains(team)) return "Bóng rổ";
+        String[] hockeyTeams = {
+                "anaheim ducks", "boston bruins", "buffalo sabres", "calgary flames",
+                "carolina hurricanes", "chicago blackhawks", "colorado avalanche", "columbus blue jackets",
+                "dallas stars", "detroit red wings", "edmonton oilers", "florida panthers",
+                "los angeles kings", "minnesota wild", "montreal canadiens", "nashville predators",
+                "new jersey devils", "new york islanders", "new york rangers", "ottawa senators",
+                "philadelphia flyers", "pittsburgh penguins", "san jose sharks", "seattle kraken",
+                "st louis blues", "tampa bay lightning", "toronto maple leafs", "vancouver canucks",
+                "vegas golden knights", "washington capitals", "winnipeg jets"
+        };
+        for (String team : hockeyTeams) if (matchup.contains(team)) return "Khúc côn cầu";
+        return "Bóng đá";
     }
 
     private static long parseKickoff(Matcher schedule, long nowMillis) {
@@ -321,6 +353,10 @@ public final class LiveEvent {
         if (normalized.equals("sport internacional")) normalized = "internacional";
         if (normalized.equals("santos sp")) normalized = "santos";
         Map<String, String> aliases = new LinkedHashMap<>();
+        aliases.put("atl san luis", "atletico san luis");
+        aliases.put("atletico san luis", "atletico san luis");
+        aliases.put("atl san luis fc", "atletico san luis");
+        aliases.put("atletico de san luis", "atletico san luis");
         aliases.put("stade rennais", "rennes");
         aliases.put("los angeles galaxy", "la galaxy");
         aliases.put("st louis city", "st louis city");
