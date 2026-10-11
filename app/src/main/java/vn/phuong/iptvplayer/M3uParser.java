@@ -95,8 +95,10 @@ public final class M3uParser {
                     for (String alternateValue : metadata.alternateUrls) {
                         for (String rawCandidate : alternateValue.split("[;|]")) {
                             String candidate = resolveUrl(rawCandidate.trim(), baseUrl);
-                            if (isNetworkUrl(candidate) && !candidate.equals(channel.url())) {
-                                channel.options().add("#NM7-ALT-URL:" + candidate);
+                            String alternateOption = "#NM7-ALT-URL:" + candidate;
+                            if (isNetworkUrl(candidate) && !candidate.equals(channel.url())
+                                    && !channel.options().contains(alternateOption)) {
+                                channel.options().add(alternateOption);
                             }
                         }
                     }

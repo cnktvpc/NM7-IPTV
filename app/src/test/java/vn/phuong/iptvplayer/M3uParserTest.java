@@ -181,6 +181,7 @@ public class M3uParserTest {
                 first.channels.get(0).streamCandidates());
         M3uParser.Result restored = parser.parse(parser.exportAll(first.channels), "");
         assertEquals(first.channels.get(0).streamCandidates(), restored.channels.get(0).streamCandidates());
+        assertEquals(1, restored.channels.get(0).options().size());
     }
 
     @Test public void readsXmlTvUrlFromPlaylistHeader() {
