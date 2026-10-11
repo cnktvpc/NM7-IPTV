@@ -79,6 +79,20 @@ public final class LiveEvent {
     }
     public boolean hasSourceUrl(String url) { return indexOfUrl(url) >= 0; }
 
+    /** Restore an event whose sources were serialized into a player intent. */
+    public static LiveEvent restored(String id, String title, String group, List<Channel> sources,
+                                     List<String> labels, long kickoffMillis, String sport,
+                                     String selectedUrl) {
+        if (sources == null || sources.isEmpty()) return null;
+        List<String> safeLabels = new ArrayList<>(sources.size());
+        for (int i = 0; i < sources.size(); i++) {
+            String label = labels != null && i < labels.size() ? labels.get(i) : "";
+            safeLabels.add(label == null || label.trim().isEmpty() ? "Server " + (i + 1) : label);
+        }
+        LiveEvent event = new LiveEvent(id, title, group, sources, safeLabels, 0, kickoffMillis, sport);
+        return event.withPreferredUrl(selectedUrl);
+    }
+
     public LiveEvent withPreferredUrl(String url) {
         int index = indexOfUrl(url);
         return index < 0 ? this : new LiveEvent(id, title, group, sources, sourceLabels, index, kickoffMillis, sport);
@@ -286,6 +300,9 @@ public final class LiveEvent {
         normalized = normalized.replaceAll("\\s+", " ").trim();
         Map<String, String> aliases = new LinkedHashMap<>();
         aliases.put("stade rennais", "rennes");
+        aliases.put("los angeles galaxy", "la galaxy");
+        aliases.put("st louis city", "st louis city");
+        aliases.put("atletico mineiro", "atletico mineiro");
         aliases.put("rennais", "rennes");
         aliases.put("sc freiburg", "freiburg");
         aliases.put("freiburg im breisgau", "freiburg");
@@ -375,7 +392,7 @@ public final class LiveEvent {
 
     private static String normalizeText(String value) {
         String decomposed = Normalizer.normalize(value == null ? "" : value, Normalizer.Form.NFD);
-        return MARKS.matcher(decomposed).replaceAll("").toLowerCase(Locale.ROOT).replace('đ', 'đ')
+        return MARKS.matcher(decomposed).replaceAll("").toLowerCase(Locale.ROOT).replace('đ', 'd')
                 .trim().replaceAll("\\s{2,}", " ");
     }
 
