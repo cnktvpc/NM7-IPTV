@@ -15,8 +15,6 @@
 ---
 
 
-# NM7 IPTV Mobile — STABLE BASELINE 1.10.128 — 2026-10-08
-
 ## Ứng viên phát triển — 1.10.133 Dedicated Live Feed (chưa chuyển stable)
 
 - **Nhánh làm việc:** `work/mobile-live-feed-lau-style-20261012`.
