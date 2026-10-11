@@ -171,9 +171,9 @@ public class M3uParserTest {
     }
 
     @Test public void parsesAlternateUrlAttributesForTheLiveServerPicker() {
-        String input = "#EXTM3U\\n"
-                + "#EXTINF:-1 group-title=\\"LIVE\\" backup-url=\\"https://backup.example/live.m3u8\\" fallback_url=\\"https://third.example/live.m3u8\\"\\n"
-                + "https://primary.example/live.m3u8\\n";
+        String input = "#EXTM3U\n"
+                + "#EXTINF:-1 group-title=\"LIVE\" backup-url=\"https://backup.example/live.m3u8\" fallback_url=\"https://third.example/live.m3u8\"\n"
+                + "https://primary.example/live.m3u8\n";
         M3uParser.Result parsed = new M3uParser().parse(input, "https://example.test/list.m3u");
         assertEquals(1, parsed.channels.size());
         Channel channel = parsed.channels.get(0);
@@ -187,9 +187,9 @@ public class M3uParserTest {
     }
 
     @Test public void resolvesRelativeAlternateStreamUrlsAgainstPlaylistUrl() {
-        String input = "#EXTM3U\\n"
-                + "#EXTINF:-1 group-title=\\"LIVE\\" alt-url=\\"backup/stream.m3u8\\",Club A vs Club B\\n"
-                + "https://example.test/live/main.m3u8\\n";
+        String input = "#EXTM3U\n"
+                + "#EXTINF:-1 group-title=\"LIVE\" alt-url=\"backup/stream.m3u8\",Club A vs Club B\n"
+                + "https://example.test/live/main.m3u8\n";
         M3uParser.Result parsed = new M3uParser().parse(input, "https://example.test/live/list.m3u");
         assertEquals("#NM7-ALT-URL:https://example.test/live/backup/stream.m3u8",
                 parsed.channels.get(0).options().get(0));
