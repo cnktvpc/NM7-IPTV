@@ -27,36 +27,56 @@ jobs:
           import re, collections
           from pathlib import Path
           text = Path('/tmp/live-feed.m3u').read_text(encoding='utf-8-sig', errors='replace')
-          print('# Temporary Live feed inspection')
-          print()
-          print('- Bytes:', len(text.encode('utf-8')))
-          print('- Header:', next((x.strip()[:250] for x in text.splitlines() if x.strip()), '<empty>'))
           entries=[]
           for line in text.splitlines():
               line=line.strip()
-              if line.startswith('#EXTINF:'):
-                  m=re.search(r'group-title=["\']([^"\']*)["\']', line, re.I)
-                  name=line.split(',',1)[1].strip() if ',' in line else ''
-                  logo=bool(re.search(r'(?:tvg-logo|logo|icon)=["\'][^"\']+["\']', line, re.I))
-                  entries.append({'group':m.group(1).strip() if m else '(no group)', 'name':name, 'logo':logo, 'meta':line[:450]})
-          print('- Entries:', len(entries))
+              if not line.startswith('#EXTINF:'): continue
+              m=re.search(r'group-title=["\']([^"\']*)["\']', line, re.I)
+              name=line.split(',',1)[1].strip() if ',' in line else ''
+              logo=bool(re.search(r'(?:tvg-logo|logo|icon)=["\'][^"\']+["\']', line, re.I))
+              status='green' if '🟢' in name else ('yellow' if '🟡' in name else ('red' if '🔴' in name else 'none'))
+              entries.append({'group':m.group(1).strip() if m else '(no group)', 'name':name, 'logo':logo, 'status':status, 'meta':line[:350]})
+          print('# Temporary Live feed inspection')
+          print()
+          print('- Bytes: '+str(len(text.encode('utf-8'))))
+          print('- Entries: '+str(len(entries)))
+          print('- Status markers: '+str(dict(collections.Counter(x['status'] for x in entries))))
           print()
           print('## Groups')
           print()
           for g,n in collections.Counter(x['group'] for x in entries).most_common(): print('- '+str(n)+' — '+g)
           print()
-          print('## Entry titles sample (stream URLs intentionally omitted)')
+          print('## Status totals by group')
           print()
-          for x in entries[:120]: print('- ['+x['group']+'] '+x['name']+' (logo='+str(x['logo'])+')')
+          for g in collections.Counter(x['group'] for x in entries).keys():
+              cs=collections.Counter(x['status'] for x in entries if x['group']==g)
+              print('- '+g+': '+str(dict(cs)))
           print()
-          print('## EXTINF metadata examples (URL omitted)')
+          for status in ['green','yellow','red','none']:
+              print('## '+status.upper()+' samples')
+              print()
+              n=0
+              seen=set()
+              for x in entries:
+                  if x['status']!=status: continue
+                  title=x['name']
+                  clean=re.sub(r'^.*?\b\d{1,2}:\d{2}\s+\d{1,2}/\d{1,2}\s*','',title)
+                  clean=re.sub(r'\s*(?:\([^)]*\)|\[[^]]*\])\s*$','',clean)
+                  key=clean.lower()
+                  if key in seen: continue
+                  seen.add(key)
+                  print('- ['+x['group']+'] '+title+' | logo='+str(x['logo']))
+                  n+=1
+                  if n>=90: break
+              print()
+          print('## EXTINF metadata (URL intentionally not emitted)')
           print()
-          for x in entries[:12]:
+          for x in entries[:10]:
               m=re.sub(r'https?://[^\s"\']+', '[url]', x['meta'])
               print('- '+m)
           PY
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add LIVE_FEED_INSPECTION.md
-          git commit -m 'test: record dedicated Live feed structure' || exit 0
+          git commit -m 'test: update dedicated Live feed analysis' || exit 0
           git push origin HEAD:work/mobile-live-feed-lau-style-20261012
