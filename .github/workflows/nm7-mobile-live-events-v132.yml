@@ -1,11 +1,11 @@
-name: NM7 IPTV Mobile 1.10.132 LauTV-style Live Events — Build
-# LauTV-inspired Live event list candidate — v132, based on Mobile 1.10.130.
+name: NM7 IPTV Mobile 1.10.133 Dedicated Live Feed — Build
+# Dedicated feed-based LauTV-style Live module — candidate v133.
 # Build is gated on Live feature checks, baseline pull-to-refresh checks, and the full unit-test suite.
 
 "on":
   push:
     branches:
-      - "work/mobile-live-events-v132"
+      - "work/mobile-live-feed-lau-style-20261012"
   workflow_dispatch:
 
 jobs:
@@ -77,16 +77,16 @@ jobs:
           set -euxo pipefail
           python3 scripts/verify-mobile-pull-refresh.py
 
-      - name: Verify 1.10.132 build configuration
+      - name: Verify 1.10.133 build configuration
         run: |
           set -euxo pipefail
-          test "$(grep -c 'versionName = "1.10.132"' app/build.gradle.kts)" -eq 1
-          test "$(grep -c 'versionCode = 148' app/build.gradle.kts)" -eq 1
+          test "$(grep -c 'versionName = "1.10.133"' app/build.gradle.kts)" -eq 1
+          test "$(grep -c 'versionCode = 149' app/build.gradle.kts)" -eq 1
 
-      - name: Verify NM7 Live events implementation
+      - name: Verify NM7 dedicated Live feed implementation
         run: |
           set -euxo pipefail
-          python3 scripts/verify-mobile-live-events-v132.py
+          python3 scripts/verify-mobile-live-feed-v133.py
 
       - name: Check Mobile lifecycle regression guards
         run: |
@@ -211,7 +211,7 @@ jobs:
               p.write_text(''.join(lines))
           PY
 
-      - name: Build Mobile 1.10.132 (Live events candidate)
+      - name: Build Mobile 1.10.133 (dedicated Live feed candidate)
         run: |
           set -o pipefail
           gradle --no-daemon --console=plain \
@@ -245,7 +245,7 @@ jobs:
       - name: Upload Mobile APK
         uses: actions/upload-artifact@v4
         with:
-          name: NM7-IPTV-Mobile-1.10.132-LIVE-EVENTS
+          name: NM7-IPTV-Mobile-1.10.133-LIVE-FEED
           path: dist/mobile/
           retention-days: 30
           if-no-files-found: error
