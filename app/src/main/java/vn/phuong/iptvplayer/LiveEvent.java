@@ -197,7 +197,9 @@ public final class LiveEvent {
             String dateKey = String.format(Locale.ROOT, "%04d-%02d-%02d",
                     matchDate.get(Calendar.YEAR), matchDate.get(Calendar.MONTH) + 1,
                     matchDate.get(Calendar.DAY_OF_MONTH));
-            String stableKey = fixture.homeKey + "_vs_" + fixture.awayKey;
+            String low = fixture.homeKey.compareTo(fixture.awayKey) <= 0 ? fixture.homeKey : fixture.awayKey;
+            String high = fixture.homeKey.compareTo(fixture.awayKey) <= 0 ? fixture.awayKey : fixture.homeKey;
+            String stableKey = low + "_vs_" + high;
             String id = dateKey + "|" + stableKey;
             String sport = fixture.sport;
             String displayGroup = sport;
@@ -225,8 +227,16 @@ public final class LiveEvent {
         String awayKey = normalizeTeam(away);
         if (homeKey.isEmpty() || awayKey.isEmpty()) return null;
         boolean markedLive = raw.contains("🟢");
-        String sport = raw.contains("🏀") || normalizeText(raw).contains("basketball")
-                ? "Bóng rổ" : (raw.contains("🏒") ? "Khúc côn cầu" : "Bóng đá");
+        String sport;
+        if (raw.contains("🏀") || normalizeText(raw).contains("basketball")) sport = "Bóng rổ";
+        else if (raw.contains("🎾") || normalizeText(raw).contains("tennis")) sport = "Quần vợt";
+        else if (raw.contains("🏒") || normalizeText(raw).contains("hockey")) sport = "Khúc côn cầu";
+        else if (raw.contains("🏈") || raw.contains("🏉") || normalizeText(raw).contains("rugby")) sport = "Bóng bầu dục";
+        else if (raw.contains("⚾") || normalizeText(raw).contains("baseball")) sport = "Bóng chày";
+        else if (raw.contains("🏐") || normalizeText(raw).contains("volleyball")) sport = "Bóng chuyền";
+        else if (raw.contains("🥊") || normalizeText(raw).contains("mma")) sport = "Võ thuật";
+        else if (raw.contains("🎮") || normalizeText(raw).contains("esports")) sport = "Esports";
+        else sport = "Bóng đá";
         String title = clean.replaceAll("\\s+", " ").trim();
         return new FeedEntry(channel, title, home, away, homeKey, awayKey, kickoff, markedLive, sport);
     }
