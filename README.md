@@ -26,7 +26,9 @@
 - **Thẻ sự kiện:** ưu tiên logo từ metadata của feed, tên trận đã chuẩn hóa, trạng thái LIVE, môn thể thao, số server và yêu thích.
 - **Player:** có thể đổi server ngay trong inline player Mobile; player Activity dự phòng cũng có nút chọn server. Lựa chọn server và yêu thích được lưu cục bộ. Feed cache riêng và làm mới mỗi 5 phút.
 - **Khả năng phục hồi:** nếu mạng lỗi, dùng M3U Live cache riêng và vẫn lọc theo thời gian hiện tại; không ghi dữ liệu Live vào playlist/session của người dùng.
-- **Kiểm thử:** thêm unit tests cho lọc trận đang diễn ra, loại trận cũ/chưa bắt đầu, gộp server khác provider/transport và khôi phục lựa chọn nguồn. Kết quả build/test đang được xác minh; chưa được xem là runtime PASS trước khi kiểm tra trên thiết bị.
+- **CI PASS:** [Run 38161961835](https://github.com/phuongnm7/iptv-player-android/actions/runs/38161961835), mã nguồn/workflow `ef40439eb7995a0b4caaa42e6d82549cda750217`. 18/18 điều kiện kiểm tra tĩnh PASS; build `:app:assembleMobileDebug` và toàn bộ `:app:testMobileDebugUnitTest` đều thành công.
+- **Artifact:** `NM7-IPTV-Mobile-1.10.133-LIVE-FEED`, ID `11710189331`. APK SHA-256: `a364e0424ea47c77f5fb75265dc64fa6284d55cef055ad0a2b50721e560ce6b8`.
+- **Chưa runtime PASS:** chưa xác nhận phát mọi server trên thiết bị thật; CI không chứng minh từng luồng còn hoạt động. Giữ là candidate, chưa chuyển stable.
 - **Quy tắc phát hành:** candidate không tự động thành stable; không merge hoặc đổi stable nếu chưa qua CI và chưa kiểm thử thực tế.
 
 > **1.10.128 là mốc ổn định chính thức hiện tại.** Mọi bản Mobile tiếp theo phải lấy đúng commit nền dưới đây; không tự ý quay lại baseline cũ.
