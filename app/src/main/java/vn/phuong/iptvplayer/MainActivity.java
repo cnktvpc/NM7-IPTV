@@ -43,6 +43,7 @@ public final class MainActivity extends Activity {
     // Independent event feed: deliberately separate from allChannels/currentSource/session.
     private List<LiveEvent> liveFeedEvents = new ArrayList<>();
     private boolean liveFeedLoading;
+    private int liveFeedRequestGeneration;
     private String liveFeedError = "";
     private final android.os.Handler liveFeedHandler = new android.os.Handler(android.os.Looper.getMainLooper());
     private static final long LIVE_FEED_REFRESH_MS = 5L * 60L * 1000L;
@@ -170,6 +171,60 @@ public final class MainActivity extends Activity {
     }
 
     private void reloadPlaylistUrl(){String source=currentSource==null?"":currentSource.split("\\n",2)[0].trim();if(!PlaylistSourceStore.isValid(source)){toast("Playlist hiện tại không phải link URL");return;}inputUrl.setText(source);loadFromUrl();}
+
+    /** Loads Live independently; this path never modifies the normal IPTV playlist. */
+    private void loadLiveFeed(){
+        if(liveFeedLoading || isFinishing() || isDestroyed())return;
+        liveFeedLoading=true;
+        final int request=++liveFeedRequestGeneration;
+        io.execute(()->{
+            String cached=LiveFeedRepository.readCache(getApplicationContext());
+            if(!cached.isEmpty()){
+                try{
+                    List<LiveEvent> cachedEvents=LiveFeedRepository.parse(cached,System.currentTimeMillis());
+                    ui(()->{
+                        if(request!=liveFeedRequestGeneration||isFinishing()||isDestroyed())return;
+                        liveFeedEvents=new ArrayList<>(cachedEvents);
+                        liveFeedError="";
+                        refreshLiveFeedUi();
+                    });
+                }catch(Exception ignored){}
+            }
+            try{
+                String content=LiveFeedRepository.download();
+                List<LiveEvent> fresh=LiveFeedRepository.parse(content,System.currentTimeMillis());
+                // A valid M3U may currently contain no live fixtures; cache it so we
+                // can still recover quickly after a temporary outage.
+                LiveFeedRepository.writeCache(getApplicationContext(),content);
+                ui(()->{
+                    if(request!=liveFeedRequestGeneration||isFinishing()||isDestroyed())return;
+                    liveFeedEvents=new ArrayList<>(fresh);
+                    liveFeedError="";
+                    liveFeedLoading=false;
+                    refreshLiveFeedUi();
+                });
+            }catch(Exception failure){
+                String reason=failure.getMessage()==null?failure.getClass().getSimpleName():failure.getMessage();
+                ui(()->{
+                    if(request!=liveFeedRequestGeneration||isFinishing()||isDestroyed())return;
+                    liveFeedLoading=false;
+                    if(liveFeedEvents.isEmpty())liveFeedError="Không tải được dữ liệu Live: "+reason;
+                    refreshLiveFeedUi();
+                });
+            }
+        });
+    }
+
+    private void refreshLiveFeedUi(){
+        if(groupRow==null||channelList==null)return;
+        rebuildGroups();
+        updateGroupButtons();
+        updateSectionButtons();
+        filter();
+        if(liveOnly&&liveFeedEvents.isEmpty()&&!liveFeedLoading&&!liveFeedError.isEmpty()&&txtEmpty!=null){
+            txtEmpty.setText(liveFeedError);
+        }
+    }
 
     private void loadFromUrl(){loadFromUrl(inputUrl.getText().toString().trim(),false);}
 
