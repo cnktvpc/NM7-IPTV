@@ -179,7 +179,6 @@ public final class PlayerActivity extends Activity {
     private boolean shouldUseBackgroundPlayback(){return !AppPreferences.isTvInterface(this)&&AppPreferences.backgroundPlayback(this);}
     private boolean playbackContextActive(){return activityStarted||backgroundPlaybackActive;}
     private static DefaultLoadControl stableLoadControl(){return new DefaultLoadControl.Builder().setBufferDurationsMs(15_000,60_000,500,1_500).setBackBuffer(10_000,true).setPrioritizeTimeOverSizeThresholds(true).build();}
-    private void startPlayer() {
     private void initializeStreamCandidates() {
         streamCandidates.clear();
         ArrayList<String> supplied = getIntent() == null ? null : getIntent().getStringArrayListExtra(EXTRA_CANDIDATES);
@@ -222,7 +221,7 @@ public final class PlayerActivity extends Activity {
         return true;
     }
 
-
+    private void startPlayer() {
         if (player != null) return; String scheme = Uri.parse(url).getScheme();
         if (scheme == null || !(scheme.matches("(?i)https?|rtsp|udp|rtmp"))) { showError("Bản này chưa hỗ trợ giao thức " + scheme + ". Không thể bảo đảm mọi giao thức IPTV."); return; }
         try {
