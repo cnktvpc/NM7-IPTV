@@ -6,7 +6,19 @@ name: NM7 IPTV Mobile 1.10.133 Dedicated Live Feed — Build
   push:
     branches:
       - "work/mobile-live-feed-lau-style-20261012"
+    paths:
+      - "app/**"
+      - "scripts/verify-mobile-live-feed-v133.py"
+      - ".github/workflows/nm7-mobile-live-events-v132.yml"
   workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: nm7-mobile-live-feed-v133
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -249,3 +261,41 @@ jobs:
           path: dist/mobile/
           retention-days: 30
           if-no-files-found: error
+
+      - name: Publish build result and artifact link
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          artifact_id="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts" --jq '.artifacts[] | select(.name == "NM7-IPTV-Mobile-1.10.133-LIVE-FEED") | .id' | head -n1)"
+          test -n "$artifact_id"
+          branch="$GITHUB_REF_NAME"
+          short_sha="${GITHUB_SHA:0:12}"
+          report_dir="$(mktemp -d)"
+          git clone --quiet --depth 1 --branch "$branch" "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git" "$report_dir"
+          cd "$report_dir"
+          {
+            echo "# NM7 IPTV Mobile 1.10.133 — CI result"
+            echo
+            echo "- Result: **PASS** (APK build and full Mobile unit-test suite completed successfully)"
+            echo "- Branch: `$branch`"
+            echo "- Source commit: `$GITHUB_SHA`"
+            echo "- Workflow run: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            echo "- Artifact: [Download NM7-IPTV-Mobile-1.10.133-LIVE-FEED](https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts/$artifact_id)"
+            echo "- Artifact ID: `$artifact_id`"
+            echo
+            echo "## SHA-256"
+            echo
+            echo '```text'
+            cat "$GITHUB_WORKSPACE/dist/mobile/SHA256SUMS.txt"
+            echo '```'
+            echo
+            echo "This is a candidate build. CI does not replace real-device playback validation."
+          } > LIVE_FEED_CI_RESULT.md
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add LIVE_FEED_CI_RESULT.md
+          git commit -m "ci: publish successful Mobile Live feed build result"
+          git push origin "HEAD:refs/heads/$branch"
