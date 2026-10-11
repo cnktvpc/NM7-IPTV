@@ -1,28 +1,31 @@
-# TIẾN ĐỘ — NM7 IPTV MOBILE 1.10.132 — LAUTV-STYLE LIVE EVENTS CANDIDATE
-## Phạm vi và tham chiếu
-- Yêu cầu: bổ sung mục **LIVE** cho NM7 Mobile theo trải nghiệm trong video LauTV do người dùng cung cấp; đây là mục lọc sự kiện trong hàng chip của màn hình Kênh, không phải nút Xtream hoặc một đổi tên nguồn M3U.
-- Mẫu LauTV quan sát được: chip `LIVE (n)`; một thẻ cho mỗi sự kiện/trận; badge LIVE; số máy chủ; hộp chọn Server 1 (Chính)/Server 2 (Dự phòng); nhấn sự kiện phát bằng trình phát nổi/inline phía trên danh sách; tim lưu yêu thích.
-- Nhánh phát triển mới: `work/mobile-live-events-v132`; dựa trên Mobile 1.10.130, commit gốc `d62f9ea5b106ab3b7e1cb47ffdc0642d466abc48`.
-- Candidate: **1.10.132**, `versionCode 148`. Không sửa/move nhánh stable và không thay đổi NM7 TV Android/Web.
-- URL playlist mặc định và cơ chế quản lý nguồn NM7 giữ nguyên.
+# TIẾN ĐỘ — NM7 IPTV MOBILE 1.10.133 — DEDICATED LAUTV-STYLE LIVE FEED
 
-## Triển khai trong candidate
-- Thêm chip `⚽ LIVE (n)` ngay sau `Tất cả (n)`; số đếm tính theo sự kiện sau khi gộp nguồn, không đếm mỗi server thành một sự kiện.
-- Dữ liệu lấy từ playlist M3U đang dùng: nhận nhóm có `LIVE`, `Event/Events`, `Sự kiện/Su kien`; đồng thời nhận trận đấu dạng `đội A vs đội B` trong nhóm thể thao. Không tự đổi hoặc hard-code URL nguồn Live.
-- Các entry trùng tiêu đề được chuẩn hóa và gộp vào một thẻ. Dòng metadata `#NM7-ALT-URL:` / `#NM7-ALT-URL=` tạo lựa chọn server phụ; các entry `Server 1/Server 2` cùng sự kiện cũng được nhóm lại.
-- Thẻ Live có logo dùng chung pipeline tải/cache logo hiện tại của NM7, tiêu đề, badge LIVE, tên nhóm, số server và nút yêu thích.
-- Nhấn thẻ dùng inline IPTV player hiện có ở Mobile; nhấn số server mở hộp chọn nguồn. Lựa chọn server và yêu thích sự kiện được lưu local trên thiết bị.
-- Thêm unit tests cho lọc nhóm Live, gộp server, URL dự phòng, kênh thể thao thông thường và khôi phục lựa chọn server.
-- Sửa điều kiện bài test viewport YouTube dùng giới hạn layout thực tế (không bắt content chiếm đủ toàn bộ chiều cao màn hình) để không báo sai do header/padding.
+## Phạm vi và ranh giới
+- Branch: `work/mobile-live-feed-lau-style-20261012`.
+- Base: candidate Mobile 1.10.132 trên nhánh làm việc, giữ nguyên stable baseline `stable/mobile-1.10.128`.
+- Version mới: **1.10.133**, `versionCode 149`.
+- Chỉ thay đổi NM7 IPTV Mobile. Không sửa stable/default branch, NM7 TV Android, NM7 Web hoặc Cloudflare Worker. Default playlist của Mobile và cơ chế quản lý nguồn truyền hình vẫn giữ nguyên.
+- Nguồn sự kiện riêng: `https://thethaonm7.phuongnm7-iptv.workers.dev/playlist.m3u`; không phụ thuộc vào playlist người dùng đang xem.
 
-## Xác minh và giới hạn
-- CI candidate: run đầu `38155235658` dừng ở verifier pull-to-refresh cũ do script dùng chung còn hard-code version 1.10.130; đây là kiểm tra version của nhánh trước, chưa tới bước build/test Live. Đã tách version guard khỏi verifier chung; workflow Live có guard 1.10.132/148 riêng và chạy full unit-test suite.
-- **CI đã PASS cho mã nguồn `de28e3b3f11f6129c13716f948340fc3fecc17c0`** — [Run 38156013028](https://github.com/phuongnm7/iptv-player-android/actions/runs/38156013028). Build Mobile và `:app:testMobileDebugUnitTest` đều thành công; verifier Live và verifier baseline pull-to-refresh đều qua.
-- Artifact: `NM7-IPTV-Mobile-1.10.132-LIVE-EVENTS`, ID `11707969756`; hạn lưu đến 2026-11-10. SHA-256 gói artifact ZIP: `475b191b0e279263eccf0bd1a1cdfdc04f42351dbdd9ce2fd9d3129a9109e8cd`.
-- APK đã giải nén từ artifact và kiểm tra ZIP integrity thành công. SHA-256 APK: `6b56db820849d902af8a94ddcd98bb2e3bf734de48a59db174f9e0445b737b84`.
-- Trạng thái phát hành: **CI PASS, vẫn là candidate; chưa stable**. Chưa có thiết bị Android thật điều khiển trong môi trường build, nên cần cài thử và kiểm tra Live/đổi server/inline playback trên điện thoại trước khi chốt ổn định.
-- CI xanh không chứng minh nguồn sự kiện có dữ liệu hoặc luồng phát được trên thiết bị thật. Sau khi có APK đạt CI, phải cài và kiểm tra chip LIVE xuất hiện với playlist thực tế, số server, chọn server, inline playback, favorite, rồi mới cân nhắc chốt ổn định.
-- Mục Live chỉ dùng nội dung có trong playlist NM7 hiện tại; nếu playlist không có nhóm/sự kiện theo các quy tắc nhận diện trên thì sẽ hiện trạng thái rỗng và không tự tìm/nhập một feed ngoài.
+## Phân tích feed
+- Đã fetch playlist từ URL được chỉ định qua workflow kiểm tra tạm thời: xấp xỉ **326 KB / 1.005 entry** khi kiểm tra.
+- `group-title` chủ yếu là nhà cung cấp (Cola TV, Vua Sân Cỏ TV, Sút Bóng TV, v.v.) hoặc giải đấu; không phải ID trận.
+- Tên entry có trạng thái emoji (🟢 đang phát, 🟡 sắp diễn ra), lịch đá, tên hai đội, tên BLV và hậu tố định dạng `[hls]`, `[hls 2]`, `[flv]`.
+- Bởi vậy bộ nhận diện mới làm sạch thời gian/trạng thái/BLV/transport, tách hai đội, so khớp biến thể tên đội và chỉ đưa fixture vào danh sách nếu ít nhất một nguồn của trận có trạng thái đang diễn ra, kickoff nằm trong ngưỡng 180 phút gần nhất (dung sai 15 phút trước giờ đá). Các luồng khác của cùng fixture được giữ như server lựa chọn; trận quá cũ hoặc chỉ sắp diễn ra sẽ bị bỏ.
+
+## Thiết kế đã triển khai
+- `LiveFeedRepository`: endpoint Live cố định, cache file riêng, timeout/giới hạn 8 MB, M3U parse độc lập; tải lại mỗi 5 phút. Không đụng `allChannels`, `currentSource`, hay SessionStore playlist của người dùng.
+- `LiveEvent.fromDedicatedFeed`: lọc trạng thái/kickoff, chuẩn hóa fixture, gộp các entry cùng trận giữa provider/transport, bỏ URL trùng, gắn nhãn server.
+- Thẻ Live dùng logo có sẵn trong metadata feed và phân loại môn thể thao; số lượng chip đếm trận sau khi gộp, không đếm từng server.
+- `LivePlaybackSession`: giữ nguyên nguồn của trận khi mở player và khi đổi server.
+- Inline player có điều khiển `Server n/m` khi trận có nhiều nguồn; PlayerActivity dự phòng có cùng chức năng. Chọn server lưu theo event ID, yêu thích giữ nguyên.
+- Feed cache được lọc lại theo giờ hiện tại mỗi lần đọc; lỗi mạng không làm hỏng nguồn truyền hình thường.
+
+## Kiểm thử và bàn giao
+- Unit tests mới: gộp 3 nguồn HLS/FLV từ nhiều provider cho một trận, loại trận già hơn 180 phút, loại trận chỉ 🟡 sắp đá, kiểm thử independence từ nhóm playlist thường và serialization/restore server.
+- Tạm thời workflow kiểm tra feed và báo cáo inspect đã được xóa sau khi xác minh feed, không nằm trong thay đổi cuối cùng.
+- **Chưa đánh dấu PASS** cho đến khi build và toàn bộ unit tests hoàn tất. Build/CI chỉ xác nhận mã nguồn và đóng gói, không chứng minh mọi luồng feed phát được trên điện thoại thật.
+- Stable `stable/mobile-1.10.128` chưa bị đổi; candidate chỉ được chốt sau khi kiểm tra chip Live, gộp trận, thumbnails, đổi server trong player, phát thực tế và favorite trên thiết bị.
 
 ---
 
