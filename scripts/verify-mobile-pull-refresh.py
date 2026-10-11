@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail-closed verification for NM7 1.10.130 YouTube Home pull-to-refresh."""
+"""Fail-closed verification for YouTube Home pull-to-refresh across Mobile candidates."""
 from pathlib import Path
 import re
 
@@ -8,7 +8,6 @@ java = (root / "smarttubedroid/src/main/java/com/liskovsoft/smartyoutubetv2/droi
 layout = (root / "smarttubedroid/src/main/res/layout/browse_activity.xml").read_text(encoding="utf-8")
 upstream_gradle = (root / "smarttubedroid/build.gradle").read_text(encoding="utf-8")
 module_gradle = Path("smarttube/build.gradle.kts").read_text(encoding="utf-8")
-app_gradle = Path("app/build.gradle.kts").read_text(encoding="utf-8")
 
 checks = [
     ("exactly one Activity dispatcher contains pull observer", len(re.findall(r"(?m)^\s*public\s+boolean\s+dispatchTouchEvent\s*\(", java)) == 1 and bool(re.search(r"(?m)^\s*public\s+boolean\s+dispatchTouchEvent\s*\([^)]*MotionEvent\s+(\w+)\s*\)\s*\{\s*trackPullDownGesture\(\1\);", java))),
@@ -21,8 +20,6 @@ checks = [
     ("layout wraps actual Browse content", 'android:id="@+id/browse_pull_refresh"' in layout and 'android:id="@+id/browse_content"' in layout),
     ("upstream SwipeRefreshLayout dependency is declared", "androidx.swiperefreshlayout:swiperefreshlayout:1.1.0" in upstream_gradle),
     ("compiled :smarttube module has SwipeRefreshLayout dependency", 'implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")' in module_gradle),
-    ("versionName is 1.10.130", 'versionName = "1.10.130"' in app_gradle),
-    ("versionCode is 146", "versionCode = 146" in app_gradle),
 ]
 for label, ok in checks:
     if not ok:

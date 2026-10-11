@@ -1,5 +1,18 @@
 # NM7 IPTV Mobile — STABLE BASELINE 1.10.128 — 2026-10-08
 
+## Ứng viên Mobile tiếp theo — 1.10.132 LauTV-style Live Events (đang kiểm thử)
+
+- **Mục tiêu:** đưa mục `⚽ LIVE (n)` vào hàng chip trên màn hình Kênh, theo mẫu LauTV trong video người dùng cung cấp.
+- **Nhánh:** `work/mobile-live-events-v132`; dựa trên nhánh candidate Mobile 1.10.130 tại commit `d62f9ea5b106ab3b7e1cb47ffdc0642d466abc48`.
+- **Version:** 1.10.132 / `versionCode 148`. Candidate riêng, chưa stable; nhánh `stable/mobile-1.10.128` giữ nguyên.
+- **Thẻ Live:** một sự kiện có tiêu đề, logo, badge LIVE, nhóm và số server. Nhiều entry cùng trận được gộp; server phụ có thể đến từ entry `Server 1/2` hoặc metadata `#NM7-ALT-URL:`.
+- **Điều khiển:** nhấn thẻ phát bằng inline player Mobile hiện có; nút số server mở bộ chọn máy chủ chính/dự phòng; yêu thích và máy chủ đã chọn được lưu cục bộ.
+- **Nguồn dữ liệu:** playlist M3U đang dùng. Nhận diện nhóm LIVE/Event/Sự kiện và trận `vs` trong nhóm thể thao; không thay URL playlist mặc định và không đụng dự án NM7 TV Android/Web.
+- **CI:** workflow riêng `.github/workflows/nm7-mobile-live-events-v132.yml` kiểm tra cấu trúc, build APK và chạy full unit tests. Chỉ phát hành candidate khi workflow pass; runtime vẫn cần test trên thiết bị.
+
+---
+
+
 > **1.10.128 là mốc ổn định chính thức hiện tại.** Mọi bản Mobile tiếp theo phải lấy đúng commit nền dưới đây; không tự ý quay lại baseline cũ.
 
 ## Mốc ổn định chính thức
