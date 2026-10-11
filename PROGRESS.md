@@ -29,6 +29,37 @@
 
 ---
 
+
+---
+
+# TIẾN ĐỘ — NM7 IPTV MOBILE 1.10.132 — LAUTV-STYLE LIVE EVENTS CANDIDATE
+## Phạm vi và tham chiếu
+- Yêu cầu: bổ sung mục **LIVE** cho NM7 Mobile theo trải nghiệm trong video LauTV do người dùng cung cấp; đây là mục lọc sự kiện trong hàng chip của màn hình Kênh, không phải nút Xtream hoặc một đổi tên nguồn M3U.
+- Mẫu LauTV quan sát được: chip `LIVE (n)`; một thẻ cho mỗi sự kiện/trận; badge LIVE; số máy chủ; hộp chọn Server 1 (Chính)/Server 2 (Dự phòng); nhấn sự kiện phát bằng trình phát nổi/inline phía trên danh sách; tim lưu yêu thích.
+- Nhánh phát triển mới: `work/mobile-live-events-v132`; dựa trên Mobile 1.10.130, commit gốc `d62f9ea5b106ab3b7e1cb47ffdc0642d466abc48`.
+- Candidate: **1.10.132**, `versionCode 148`. Không sửa/move nhánh stable và không thay đổi NM7 TV Android/Web.
+- URL playlist mặc định và cơ chế quản lý nguồn NM7 giữ nguyên.
+
+## Triển khai trong candidate
+- Thêm chip `⚽ LIVE (n)` ngay sau `Tất cả (n)`; số đếm tính theo sự kiện sau khi gộp nguồn, không đếm mỗi server thành một sự kiện.
+- Dữ liệu lấy từ playlist M3U đang dùng: nhận nhóm có `LIVE`, `Event/Events`, `Sự kiện/Su kien`; đồng thời nhận trận đấu dạng `đội A vs đội B` trong nhóm thể thao. Không tự đổi hoặc hard-code URL nguồn Live.
+- Các entry trùng tiêu đề được chuẩn hóa và gộp vào một thẻ. Dòng metadata `#NM7-ALT-URL:` / `#NM7-ALT-URL=` tạo lựa chọn server phụ; các entry `Server 1/Server 2` cùng sự kiện cũng được nhóm lại.
+- Thẻ Live có logo dùng chung pipeline tải/cache logo hiện tại của NM7, tiêu đề, badge LIVE, tên nhóm, số server và nút yêu thích.
+- Nhấn thẻ dùng inline IPTV player hiện có ở Mobile; nhấn số server mở hộp chọn nguồn. Lựa chọn server và yêu thích sự kiện được lưu local trên thiết bị.
+- Thêm unit tests cho lọc nhóm Live, gộp server, URL dự phòng, kênh thể thao thông thường và khôi phục lựa chọn server.
+- Sửa điều kiện bài test viewport YouTube dùng giới hạn layout thực tế (không bắt content chiếm đủ toàn bộ chiều cao màn hình) để không báo sai do header/padding.
+
+## Xác minh và giới hạn
+- CI candidate: run đầu `38155235658` dừng ở verifier pull-to-refresh cũ do script dùng chung còn hard-code version 1.10.130; đây là kiểm tra version của nhánh trước, chưa tới bước build/test Live. Đã tách version guard khỏi verifier chung; workflow Live có guard 1.10.132/148 riêng và chạy full unit-test suite.
+- **CI đã PASS cho mã nguồn `de28e3b3f11f6129c13716f948340fc3fecc17c0`** — [Run 38156013028](https://github.com/phuongnm7/iptv-player-android/actions/runs/38156013028). Build Mobile và `:app:testMobileDebugUnitTest` đều thành công; verifier Live và verifier baseline pull-to-refresh đều qua.
+- Artifact: `NM7-IPTV-Mobile-1.10.132-LIVE-EVENTS`, ID `11707969756`; hạn lưu đến 2026-11-10. SHA-256 gói artifact ZIP: `475b191b0e279263eccf0bd1a1cdfdc04f42351dbdd9ce2fd9d3129a9109e8cd`.
+- APK đã giải nén từ artifact và kiểm tra ZIP integrity thành công. SHA-256 APK: `6b56db820849d902af8a94ddcd98bb2e3bf734de48a59db174f9e0445b737b84`.
+- Trạng thái phát hành: **CI PASS, vẫn là candidate; chưa stable**. Chưa có thiết bị Android thật điều khiển trong môi trường build, nên cần cài thử và kiểm tra Live/đổi server/inline playback trên điện thoại trước khi chốt ổn định.
+- CI xanh không chứng minh nguồn sự kiện có dữ liệu hoặc luồng phát được trên thiết bị thật. Sau khi có APK đạt CI, phải cài và kiểm tra chip LIVE xuất hiện với playlist thực tế, số server, chọn server, inline playback, favorite, rồi mới cân nhắc chốt ổn định.
+- Mục Live chỉ dùng nội dung có trong playlist NM7 hiện tại; nếu playlist không có nhóm/sự kiện theo các quy tắc nhận diện trên thì sẽ hiện trạng thái rỗng và không tự tìm/nhập một feed ngoài.
+
+---
+
 # TIẾN ĐỘ — NM7 IPTV MOBILE 1.10.130 — YOUTUBE HOME PULL-TO-REFRESH REDO
 
 ## Vì sao phải làm lại
