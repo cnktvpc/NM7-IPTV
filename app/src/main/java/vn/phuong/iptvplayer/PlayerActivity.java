@@ -346,9 +346,16 @@ public final class PlayerActivity extends Activity {
             LivePlaybackSession.clearIfNotLiveSource(c);
             liveEvent=null;
         }
-        updateLiveServerButton();
-        if(isCurrentChannel(c))return;
+        if(isCurrentChannel(c)){
+            updateLiveServerButton();
+            return;
+        }
         name=c.name();url=c.url();mime=c.mimeHint();options=new ArrayList<>(c.options());
+        if(liveEvent!=null){
+            liveEvent=liveEvent.withPreferredUrl(url);
+            LivePlaybackSession.setActive(liveEvent);
+        }
+        updateLiveServerButton();
         DrmSpec d=DrmSpec.fromOptions(options);drmSystem=d.system;drmLicense=d.license;
         currentHeaders=new Bundle();for(Map.Entry<String,String> e:c.headers().entrySet())currentHeaders.putString(e.getKey(),e.getValue());
         getIntent().putExtra(EXTRA_NAME,name);getIntent().putExtra(EXTRA_URL,url);getIntent().putExtra(EXTRA_HEADERS,currentHeaders);
