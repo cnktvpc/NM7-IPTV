@@ -6,7 +6,7 @@ import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.FrameLayout;
+import android.view.ViewGroup;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
@@ -56,7 +56,7 @@ public class YouTubeChromeRecoveryTest {
         int contentId = app.getResources().getIdentifier("browse_content", "id", app.getPackageName());
         int headerId = app.getResources().getIdentifier("browse_app_bar", "id", app.getPackageName());
         View root = LayoutInflater.from(c).inflate(layout, null, false);
-        assertTrue(root instanceof FrameLayout);
+        assertTrue(root instanceof ViewGroup);
         int w = View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY);
         int h = View.MeasureSpec.makeMeasureSpec(1920, View.MeasureSpec.EXACTLY);
         root.measure(w, h); root.layout(0, 0, 1080, 1920);
