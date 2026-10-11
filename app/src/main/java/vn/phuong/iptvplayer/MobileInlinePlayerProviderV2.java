@@ -272,6 +272,7 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
         channelList.setOnItemClickListener((parent, view, position, id) -> {
             Object item = parent.getAdapter().getItem(position);
             if (item instanceof Channel) playInline((Channel) item);
+            else if (item instanceof LiveEvent) playInline(((LiveEvent) item).primary());
             else if (originalClick != null) originalClick.onItemClick(parent, view, position, id);
         });
 
@@ -1120,6 +1121,16 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
     }
     @Override public void onActivityStopped(Activity a) { }
     private static MobileInlinePlayerProviderV2 instance;
+
+    /** Starts a selected Live source in the existing inline player when the mobile player is attached. */
+    public static boolean playLiveChannel(Channel channel) {
+        MobileInlinePlayerProviderV2 owner = instance;
+        if (channel == null || owner == null || owner.currentActivity == null
+                || AppPreferences.isTvInterface(owner.currentActivity)) return false;
+        owner.playInline(channel);
+        return true;
+    }
+
     private boolean resumeAfterYoutube;
     private long pendingResumePositionMs;
     private boolean pendingResumePlaying;
