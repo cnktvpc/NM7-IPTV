@@ -54,7 +54,7 @@ public final class LiveEventAdapter extends BaseAdapter {
         holder.title.setText(event.title());
         holder.group.setText(event.group().isEmpty() ? "LIVE" : "LIVE  •  " + event.group());
         int servers = event.sources().size();
-        holder.servers.setText(servers + (servers == 1 ? " Server" : " Servers") + "  ▸");
+        holder.servers.setText(servers + " Server" + "  ▸");
         holder.servers.setContentDescription("Chọn máy chủ phát sóng, " + servers + " nguồn");
         holder.servers.setOnClickListener(v -> listener.onServersRequested(event));
 

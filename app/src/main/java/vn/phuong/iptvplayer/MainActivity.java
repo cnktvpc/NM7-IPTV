@@ -240,14 +240,19 @@ public final class MainActivity extends Activity {
     }
 
     private void rebuildGroups(){
-        Set<String> uniqueGroups=new LinkedHashSet<>();
-        for(Channel channel:allChannels)uniqueGroups.add(channel.group());
-        List<String> groups=new ArrayList<>(uniqueGroups);
-        if(!selectedGroup.isEmpty()&&!uniqueGroups.contains(selectedGroup))selectedGroup="";
+        java.util.LinkedHashMap<String,Integer> counts=new java.util.LinkedHashMap<>();
+        for(Channel channel:allChannels)counts.put(channel.group(),counts.getOrDefault(channel.group(),0)+1);
+        if(!selectedGroup.isEmpty()&&!counts.containsKey(selectedGroup))selectedGroup="";
         groupRow.removeAllViews();
         addGroupButton("Tất cả ("+allChannels.size()+")","");
         addGroupButton("⚽ LIVE ("+LiveEvent.fromChannels(allChannels).size()+")",LIVE_GROUP_TAG);
-        for(String group:groups)addGroupButton(group,group);
+        for(java.util.Map.Entry<String,Integer> entry:counts.entrySet()){
+            String group=entry.getKey();
+            String normalized=group.trim().toLowerCase(Locale.ROOT);
+            if(normalized.equals("live")||normalized.equals("event")||normalized.equals("events")
+                    ||normalized.equals("sự kiện")||normalized.equals("su kien")||normalized.equals("sukien"))continue;
+            addGroupButton(group+" ("+entry.getValue()+")",group);
+        }
         updateGroupButtons();
     }
     private void addGroupButton(String label,String value){
