@@ -464,7 +464,21 @@ public final class MainActivity extends Activity {
         startActivity(i);
     }
     private void selectSection(int s){activeSection=s;updateSectionButtons();filter();}
-    private void updateSectionButtons(){int[] ids={R.id.btnAllChannels,R.id.btnFavorites,R.id.btnRecent};for(int i=0;i<ids.length;i++){View b=findViewById(ids[i]);b.setAlpha(i==activeSection?1f:.62f);b.setSelected(i==activeSection);}if(txtEmpty!=null)txtEmpty.setText(liveOnly?(activeSection==1?"Chưa có sự kiện Live yêu thích":activeSection==2?"Chưa có sự kiện Live đã xem":"Không tìm thấy sự kiện LIVE"):(activeSection==1?"Chưa có kênh yêu thích":activeSection==2?"Chưa có kênh đã xem":"Không tìm thấy kênh"));}
+    private void updateSectionButtons(){
+        int[] ids={R.id.btnAllChannels,R.id.btnFavorites,R.id.btnRecent};
+        for(int i=0;i<ids.length;i++){
+            View b=findViewById(ids[i]);
+            b.setAlpha(i==activeSection?1f:.62f);
+            b.setSelected(i==activeSection);
+        }
+        if(txtEmpty!=null){
+            if(liveOnly&&liveFeedEvents.isEmpty()){
+                txtEmpty.setText(liveFeedLoading?"Đang tải danh sách trận Live…":(!liveFeedError.isEmpty()?liveFeedError:"Hiện không có trận đang diễn ra"));
+            }else{
+                txtEmpty.setText(liveOnly?(activeSection==1?"Chưa có sự kiện Live yêu thích":activeSection==2?"Chưa có sự kiện Live đã xem":"Không tìm thấy sự kiện LIVE"):(activeSection==1?"Chưa có kênh yêu thích":activeSection==2?"Chưa có kênh đã xem":"Không tìm thấy kênh"));
+            }
+        }
+    }
     private void saveSession(){try{SessionStore.save(getApplicationContext(),SessionStore.snapshot(allChannels),currentSource,epgUrl,duplicateCount,missingUrlCount);}catch(Exception ignored){}}
     private void setLoading(boolean v){loading=v;if(progress!=null)progress.setVisibility(v?View.VISIBLE:View.GONE);}
     private void setImportExpanded(boolean expanded){importExpanded=expanded;View section=findViewById(R.id.importPanel);if(section!=null)section.setVisibility(expanded?View.VISIBLE:View.GONE);}
