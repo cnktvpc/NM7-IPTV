@@ -23,6 +23,7 @@ public final class LiveEventAdapter extends BaseAdapter {
     private final ChannelAdapter logoBinder;
     private final Listener listener;
     private List<LiveEvent> events = new ArrayList<>();
+    private String playingEventId = "";
 
     public LiveEventAdapter(Context context, ChannelAdapter logoBinder, Listener listener) {
         this.context = context;
@@ -33,6 +34,13 @@ public final class LiveEventAdapter extends BaseAdapter {
 
     public void submit(List<LiveEvent> events) {
         this.events = new ArrayList<>(events == null ? new ArrayList<>() : events);
+        notifyDataSetChanged();
+    }
+
+    public void setPlayingEvent(String eventId) {
+        String next = eventId == null ? "" : eventId;
+        if (next.equals(playingEventId)) return;
+        playingEventId = next;
         notifyDataSetChanged();
     }
 
@@ -70,7 +78,8 @@ public final class LiveEventAdapter extends BaseAdapter {
 
         holder.badge.setText("LIVE");
         if (logoBinder != null) logoBinder.bindLogo(convertView, event.primary());
-        convertView.setBackgroundResource(R.drawable.live_event_card);
+        convertView.setBackgroundResource(event.id().equals(playingEventId)
+                ? R.drawable.channel_card_playing : R.drawable.live_event_card);
         convertView.setMinimumHeight(Math.round((AppPreferences.isTvInterface(context) ? 92 : 86)
                 * context.getResources().getDisplayMetrics().density));
         return convertView;

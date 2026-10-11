@@ -272,8 +272,13 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
         channelList.setOnItemClickListener((parent, view, position, id) -> {
             Object item = parent.getAdapter().getItem(position);
             if (item instanceof Channel) playInline((Channel) item);
-            else if (item instanceof LiveEvent) playInline(((LiveEvent) item).primary());
-            else if (originalClick != null) originalClick.onItemClick(parent, view, position, id);
+            else if (item instanceof LiveEvent && originalClick != null) {
+                originalClick.onItemClick(parent, view, position, id);
+            } else if (item instanceof LiveEvent) {
+                playInline(((LiveEvent) item).primary());
+            } else if (originalClick != null) {
+                originalClick.onItemClick(parent, view, position, id);
+            }
         });
 
         rootLayoutListener = (v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) ->

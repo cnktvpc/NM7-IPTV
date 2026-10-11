@@ -333,6 +333,7 @@ public final class MainActivity extends Activity {
         return false;
     }
     private void playLiveEvent(LiveEvent event){
+        if(liveAdapter!=null)liveAdapter.setPlayingEvent(event.id());
         Channel selected=event.primary();
         if(!MobileInlinePlayerProviderV2.playLiveChannel(selected))play(selected);
     }
@@ -350,6 +351,7 @@ public final class MainActivity extends Activity {
                 .setSingleChoiceItems(labels,event.selectedIndex(),(dialog,which)->{
                     Channel source=sources.get(which);
                     LiveEventStore.setSelectedUrl(this,event.id(),source.url());
+                    if(liveAdapter!=null)liveAdapter.setPlayingEvent(event.id());
                     dialog.dismiss();
                     filter();
                     if(!MobileInlinePlayerProviderV2.playLiveChannel(source))play(source);
