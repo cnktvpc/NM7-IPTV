@@ -165,32 +165,28 @@ public final class LiveEvent {
             List<Channel> sources = new ArrayList<>();
             List<String> labels = new ArrayList<>();
             Set<String> seenUrls = new LinkedHashSet<>();
-            FeedEntry representative = null;
             for (FeedEntry entry : fixture.entries) {
                 if (!seenUrls.add(entry.channel.url())) continue;
-                if (representative == null || (!representative.hasLogo() && entry.hasLogo())
-                        || (entry.markedLive && !representative.markedLive)) representative = entry;
                 String name = fixture.title;
                 Channel source = copyWithUrl(entry.channel, entry.channel.url(), name);
                 sources.add(source);
                 labels.add(feedSourceLabel(entry.channel, sources.size()));
             }
             if (sources.isEmpty()) continue;
-            if (representative != null) {
-                // Put a verified live source first, followed by alternatives.
-                int liveIndex = -1;
-                for (int i = 0; i < fixture.entries.size(); i++) {
-                    FeedEntry entry = fixture.entries.get(i);
-                    if (entry.markedLive && isFresh(entry.kickoffMillis, nowMillis)) {
-                        liveIndex = indexOfSourceUrl(sources, entry.channel.url());
-                        if (liveIndex >= 0) break;
-                    }
-                }
-                if (liveIndex > 0) {
-                    Collections.swap(sources, 0, liveIndex);
-                    Collections.swap(labels, 0, liveIndex);
-                    representative = entryByUrl(fixture.entries, sources.get(0).url());
-                }
+            // Prefer a source marked currently live; within the same status prefer one
+            // with a feed-provided logo so the event card does not show a blank tile.
+            int preferredIndex = -1;
+            int preferredScore = -1;
+            for (FeedEntry entry : fixture.entries) {
+                int sourceIndex = indexOfSourceUrl(sources, entry.channel.url());
+                if (sourceIndex < 0) continue;
+                int score = (entry.markedLive && isFresh(entry.kickoffMillis, nowMillis) ? 2 : 0)
+                        + (entry.hasLogo() ? 1 : 0);
+                if (score > preferredScore) { preferredScore = score; preferredIndex = sourceIndex; }
+            }
+            if (preferredIndex > 0) {
+                Collections.swap(sources, 0, preferredIndex);
+                Collections.swap(labels, 0, preferredIndex);
             }
             Calendar matchDate = Calendar.getInstance(FEED_TIME_ZONE, Locale.ROOT);
             matchDate.setTimeInMillis(activeKickoff);
