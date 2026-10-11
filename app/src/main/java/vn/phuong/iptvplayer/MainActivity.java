@@ -417,11 +417,13 @@ public final class MainActivity extends Activity {
         if(sources.size()<=1){playLiveEvent(event);return;}
         String[] labels=new String[sources.size()];
         for(int i=0;i<sources.size();i++){
-            labels[i]=event.sourceLabel(i)+(i==event.selectedIndex()?"\n✓ Đang chọn":"\nNhấn để phát nguồn này");
+            labels[i]=event.sourceLabel(i)+(i==event.selectedIndex()?"  ✓ Đang chọn":"");
         }
-        new AlertDialog.Builder(this).setTitle("Chọn máy chủ phát sóng")
-                .setMessage("Nếu luồng hiện tại gặp sự cố hoặc bị gián đoạn, hãy chọn máy chủ thay thế.")
-                .setSingleChoiceItems(labels,event.selectedIndex(),(dialog,which)->{
+        // Do not combine a message panel with a choice list: on some Android versions
+        // that combination hides the server rows, leaving only the explanatory text.
+        new AlertDialog.Builder(this).setTitle("Chọn máy chủ phát sóng ("+sources.size()+")")
+                .setItems(labels,(dialog,which)->{
+                    if(which<0||which>=sources.size())return;
                     Channel source=sources.get(which);
                     LiveEventStore.setSelectedUrl(this,event.id(),source.url());
                     LiveEvent selectedEvent=event.withPreferredUrl(source.url());

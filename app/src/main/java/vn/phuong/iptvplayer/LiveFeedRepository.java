@@ -58,7 +58,10 @@ final class LiveFeedRepository {
     static String download() throws Exception {
         HttpURLConnection connection = null;
         try {
-            URL address = new URL(FEED_URL);
+            // Some edge caches ignore Cache-Control on M3U routes. Keep the official
+            // source path, but add a unique query key so periodic refreshes fetch current data.
+            String separator = FEED_URL.contains("?") ? "&" : "?";
+            URL address = new URL(FEED_URL + separator + "_nm7_refresh=" + System.currentTimeMillis());
             connection = (HttpURLConnection) address.openConnection();
             connection.setUseCaches(false);
             connection.setConnectTimeout(12000);
@@ -66,8 +69,9 @@ final class LiveFeedRepository {
             connection.setInstanceFollowRedirects(true);
             connection.setRequestProperty("User-Agent", "NM7-IPTV-Mobile-Live/1.10.133 Android");
             connection.setRequestProperty("Accept", "application/vnd.apple.mpegurl,application/x-mpegURL,text/plain,*/*");
-            connection.setRequestProperty("Cache-Control", "no-cache");
+            connection.setRequestProperty("Cache-Control", "no-cache, no-store, max-age=0");
             connection.setRequestProperty("Pragma", "no-cache");
+            connection.setRequestProperty("If-Modified-Since", "0");
             int status = connection.getResponseCode();
             if (status < 200 || status >= 300) throw new IllegalStateException("HTTP " + status);
             String content;

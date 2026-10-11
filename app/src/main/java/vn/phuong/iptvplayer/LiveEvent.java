@@ -28,12 +28,16 @@ public final class LiveEvent {
     private static final Pattern LIVE_TAG = Pattern.compile(
             "(?i)(?:^\\s*\\[?live\\]?\\s*[:|–-]?\\s*|\\s*[|•–-]\\s*live\\s*$|\\s*[\\[(]\\s*live\\s*[)\\]]\\s*$)");
     private static final Pattern TIME_DATE = Pattern.compile(
-            "(?<!\\d)([01]?\\d|2[0-3]):([0-5]\\d)\\s+(\\d{1,2})/(\\d{1,2})(?:/(\\d{2,4}))?");
+            "(?<!\\d)(?<hour>[01]?\\d|2[0-3]):(?<minute>[0-5]\\d)\\s+(?<day>\\d{1,2})/(?<month>\\d{1,2})(?:/(?<year>\\d{2,4}))?");
+    private static final Pattern DATE_TIME = Pattern.compile(
+            "(?<!\\d)(?<day>\\d{1,2})/(?<month>\\d{1,2})(?:/(?<year>\\d{2,4}))?\\s+(?<hour>[01]?\\d|2[0-3]):(?<minute>[0-5]\\d)");
     private static final Pattern MATCH_SPLIT = Pattern.compile("(?i)\\s+(?:vs?\\.?|versus)\\s+");
     private static final TimeZone FEED_TIME_ZONE = TimeZone.getTimeZone("Asia/Ho_Chi_Minh");
     private static final long LIVE_MAX_AGE_MS = 180L * 60L * 1000L;
     private static final long PRE_KICKOFF_TOLERANCE_MS = 15L * 60L * 1000L;
-    private static final long SOURCE_TIME_SKEW_MS = 3L * 60L * 60L * 1000L;
+    private static final long SOURCE_TIME_SKEW_MS = 18L * 60L * 60L * 1000L;
+    // Allow long games only while the dedicated feed still explicitly marks them LIVE.
+    private static final long LIVE_MARKED_MAX_AGE_MS = 8L * 60L * 60L * 1000L;
 
     private final String id;
     private final String title;
@@ -126,10 +130,10 @@ public final class LiveEvent {
     }
 
     /**
-     * Builds Live cards specifically from the dedicated sports feed. A fixture is
-     * displayed only when at least one source marks it green and its scheduled start
-     * falls within the last 180 minutes (with a small pre-kickoff tolerance).
-     * Every source for that same fixture is then retained as a server option.
+     * Builds Live cards specifically from the dedicated sports feed. A fixture must
+     * have an explicit live marker and a plausible start time. Regular provider sources
+     * are kept for 180 minutes, while a provider still explicitly marked LIVE is allowed
+     * up to eight hours for long matches. Every same-fixture source becomes a server option.
      */
     public static List<LiveEvent> fromDedicatedFeed(List<Channel> channels, long nowMillis) {
         if (channels == null || channels.isEmpty()) return Collections.emptyList();
@@ -156,7 +160,7 @@ public final class LiveEvent {
         for (FixtureBuilder fixture : fixtures) {
             long activeKickoff = Long.MAX_VALUE;
             for (FeedEntry entry : fixture.entries) {
-                if (entry.markedLive && isFresh(entry.kickoffMillis, nowMillis)) {
+                if (entry.markedLive && isActiveLive(entry.kickoffMillis, nowMillis)) {
                     activeKickoff = Math.min(activeKickoff, entry.kickoffMillis);
                 }
             }
@@ -168,7 +172,9 @@ public final class LiveEvent {
             for (FeedEntry entry : fixture.entries) {
                 // Do not offer an ended (red) provider or an expired/future schedule
                 // as a "server" just because its team names resemble this fixture.
-                if (!isFresh(entry.kickoffMillis, nowMillis) || entry.channel.name().contains("🔴")) continue;
+                boolean regularSourceFresh = isFresh(entry.kickoffMillis, nowMillis);
+                boolean explicitlyLiveFresh = entry.markedLive && isActiveLive(entry.kickoffMillis, nowMillis);
+                if ((!regularSourceFresh && !explicitlyLiveFresh) || isEndedMarker(entry.channel.name())) continue;
                 if (!seenUrls.add(entry.channel.url())) continue;
                 String name = fixture.title;
                 Channel source = copyWithUrl(entry.channel, entry.channel.url(), name);
@@ -183,7 +189,7 @@ public final class LiveEvent {
             for (FeedEntry entry : fixture.entries) {
                 int sourceIndex = indexOfSourceUrl(sources, entry.channel.url());
                 if (sourceIndex < 0) continue;
-                int score = (entry.markedLive && isFresh(entry.kickoffMillis, nowMillis) ? 2 : 0)
+                int score = (entry.markedLive && isActiveLive(entry.kickoffMillis, nowMillis) ? 2 : 0)
                         + (entry.hasLogo() ? 1 : 0);
                 if (score > preferredScore) { preferredScore = score; preferredIndex = sourceIndex; }
             }
@@ -211,7 +217,10 @@ public final class LiveEvent {
     private static FeedEntry parseFeedEntry(Channel channel, long nowMillis) {
         String raw = channel.name().trim();
         Matcher schedule = TIME_DATE.matcher(raw);
-        if (!schedule.find()) return null; // cannot reliably apply the stale-event cutoff
+        if (!schedule.find()) {
+            schedule = DATE_TIME.matcher(raw);
+            if (!schedule.find()) return null; // no reliable event time for stale filtering
+        }
         long kickoff = parseKickoff(schedule, nowMillis);
         if (kickoff <= 0L) return null;
         String afterSchedule = raw.substring(schedule.end()).trim();
@@ -225,7 +234,7 @@ public final class LiveEvent {
         String homeKey = normalizeTeam(home);
         String awayKey = normalizeTeam(away);
         if (homeKey.isEmpty() || awayKey.isEmpty()) return null;
-        boolean markedLive = raw.contains("🟢");
+        boolean markedLive = isLiveMarker(raw);
         String sport = classifySport(raw, homeKey, awayKey);
         String title = clean.replaceAll("\\s+", " ").trim();
         return new FeedEntry(channel, title, home, away, homeKey, awayKey, kickoff, markedLive, sport);
@@ -274,16 +283,16 @@ public final class LiveEvent {
 
     private static long parseKickoff(Matcher schedule, long nowMillis) {
         try {
-            int hour = Integer.parseInt(schedule.group(1));
-            int minute = Integer.parseInt(schedule.group(2));
-            int day = Integer.parseInt(schedule.group(3));
-            int month = Integer.parseInt(schedule.group(4));
+            int hour = Integer.parseInt(schedule.group("hour"));
+            int minute = Integer.parseInt(schedule.group("minute"));
+            int day = Integer.parseInt(schedule.group("day"));
+            int month = Integer.parseInt(schedule.group("month"));
             Calendar now = Calendar.getInstance(FEED_TIME_ZONE, Locale.ROOT);
             now.setTimeInMillis(nowMillis);
             int currentYear = now.get(Calendar.YEAR);
             Integer explicitYear = null;
-            if (schedule.group(5) != null) {
-                int value = Integer.parseInt(schedule.group(5));
+            if (schedule.group("year") != null) {
+                int value = Integer.parseInt(schedule.group("year"));
                 explicitYear = value < 100 ? (value < 70 ? 2000 + value : 1900 + value) : value;
             }
             int[] candidateYears = explicitYear == null
@@ -318,6 +327,23 @@ public final class LiveEvent {
     private static boolean isFresh(long kickoff, long now) {
         long age = now - kickoff;
         return age >= -PRE_KICKOFF_TOLERANCE_MS && age <= LIVE_MAX_AGE_MS;
+    }
+
+    private static boolean isActiveLive(long kickoff, long now) {
+        long age = now - kickoff;
+        return age >= -PRE_KICKOFF_TOLERANCE_MS && age <= LIVE_MARKED_MAX_AGE_MS;
+    }
+
+    private static boolean isLiveMarker(String raw) {
+        if (raw == null || raw.isEmpty()) return false;
+        if (raw.contains("🟢") || raw.contains("🟩")) return true;
+        String normalized = normalizeText(raw);
+        return Pattern.compile("(?i)(?:\\[\\s*live\\s*\\]|\\blive\\s+now\\b|\\bcurrently live\\b|\\bdang live\\b|\\btruc tiep\\b)")
+                .matcher(normalized).find();
+    }
+
+    private static boolean isEndedMarker(String raw) {
+        return raw != null && (raw.contains("🔴") || raw.contains("🟥"));
     }
 
     private static boolean sameFixture(FixtureBuilder fixture, FeedEntry entry) {

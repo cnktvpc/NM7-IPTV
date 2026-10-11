@@ -115,11 +115,11 @@ public class LiveEventTest {
     }
 
     @Test public void dedicatedFeedRecognizesBasketballEvenWhenProviderUsesFootballEmoji() {
-        String m3u = "#EXTM3U\\n"
-                + "#EXTINF:-1 group-title=\\"Cola TV\\", 🟢 00:10 12/10 ⚽ Cleveland Cavaliers vs Orlando Magic (BLV A) [hls]\\n"
-                + "https://stream.example/cavs.m3u8\\n"
-                + "#EXTINF:-1 group-title=\\"Vua Sân Cỏ TV\\", 🟢 00:15 12/10 ⚽ Charlotte Hornets vs Milwaukee Bucks (BLV B) [hls]\\n"
-                + "https://stream.example/hornets.m3u8\\n";
+        String m3u = "#EXTM3U\n"
+                + "#EXTINF:-1 group-title=\\"Cola TV\\", 🟢 00:10 12/10 ⚽ Cleveland Cavaliers vs Orlando Magic (BLV A) [hls]\n"
+                + "https://stream.example/cavs.m3u8\n"
+                + "#EXTINF:-1 group-title=\\"Vua Sân Cỏ TV\\", 🟢 00:15 12/10 ⚽ Charlotte Hornets vs Milwaukee Bucks (BLV B) [hls]\n"
+                + "https://stream.example/hornets.m3u8\n";
         long now = java.time.LocalDateTime.of(2026, 10, 12, 0, 30)
                 .atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toInstant().toEpochMilli();
         List<Channel> channels = new M3uParser().parse(m3u, LiveFeedRepository.FEED_URL).channels;
@@ -132,11 +132,11 @@ public class LiveEventTest {
     }
 
     @Test public void dedicatedFeedMergesAbbreviatedAndFullAtleticoSanLuisNames() {
-        String m3u = "#EXTM3U\\n"
-                + "#EXTINF:-1 group-title=\\"Provider A\\", 🟢 00:10 12/10 ⚽ Atl. San Luis vs Santos Laguna (BLV A) [hls]\\n"
-                + "https://stream.example/atlsanluis-a.m3u8\\n"
-                + "#EXTINF:-1 group-title=\\"Provider B\\", 🟡 00:15 12/10 ⚽ Atletico San Luis vs Santos Laguna (BLV B) [flv]\\n"
-                + "https://stream.example/atlsanluis-b.m3u8\\n";
+        String m3u = "#EXTM3U\n"
+                + "#EXTINF:-1 group-title=\\"Provider A\\", 🟢 00:10 12/10 ⚽ Atl. San Luis vs Santos Laguna (BLV A) [hls]\n"
+                + "https://stream.example/atlsanluis-a.m3u8\n"
+                + "#EXTINF:-1 group-title=\\"Provider B\\", 🟡 00:15 12/10 ⚽ Atletico San Luis vs Santos Laguna (BLV B) [flv]\n"
+                + "https://stream.example/atlsanluis-b.m3u8\n";
         long now = java.time.LocalDateTime.of(2026, 10, 12, 0, 30)
                 .atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toInstant().toEpochMilli();
         List<Channel> channels = new M3uParser().parse(m3u, LiveFeedRepository.FEED_URL).channels;
@@ -145,6 +145,39 @@ public class LiveEventTest {
 
         assertEquals(1, events.size());
         assertEquals(2, events.get(0).sources().size());
+    }
+
+    @Test public void dedicatedFeedMergesSameFixtureWithProviderKickoffSkewAndLongRunningLiveStatus() {
+        String m3u = "#EXTM3U\n"
+                + "#EXTINF:-1 group-title=\"Provider A\", 🟢 00:10 12/10 ⚽ Atl. San Luis vs Santos Laguna (BLV A) [hls]\n"
+                + "https://stream.example/atlsanluis-a.m3u8\n"
+                + "#EXTINF:-1 group-title=\"Provider B\", 🟡 06:00 12/10 ⚽ Atletico San Luis vs Santos Laguna (BLV B) [flv]\n"
+                + "https://stream.example/atlsanluis-b.m3u8\n";
+        long now = java.time.LocalDateTime.of(2026, 10, 12, 6, 30)
+                .atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toInstant().toEpochMilli();
+        List<Channel> channels = new M3uParser().parse(m3u, LiveFeedRepository.FEED_URL).channels;
+
+        List<LiveEvent> events = LiveEvent.fromDedicatedFeed(channels, now);
+
+        assertEquals("Provider schedule skew should not split the same fixture", 1, events.size());
+        assertEquals("The explicit active source and the fresh backup must both remain selectable",
+                2, events.get(0).sources().size());
+        assertTrue(events.get(0).hasSourceUrl("https://stream.example/atlsanluis-a.m3u8"));
+        assertTrue(events.get(0).hasSourceUrl("https://stream.example/atlsanluis-b.m3u8"));
+    }
+
+    @Test public void dedicatedFeedAcceptsDateBeforeTimeAndTextLiveMarker() {
+        String m3u = "#EXTM3U\n"
+                + "#EXTINF:-1 group-title=\"Provider A\", [LIVE] 12/10 06:10 ⚽ Team North vs Team South [hls]\n"
+                + "https://stream.example/north-south.m3u8\n";
+        long now = java.time.LocalDateTime.of(2026, 10, 12, 6, 20)
+                .atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toInstant().toEpochMilli();
+        List<Channel> channels = new M3uParser().parse(m3u, LiveFeedRepository.FEED_URL).channels;
+
+        List<LiveEvent> events = LiveEvent.fromDedicatedFeed(channels, now);
+
+        assertEquals(1, events.size());
+        assertEquals("Team North vs Team South", events.get(0).title());
     }
 
     @Test public void restoredLiveEventPreservesServerLabelsAndSelectedUrl() {
