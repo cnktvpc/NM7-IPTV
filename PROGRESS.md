@@ -24,7 +24,9 @@
 ## Kiểm thử và bàn giao
 - Unit tests mới: gộp 3 nguồn HLS/FLV từ nhiều provider cho một trận, loại trận già hơn 180 phút, loại trận chỉ 🟡 sắp đá, kiểm thử independence từ nhóm playlist thường và serialization/restore server.
 - Tạm thời workflow kiểm tra feed và báo cáo inspect đã được xóa sau khi xác minh feed, không nằm trong thay đổi cuối cùng.
-- **Chưa đánh dấu PASS** cho đến khi build và toàn bộ unit tests hoàn tất. Build/CI chỉ xác nhận mã nguồn và đóng gói, không chứng minh mọi luồng feed phát được trên điện thoại thật.
+- **CI PASS — Run 38161961835:** https://github.com/phuongnm7/iptv-player-android/actions/runs/38161961835 . 18/18 guard tĩnh PASS; `:app:assembleMobileDebug` thành công; toàn bộ `:app:testMobileDebugUnitTest` thành công.
+- Artifact `NM7-IPTV-Mobile-1.10.133-LIVE-FEED`, ID `11710189331`, hạn lưu đến 2026-11-10. APK SHA-256: `a364e0424ea47c77f5fb75265dc64fa6284d55cef055ad0a2b50721e560ce6b8`.
+- **Còn thiếu kiểm thử trên thiết bị thật:** chưa thể tuyên bố mọi server phát thực tế; cần xác nhận sự kiện đang diễn ra, thumbnail/logo, đổi server khi đang xem, favorite và cập nhật feed trước khi chuyển stable.
 - Stable `stable/mobile-1.10.128` chưa bị đổi; candidate chỉ được chốt sau khi kiểm tra chip Live, gộp trận, thumbnails, đổi server trong player, phát thực tế và favorite trên thiết bị.
 
 ---
