@@ -218,7 +218,7 @@ jobs:
             -PtruthXVersion=1.5.0 \
             -PtestXSupportVersion=1.1.0 \
             -PannotationXVersion=1.1.0 \
-:app:assembleMobileDebug
+            :app:assembleMobileDebug
           mkdir -p dist/mobile
           cp app/build/outputs/apk/mobile/debug/*.apk dist/mobile/
           cd dist/mobile && sha256sum *.apk > SHA256SUMS.txt
