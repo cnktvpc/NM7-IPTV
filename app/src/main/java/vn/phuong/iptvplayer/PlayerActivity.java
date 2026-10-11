@@ -353,6 +353,8 @@ public final class PlayerActivity extends Activity {
         currentHeaders=new Bundle();for(Map.Entry<String,String> e:c.headers().entrySet())currentHeaders.putString(e.getKey(),e.getValue());
         getIntent().putExtra(EXTRA_NAME,name);getIntent().putExtra(EXTRA_URL,url);getIntent().putExtra(EXTRA_HEADERS,currentHeaders);
         getIntent().putExtra(EXTRA_MIME,mime);getIntent().putStringArrayListExtra(EXTRA_OPTIONS,options);
+        if(liveEvent!=null)getIntent().putExtra(EXTRA_LIVE_EVENT,LivePlaybackSession.encode(liveEvent));
+        else getIntent().removeExtra(EXTRA_LIVE_EVENT);
         ((TextView)findViewById(R.id.txtPlayerTitle)).setText(name);((TextView)findViewById(R.id.txtPlayerUrl)).setText(url);
         findViewById(R.id.playerError).setVisibility(View.GONE);AppPreferences.recordRecent(this,c);
         quickCurrentId=AppPreferences.id(c);position=0;resumePlayback=true;resolvingClearKey=false;
