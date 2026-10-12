@@ -15,9 +15,10 @@
 6. Thêm regression guards cho helper thời lượng, nhãn UI, ticker, thứ tự giảm dần và version.
 
 ## Kiểm chứng
-- Trạng thái build/test: chờ GitHub Actions của candidate 1.10.135.
-- CI PASS xác nhận build, unit test và regression guards; vẫn cần người dùng xác nhận hiển thị/thứ tự trên điện thoại thật.
-- Không tự động chuyển candidate sang stable. Artifact/checksum chỉ ghi nhận sau khi CI thành công.
+- **CI: PASS** — [GitHub Actions run 38220807402](https://github.com/phuongnm7/iptv-player-android/actions/runs/38220807402); build APK, regression guards, full Mobile unit-test suite và upload artifact đều thành công.
+- Artifact: [NM7-IPTV-Mobile-1.10.135-LIVE-DURATION](https://github.com/phuongnm7/iptv-player-android/actions/runs/38220807402/artifacts/11734067803); ID `11734067803`.
+- SHA-256 APK: `e59efa2c6890794f074229190e3f5d096155c9b4dbd2110b1c0cfa112afc889e` (đã đối chiếu khớp với `SHA256SUMS.txt` trong artifact).
+- Vẫn cần người dùng xác nhận hiển thị và playback trên điện thoại thật. Candidate chưa chuyển stable; `stable/mobile-1.10.128` giữ nguyên.
 
 ---
 # LỊCH SỬ TIẾN ĐỘ — 2026-10-12 — MOBILE 1.10.134 / LIVE FEED ĐANG ĐƯỢC TEST
