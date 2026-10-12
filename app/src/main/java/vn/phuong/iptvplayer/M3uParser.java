@@ -92,6 +92,16 @@ public final class M3uParser {
                             metadata.tvgId, pendingHeaders);
                     channel.setOriginalExtInf(metadata.original);
                     channel.options().addAll(pendingOptions);
+                    for (String alternateValue : metadata.alternateUrls) {
+                        for (String rawCandidate : alternateValue.split("[;|]")) {
+                            String candidate = resolveUrl(rawCandidate.trim(), baseUrl);
+                            String alternateOption = "#NM7-ALT-URL:" + candidate;
+                            if (isNetworkUrl(candidate) && !candidate.equals(channel.url())
+                                    && !channel.options().contains(alternateOption)) {
+                                channel.options().add(alternateOption);
+                            }
+                        }
+                    }
                     if (!seen.add(channel.identityKey())) duplicates++;
                     else channels.add(channel);
                 }
@@ -147,6 +157,22 @@ public final class M3uParser {
                     break;
                 case "tvg-id":
                     metadata.tvgId = value;
+                    break;
+                case "backup-url":
+                case "backup_url":
+                case "backup-urls":
+                case "backup_urls":
+                case "fallback-url":
+                case "fallback_url":
+                case "fallback-urls":
+                case "fallback_urls":
+                case "alt-url":
+                case "alt_url":
+                case "stream-url-2":
+                case "stream_url_2":
+                case "url-alt":
+                case "url_alt":
+                    if (value != null && !value.trim().isEmpty()) metadata.alternateUrls.add(value.trim());
                     break;
                 case "group-title":
                     metadata.group = value;
@@ -323,6 +349,7 @@ public final class M3uParser {
         String logoUrl = "";
         String iconUrl = "";
         String tvgId = "";
+        final List<String> alternateUrls = new ArrayList<>();
     }
 
     private static final class UrlAndHeaders {

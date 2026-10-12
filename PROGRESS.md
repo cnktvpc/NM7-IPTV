@@ -1,46 +1,192 @@
-# CẬP NHẬT TIẾN ĐỘ — CHỐT STABLE 1.10.128 — 2026-10-08
-
-## Kết luận
-
-**1.10.128 đã được người dùng test thực tế và chốt là bản ổn định đến hiện tại.**
-
-Đây là baseline chính thức để phát triển các bản Mobile tiếp theo.
-
-### Thay đổi cuối cùng
-
-- Giữ nguyên toàn bộ geometry/layout/functionality đã ổn định.
-- Chỉ tăng nhẹ kích thước logo YouTube theo ảnh người dùng gửi.
-- Kích thước hộp logo: **84dp × 32dp**.
-- Không thay đổi playback, IPTV, navigation, header controls hoặc Android TV.
-- Người dùng xác nhận bản cuối: **được / ổn định đến hiện tại**.
-
-## Source / CI / Artifact
-
-- Stable branch: `stable/mobile-1.10.128`
-- Development branch: `work/mobile-youtube-ui-v128`
-- Build commit: `ce19a4cb9ed65b3953107ffff8b2eaf9605ff74a`
-- Workflow: **NM7 IPTV Mobile 1.10.128 Exact YouTube Wordmark — Build**
-- Run ID: **37776866236 — SUCCESS**
-- Artifact: **NM7-IPTV-Mobile-1.10.128-FINAL**
-- Artifact ID: **11550202229**
-- Artifact digest: `sha256:f61beb800c4bcd10f4fff57082dc99f871d54716c74d972227cd8b2802f4db0d`
-- Artifact size: **69,592,875 bytes**
-
-## Quy tắc handoff cho các bản sau
-
-1. Lấy **1.10.128** làm nền trực tiếp.
-2. Không tự ý lấy lại baseline cũ.
-3. Giữ nguyên những phần đã được người dùng xác nhận ổn định.
-4. Chỉ sửa đúng phạm vi người dùng yêu cầu.
-5. Tăng version/versionCode cho mỗi build mới.
-6. Build + verify CI trước khi giao.
-7. Chỉ cập nhật stable baseline sau khi người dùng test thực tế và xác nhận.
+# TIẾN ĐỘ PHÁT HÀNH — NM7 IPTV MOBILE 1.10.135 — STABLE — 2026-10-12
 
 ## Trạng thái
+- **ĐÃ CHỐT STABLE** sau khi người dùng xác nhận bản 1.10.135 hoạt động OK.
+- Version: **1.10.135 / versionCode 151**.
+- Nhánh ổn định mới: `stable/mobile-1.10.135`.
+- Nhánh ổn định trước `stable/mobile-1.10.128` được giữ nguyên, không ghi đè.
+- Nhánh nguồn phát triển: `work/mobile-live-feed-lau-style-20261012`.
 
-**STABLE / CURRENT BASELINE: 1.10.128**
+## Thay đổi được phát hành
+1. Hiển thị **Đã live N phút** cạnh nút Server trên thẻ Live.
+2. Tính số phút hoàn chỉnh từ kickoff; clamp 0 cho timestamp thiếu hoặc kickoff tương lai.
+3. Ticker UI sẵn có làm mới thẻ Live mỗi 60 giây, không thêm request mạng.
+4. Sắp xếp kickoff giảm dần để trận bắt đầu mới nhất hiển thị trước.
+5. Bổ sung unit test duration 0/30/125 phút, kickoff tương lai và thứ tự sự kiện.
+
+## Kiểm thử và APK
+- GitHub Actions [run 38220807402](https://github.com/phuongnm7/iptv-player-android/actions/runs/38220807402): **SUCCESS**.
+- Build APK, regression guards, toàn bộ unit tests và upload artifact đều PASS.
+- Artifact: [NM7-IPTV-Mobile-1.10.135-LIVE-DURATION](https://github.com/phuongnm7/iptv-player-android/actions/runs/38220807402/artifacts/11734067803), ID `11734067803`.
+- SHA-256: `e59efa2c6890794f074229190e3f5d096155c9b4dbd2110b1c0cfa112afc889e`.
+- Người dùng đã cài/test và xác nhận OK; bản 1.10.135 được chuyển sang stable.
+
+## Ranh giới
+- Chỉ NM7 IPTV Mobile được thay đổi.
+- Không sửa NM7 TV Android, NM7 TV Web, playlist mặc định, nguồn Live độc lập hoặc Cloudflare Worker.
+- Các bản Mobile tiếp theo lấy `stable/mobile-1.10.135` làm baseline.
 
 ---
+# LỊCH SỬ TIẾN ĐỘ — 2026-10-12 — MOBILE 1.10.134 / LIVE FEED ĐANG ĐƯỢC TEST
+
+## Trạng thái mới nhất theo phản hồi người dùng
+- Người dùng báo rằng **mục Live hiện tạm thời đã lọc được các trận đang live** và đang tiếp tục kiểm thử.
+- Ghi nhận đây là **kết quả ban đầu trên thiết bị**, không diễn giải thành xác nhận đã tìm đủ tất cả trận hoặc mọi luồng đều chạy ổn định.
+- Candidate đang kiểm thử: **1.10.134**, `versionCode 150`.
+- Nhánh phát triển: `work/mobile-live-feed-lau-style-20261012`.
+- Nhánh stable `stable/mobile-1.10.128` giữ nguyên; không promote candidate trong khi người dùng còn kiểm thử.
+
+## Nguồn dữ liệu và ranh giới chức năng
+- Live dùng feed độc lập: `https://thethaonm7.phuongnm7-iptv.workers.dev/playlist.m3u`.
+- Danh sách Live không lấy theo playlist IPTV mà người dùng chọn trong ứng dụng.
+- Phạm vi chỉ là NM7 IPTV Mobile. Không sửa NM7 TV Android, NM7 Web, playlist mặc định của IPTV hoặc Cloudflare Worker.
+
+## Các điều chỉnh đã có trong candidate 1.10.134
+1. **Làm mới dữ liệu:** thêm tham số cache-busting khi refresh feed để tránh dùng phản hồi cache cũ.
+2. **Nhận dạng lịch thi đấu:** hỗ trợ cả hai thứ tự giờ/ngày `HH:mm DD/MM` và `DD/MM HH:mm`.
+3. **Nhận dạng trạng thái live:** nhận diện marker emoji xanh cùng các marker văn bản `[LIVE]`, `live now`, `currently live`, `đang live`, `trực tiếp`.
+4. **Cửa sổ sự kiện:** sự kiện được đánh dấu rõ là live được giữ tối đa 8 giờ để không bị loại chỉ vì lịch/giờ feed lệch; dữ liệu thông thường vẫn dùng ngưỡng 180 phút.
+5. **Loại sự kiện không còn live:** tiếp tục loại marker trận đã kết thúc/đỏ.
+6. **Gộp cùng một trận:** nới dung sai kickoff của provider đến 18 giờ khi tên đội tương ứng, để giảm tách trùng do giờ lịch giữa các nguồn lệch; cần kiểm tra thực tế để bảo đảm không gộp nhầm các trận khác nhau.
+7. **Chọn server:** sửa dialog chọn nguồn phát để dùng danh sách lựa chọn hiển thị được, thay vì kết hợp message với single-choice list khiến hàng lựa chọn không hiện.
+8. **Regression tests:** thêm test cho giờ kickoff lệch, định dạng ngày đứng trước giờ và marker live dạng chữ.
+9. **Chẩn đoán feed:** workflow có bước kiểm tra payload feed Live riêng, chỉ báo số lượng/tên sự kiện phục vụ chẩn đoán, không xuất URL luồng nhạy cảm.
+
+## CI và APK
+- GitHub Actions: [run 38185598470 — SUCCESS](https://github.com/phuongnm7/iptv-player-android/actions/runs/38185598470).
+- Các bước build Mobile, full unit-test suite, static verifiers, chẩn đoán feed và upload APK đều thành công.
+- APK candidate: **1.10.134 / versionCode 150**; artifact đã được tải về và checksum SHA-256 khớp với `SHA256SUMS.txt` do CI cung cấp.
+- **Phân biệt rõ:** CI PASS chỉ xác nhận pipeline/build/test tự động. Không tự động chứng minh danh sách trận ngoài thực tế đầy đủ, từng URL còn hoạt động hay playback trên mọi server thành công.
+
+## Kế hoạch kiểm thử tiếp theo
+- Người dùng tiếp tục test bản 1.10.134.
+- Đối chiếu các trận đang live ở feed gốc với thẻ trong ứng dụng: trận bị thiếu, trùng, bị nhầm trạng thái hoặc hiển thị sau khi đã kết thúc.
+- Kiểm tra mở trận, chuyển server, và refresh Live sau khi feed cập nhật.
+- Nếu phát hiện sai lệch, ghi lại tên trận, trạng thái/giờ trong feed và ảnh chụp danh sách Live để xác định có phải parser, bộ lọc thời gian, logic gộp trận hay dữ liệu nguồn.
+- Chỉ kết luận **runtime PASS** sau khi kết quả thiết bị xác nhận. Không thay đổi stable branch cho đến khi người dùng xác nhận ổn định.
+
+---
+
+# TIẾN ĐỘ — NM7 IPTV MOBILE 1.10.133 — DEDICATED LAUTV-STYLE LIVE FEED
+
+## Phạm vi và ranh giới
+- Branch: `work/mobile-live-feed-lau-style-20261012`.
+- Base: candidate Mobile 1.10.132 trên nhánh làm việc, giữ nguyên stable baseline `stable/mobile-1.10.128`.
+- Version mới: **1.10.133**, `versionCode 149`.
+- Chỉ thay đổi NM7 IPTV Mobile. Không sửa stable/default branch, NM7 TV Android, NM7 Web hoặc Cloudflare Worker. Default playlist của Mobile và cơ chế quản lý nguồn truyền hình vẫn giữ nguyên.
+- Nguồn sự kiện riêng: `https://thethaonm7.phuongnm7-iptv.workers.dev/playlist.m3u`; không phụ thuộc vào playlist người dùng đang xem.
+
+## Phân tích feed
+- Đã fetch playlist từ URL được chỉ định qua workflow kiểm tra tạm thời: xấp xỉ **326 KB / 1.005 entry** khi kiểm tra.
+- `group-title` chủ yếu là nhà cung cấp (Cola TV, Vua Sân Cỏ TV, Sút Bóng TV, v.v.) hoặc giải đấu; không phải ID trận.
+- Tên entry có trạng thái emoji (🟢 đang phát, 🟡 sắp diễn ra), lịch đá, tên hai đội, tên BLV và hậu tố định dạng `[hls]`, `[hls 2]`, `[flv]`.
+- Bởi vậy bộ nhận diện mới làm sạch thời gian/trạng thái/BLV/transport, tách hai đội, so khớp biến thể tên đội và chỉ đưa fixture vào danh sách nếu ít nhất một nguồn của trận có trạng thái đang diễn ra, kickoff nằm trong ngưỡng 180 phút gần nhất (dung sai 15 phút trước giờ đá). Các luồng khác của cùng fixture được giữ như server lựa chọn; trận quá cũ hoặc chỉ sắp diễn ra sẽ bị bỏ.
+
+## Thiết kế đã triển khai
+- `LiveFeedRepository`: endpoint Live cố định, cache file riêng, timeout/giới hạn 8 MB, M3U parse độc lập; tải lại mỗi 5 phút. Không đụng `allChannels`, `currentSource`, hay SessionStore playlist của người dùng.
+- `LiveEvent.fromDedicatedFeed`: lọc trạng thái/kickoff, chuẩn hóa fixture, gộp các entry cùng trận giữa provider/transport, bỏ URL trùng, gắn nhãn server.
+- Thẻ Live dùng logo có sẵn trong metadata feed và phân loại môn thể thao; số lượng chip đếm trận sau khi gộp, không đếm từng server.
+- `LivePlaybackSession`: giữ nguyên nguồn của trận khi mở player và khi đổi server.
+- Inline player có điều khiển `Server n/m` khi trận có nhiều nguồn; PlayerActivity dự phòng có cùng chức năng. Chọn server lưu theo event ID, yêu thích giữ nguyên.
+- Feed cache được lọc lại theo giờ hiện tại mỗi lần đọc; lỗi mạng không làm hỏng nguồn truyền hình thường.
+
+## Kiểm thử và bàn giao
+- Unit tests mới: gộp 3 nguồn HLS/FLV từ nhiều provider cho một trận, loại trận già hơn 180 phút, loại trận chỉ 🟡 sắp đá, kiểm thử independence từ nhóm playlist thường và serialization/restore server.
+- Tạm thời workflow kiểm tra feed và báo cáo inspect đã được xóa sau khi xác minh feed, không nằm trong thay đổi cuối cùng.
+- **CI PASS — Run 38161961835:** https://github.com/phuongnm7/iptv-player-android/actions/runs/38161961835 . 18/18 guard tĩnh PASS; `:app:assembleMobileDebug` thành công; toàn bộ `:app:testMobileDebugUnitTest` thành công.
+- Artifact `NM7-IPTV-Mobile-1.10.133-LIVE-FEED`, ID `11710189331`, hạn lưu đến 2026-11-10. APK SHA-256: `a364e0424ea47c77f5fb75265dc64fa6284d55cef055ad0a2b50721e560ce6b8`.
+- **Còn thiếu kiểm thử trên thiết bị thật:** chưa thể tuyên bố mọi server phát thực tế; cần xác nhận sự kiện đang diễn ra, thumbnail/logo, đổi server khi đang xem, favorite và cập nhật feed trước khi chuyển stable.
+- Stable `stable/mobile-1.10.128` chưa bị đổi; candidate chỉ được chốt sau khi kiểm tra chip Live, gộp trận, thumbnails, đổi server trong player, phát thực tế và favorite trên thiết bị.
+
+---
+
+
+---
+
+# TIẾN ĐỘ — NM7 IPTV MOBILE 1.10.132 — LAUTV-STYLE LIVE EVENTS CANDIDATE
+## Phạm vi và tham chiếu
+- Yêu cầu: bổ sung mục **LIVE** cho NM7 Mobile theo trải nghiệm trong video LauTV do người dùng cung cấp; đây là mục lọc sự kiện trong hàng chip của màn hình Kênh, không phải nút Xtream hoặc một đổi tên nguồn M3U.
+- Mẫu LauTV quan sát được: chip `LIVE (n)`; một thẻ cho mỗi sự kiện/trận; badge LIVE; số máy chủ; hộp chọn Server 1 (Chính)/Server 2 (Dự phòng); nhấn sự kiện phát bằng trình phát nổi/inline phía trên danh sách; tim lưu yêu thích.
+- Nhánh phát triển mới: `work/mobile-live-events-v132`; dựa trên Mobile 1.10.130, commit gốc `d62f9ea5b106ab3b7e1cb47ffdc0642d466abc48`.
+- Candidate: **1.10.132**, `versionCode 148`. Không sửa/move nhánh stable và không thay đổi NM7 TV Android/Web.
+- URL playlist mặc định và cơ chế quản lý nguồn NM7 giữ nguyên.
+
+## Triển khai trong candidate
+- Thêm chip `⚽ LIVE (n)` ngay sau `Tất cả (n)`; số đếm tính theo sự kiện sau khi gộp nguồn, không đếm mỗi server thành một sự kiện.
+- Dữ liệu lấy từ playlist M3U đang dùng: nhận nhóm có `LIVE`, `Event/Events`, `Sự kiện/Su kien`; đồng thời nhận trận đấu dạng `đội A vs đội B` trong nhóm thể thao. Không tự đổi hoặc hard-code URL nguồn Live.
+- Các entry trùng tiêu đề được chuẩn hóa và gộp vào một thẻ. Dòng metadata `#NM7-ALT-URL:` / `#NM7-ALT-URL=` tạo lựa chọn server phụ; các entry `Server 1/Server 2` cùng sự kiện cũng được nhóm lại.
+- Thẻ Live có logo dùng chung pipeline tải/cache logo hiện tại của NM7, tiêu đề, badge LIVE, tên nhóm, số server và nút yêu thích.
+- Nhấn thẻ dùng inline IPTV player hiện có ở Mobile; nhấn số server mở hộp chọn nguồn. Lựa chọn server và yêu thích sự kiện được lưu local trên thiết bị.
+- Thêm unit tests cho lọc nhóm Live, gộp server, URL dự phòng, kênh thể thao thông thường và khôi phục lựa chọn server.
+- Sửa điều kiện bài test viewport YouTube dùng giới hạn layout thực tế (không bắt content chiếm đủ toàn bộ chiều cao màn hình) để không báo sai do header/padding.
+
+## Xác minh và giới hạn
+- CI candidate: run đầu `38155235658` dừng ở verifier pull-to-refresh cũ do script dùng chung còn hard-code version 1.10.130; đây là kiểm tra version của nhánh trước, chưa tới bước build/test Live. Đã tách version guard khỏi verifier chung; workflow Live có guard 1.10.132/148 riêng và chạy full unit-test suite.
+- **CI đã PASS cho mã nguồn `de28e3b3f11f6129c13716f948340fc3fecc17c0`** — [Run 38156013028](https://github.com/phuongnm7/iptv-player-android/actions/runs/38156013028). Build Mobile và `:app:testMobileDebugUnitTest` đều thành công; verifier Live và verifier baseline pull-to-refresh đều qua.
+- Artifact: `NM7-IPTV-Mobile-1.10.132-LIVE-EVENTS`, ID `11707969756`; hạn lưu đến 2026-11-10. SHA-256 gói artifact ZIP: `475b191b0e279263eccf0bd1a1cdfdc04f42351dbdd9ce2fd9d3129a9109e8cd`.
+- APK đã giải nén từ artifact và kiểm tra ZIP integrity thành công. SHA-256 APK: `6b56db820849d902af8a94ddcd98bb2e3bf734de48a59db174f9e0445b737b84`.
+- Trạng thái phát hành: **CI PASS, vẫn là candidate; chưa stable**. Chưa có thiết bị Android thật điều khiển trong môi trường build, nên cần cài thử và kiểm tra Live/đổi server/inline playback trên điện thoại trước khi chốt ổn định.
+- CI xanh không chứng minh nguồn sự kiện có dữ liệu hoặc luồng phát được trên thiết bị thật. Sau khi có APK đạt CI, phải cài và kiểm tra chip LIVE xuất hiện với playlist thực tế, số server, chọn server, inline playback, favorite, rồi mới cân nhắc chốt ổn định.
+- Mục Live chỉ dùng nội dung có trong playlist NM7 hiện tại; nếu playlist không có nhóm/sự kiện theo các quy tắc nhận diện trên thì sẽ hiện trạng thái rỗng và không tự tìm/nhập một feed ngoài.
+
+---
+
+# TIẾN ĐỘ — NM7 IPTV MOBILE 1.10.130 — YOUTUBE HOME PULL-TO-REFRESH REDO
+
+## Vì sao phải làm lại
+- Người dùng đã kiểm thử 1.10.129 và xác nhận vuốt ở Trang chủ không làm reload; thực tế không khác 1.10.128. Vì vậy trạng thái build SUCCESS trước đó chỉ xác nhận biên dịch, không chứng minh gesture hoạt động.
+- 1.10.129 chỉ gắn `SwipeRefreshLayout` bao quanh một `FrameLayout` nhiều kiểu danh sách. Dù có callback cuộn lên, nó không đủ để bắt lỗi cử chỉ trong Home feed có RecyclerView lồng theo chiều ngang.
+- Chưa kết luận thiết bị runtime dùng đúng nhánh/gesture nào là nguyên nhân duy nhất; lần sửa này thêm fallback bắt cử chỉ ở cấp Activity thay vì giả định parent SwipeRefreshLayout luôn nhận được kéo vuốt.
+
+## Thiết kế 1.10.130
+- Candidate: **1.10.130**, `versionCode 146`.
+- Nhánh: `work/mobile-youtube-pull-refresh-v130`.
+- Baseline ổn định: `stable/mobile-1.10.128`, commit `ce19a4cb9ed65b3953107ffff8b2eaf9605ff74a`; không di chuyển stable.
+- Giữ SwipeRefreshLayout cho spinner và đường native; thêm fallback quan sát touch ở `BrowseActivity.dispatchTouchEvent`, rồi mới thực hiện fallback sau khi AndroidX có cơ hội xử lý cử chỉ.
+- Gesture chỉ hợp lệ khi bắt đầu trong content Trang chủ, section có ID Home và danh sách đang ở đầu; ngưỡng 96dp theo trục dọc, loại trừ thao tác vuốt ngang.
+- Native callback và fallback dùng cùng `onPullToRefresh()`; fallback kiểm tra trạng thái `isRefreshing()` để tránh gọi reload hai lần.
+- Reload bằng `BrowsePresenter.refresh(false)`, không recreate Activity, không đổi section/player.
+- Dừng spinner khi callback tải kết thúc, khi báo lỗi hoặc sau timeout 20 giây.
+- Verifier phải kiểm tra các điều kiện gesture và dependency của đúng module `:smarttube`; workflow build APK 1.10.130 riêng.
+- **Chưa được đánh dấu runtime PASS chỉ vì CI xanh.** Không chuyển STABLE trước khi người dùng xác nhận thao tác thật trên thiết bị.
+
+## Trạng thái kiểm thử
+- 1.10.129: **FAIL theo kiểm thử thực tế của người dùng**; không được xem là bản có pull-to-refresh hoạt động.
+- 1.10.130: đang chuẩn bị candidate mới; chờ verifier + build + binary inspection, sau đó cần thử nghiệm thực tế.
+
+
+---
+
+# CẬP NHẬT TIẾN ĐỘ — 1.10.128 — 2026-10-08
+
+## Kết quả mới nhất
+**1.10.128 đã build thành công và người dùng đã test thực tế: tạm ổn.**
+
+### YouTube logo / wordmark
+- Đã thay asset logo bằng **ảnh YouTube do người dùng cung cấp**, không tự dựng lại logo.
+- Giữ nguyên bố cục, vị trí, kích thước UI và logic của bản trước.
+- Người dùng xác nhận bản hiện tại **tạm ổn**.
+- **Lỗi nhỏ còn lại:** logo YouTube hiển thị hơi nhỏ.
+- Không tiếp tục chỉnh kích thước trong 1.10.128 để tránh làm thay đổi layout đã ổn định.
+- Vòng sau chỉ xử lý **scale/kích thước logo**, không thay đổi geometry khác nếu không có yêu cầu.
+
+## Source / CI
+- Branch: `work/mobile-youtube-ui-v128`
+- Commit: `6535b8189fda2b0e957e76755884762c8162ff7e`
+- Workflow: **NM7 IPTV Mobile 1.10.128 Exact YouTube Wordmark — Build**
+- Run ID: **37761713778 — SUCCESS**
+- Artifact: **NM7-IPTV-Mobile-1.10.128-FINAL**
+- Artifact ID: **11542827736**
+- Artifact digest: `sha256:653bae046a31dffce40fd78a0b5442333982ee65d2a7b9b73f35d1c5465ebcee`
+
+## Handoff cho vòng sau
+1. Giữ nguyên toàn bộ behavior/layout đã được người dùng xác nhận ở 1.10.128.
+2. Chỉ tăng kích thước logo YouTube một cách có kiểm soát.
+3. Không tự thay logo bằng asset khác.
+4. Sau khi chỉnh phải build CI và kiểm tra artifact trước khi giao.
+
+---
+
 # CẬP NHẬT TIẾN ĐỘ — 1.10.128 FIXED — 2026-10-08
 
 ## Xác định dứt điểm vì sao logo YouTube biến mất

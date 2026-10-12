@@ -1,6 +1,7 @@
 package vn.phuong.iptvplayer;
 
 import org.junit.Test;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -168,6 +169,31 @@ public class M3uParserTest {
                 result.channels.get(2).iconUrl());
         assertEquals("https://example.com/playlist/icons/vtv3.png",
                 result.channels.get(2).effectiveLogoUrl());
+    }
+
+    @Test public void parsesAlternateUrlAttributesForTheLiveServerPicker() {
+        String input = "#EXTM3U\n"
+                + "#EXTINF:-1 group-title=\"LIVE\" backup-url=\"https://backup.example/live.m3u8\" fallback_url=\"https://third.example/live.m3u8\"\n"
+                + "https://primary.example/live.m3u8\n";
+        M3uParser.Result parsed = new M3uParser().parse(input, "https://example.test/list.m3u");
+        assertEquals(1, parsed.channels.size());
+        Channel channel = parsed.channels.get(0);
+        assertTrue(channel.options().contains("#NM7-ALT-URL:https://backup.example/live.m3u8"));
+        assertTrue(channel.options().contains("#NM7-ALT-URL:https://third.example/live.m3u8"));
+        List<LiveEvent> events = LiveEvent.fromChannels(parsed.channels);
+        assertEquals(1, events.size());
+        assertEquals(3, events.get(0).sources().size());
+        assertEquals("https://backup.example/live.m3u8", events.get(0).sources().get(1).url());
+        assertEquals("https://third.example/live.m3u8", events.get(0).sources().get(2).url());
+    }
+
+    @Test public void resolvesRelativeAlternateStreamUrlsAgainstPlaylistUrl() {
+        String input = "#EXTM3U\n"
+                + "#EXTINF:-1 group-title=\"LIVE\" alt-url=\"backup/stream.m3u8\",Club A vs Club B\n"
+                + "https://example.test/live/main.m3u8\n";
+        M3uParser.Result parsed = new M3uParser().parse(input, "https://example.test/live/list.m3u");
+        assertEquals("#NM7-ALT-URL:https://example.test/live/backup/stream.m3u8",
+                parsed.channels.get(0).options().get(0));
     }
 
     @Test public void readsXmlTvUrlFromPlaylistHeader() {

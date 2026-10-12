@@ -86,6 +86,7 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
     private TextView title;
     private TextView programme;
     private TextView stats;
+    private android.widget.Button liveServerButton;
     private ImageButton fullscreenButton;
     private ListView channelList;
     private AdapterView.OnItemClickListener originalClick;
@@ -261,6 +262,20 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
         panel.addView(stats, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 
+        liveServerButton = new android.widget.Button(activity);
+        liveServerButton.setAllCaps(false);
+        liveServerButton.setTextSize(12);
+        liveServerButton.setTextColor(activity.getColor(R.color.live_accent));
+        liveServerButton.setBackgroundResource(R.drawable.button_secondary);
+        liveServerButton.setText("Đổi máy chủ");
+        liveServerButton.setVisibility(View.GONE);
+        liveServerButton.setOnClickListener(v -> showLiveServerPicker());
+        LinearLayout.LayoutParams serverParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, dp(activity, 40));
+        serverParams.setMarginStart(dp(activity, 10));
+        serverParams.setMarginEnd(dp(activity, 10));
+        panel.addView(liveServerButton, serverParams);
+
         LinearLayout.LayoutParams panelParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         panelParams.setMarginStart(-root.getPaddingLeft());
@@ -272,7 +287,13 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
         channelList.setOnItemClickListener((parent, view, position, id) -> {
             Object item = parent.getAdapter().getItem(position);
             if (item instanceof Channel) playInline((Channel) item);
-            else if (originalClick != null) originalClick.onItemClick(parent, view, position, id);
+            else if (item instanceof LiveEvent && originalClick != null) {
+                originalClick.onItemClick(parent, view, position, id);
+            } else if (item instanceof LiveEvent) {
+                playInline(((LiveEvent) item).primary());
+            } else if (originalClick != null) {
+                originalClick.onItemClick(parent, view, position, id);
+            }
         });
 
         rootLayoutListener = (v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) ->
@@ -329,6 +350,43 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
         if (fullscreenButton == null) return;
         fullscreenButton.setImageResource(fullscreen ? R.drawable.ic_nm7_fullscreen_exit : R.drawable.ic_nm7_fullscreen);
         fullscreenButton.setContentDescription(fullscreen ? "Thu nhỏ" : "Toàn màn hình");
+    }
+
+    private void updateLiveServerButton(Channel channel) {
+        if (liveServerButton == null) return;
+        LiveEvent event = LivePlaybackSession.activeFor(channel);
+        if (event == null || event.sources().size() < 2) {
+            LivePlaybackSession.clearIfNotLiveSource(channel);
+            liveServerButton.setVisibility(View.GONE);
+            return;
+        }
+        LivePlaybackSession.setActive(event);
+        int selected = event.indexOfUrl(channel.url());
+        liveServerButton.setText("Server " + (selected + 1) + "/" + event.sources().size() + "  ▾");
+        liveServerButton.setContentDescription("Đang phát " + event.sourceLabel(selected) + ". Nhấn để đổi máy chủ");
+        liveServerButton.setVisibility(View.VISIBLE);
+    }
+
+    private void showLiveServerPicker() {
+        LiveEvent event = LivePlaybackSession.activeFor(currentChannel);
+        if (event == null || event.sources().size() < 2 || currentActivity == null) return;
+        String[] labels = new String[event.sources().size()];
+        int selected = event.indexOfUrl(currentChannel.url());
+        for (int i = 0; i < labels.length; i++) {
+            labels[i] = event.sourceLabel(i) + (i == selected ? "  ✓ Đang phát" : "");
+        }
+        new android.app.AlertDialog.Builder(currentActivity)
+                .setTitle("Chọn máy chủ • " + event.title())
+                .setSingleChoiceItems(labels, Math.max(0, selected), (dialog, which) -> {
+                    if (which < 0 || which >= event.sources().size()) return;
+                    Channel source = event.sources().get(which);
+                    LiveEventStore.setSelectedUrl(currentActivity, event.id(), source.url());
+                    LivePlaybackSession.setActive(event.withPreferredUrl(source.url()));
+                    dialog.dismiss();
+                    playInline(source);
+                })
+                .setNegativeButton("Đóng", null)
+                .show();
     }
 
     private void updateSeekUi() {
@@ -462,6 +520,7 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
         lastNetworkProgressMs = lastFrameProgressMs;
         stablePlaybackSinceMs = 0;
         currentChannel = channel;
+        updateLiveServerButton(channel);
         panel.setVisibility(View.VISIBLE);
         playerView.hideController();
         title.setText(channel.name());
@@ -1000,6 +1059,7 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
         title = null;
         programme = null;
         stats = null;
+        liveServerButton = null;
         backgroundActive = false;
         resumeAfterLifecyclePause = false;
         fullscreen = false;
@@ -1120,6 +1180,16 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
     }
     @Override public void onActivityStopped(Activity a) { }
     private static MobileInlinePlayerProviderV2 instance;
+
+    /** Starts a selected Live source in the existing inline player when the mobile player is attached. */
+    public static boolean playLiveChannel(Channel channel) {
+        MobileInlinePlayerProviderV2 owner = instance;
+        if (channel == null || owner == null || owner.currentActivity == null
+                || AppPreferences.isTvInterface(owner.currentActivity)) return false;
+        owner.playInline(channel);
+        return true;
+    }
+
     private boolean resumeAfterYoutube;
     private long pendingResumePositionMs;
     private boolean pendingResumePlaying;

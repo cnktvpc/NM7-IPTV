@@ -118,6 +118,13 @@ public final class ChannelAdapter extends BaseAdapter {
         notifyDataSetChanged();
     }
 
+    /** Reuses the existing asynchronous/disk-cached logo pipeline for non-channel cards. */
+    public void bindLogo(View itemRoot, Channel channel) {
+        if (itemRoot == null || channel == null) return;
+        Holder holder = new Holder(itemRoot);
+        if (holder.logo != null && holder.badge != null) loadLogo(holder, channel);
+    }
+
     @Override public int getCount() { return channels.size(); }
     @Override public Channel getItem(int position) { return channels.get(position); }
     @Override public long getItemId(int position) { return position; }

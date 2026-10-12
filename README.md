@@ -1,6 +1,59 @@
-# NM7 IPTV Mobile — STABLE BASELINE 1.10.128 — 2026-10-08
+# NM7 IPTV Mobile — STABLE BASELINE 1.10.135 — 2026-10-12
 
-> **1.10.128 là bản ổn định chính thức hiện tại.** Người dùng đã test thực tế và xác nhận bản này ổn định đến thời điểm hiện tại. Đây là **baseline bắt buộc cho các bản Mobile tiếp theo**.
+> **1.10.135 là bản ổn định chính thức hiện tại.** Người dùng đã cài thử và xác nhận bản này hoạt động ổn.
+
+## Mốc ổn định đã chốt
+
+- **Version:** 1.10.135
+- **versionCode:** 151
+- **Stable branch:** `stable/mobile-1.10.135`
+- **Previous stable snapshot:** `stable/mobile-1.10.128` (được giữ nguyên làm mốc lịch sử)
+- **Development branch:** `work/mobile-live-feed-lau-style-20261012`
+- **Source code tested by CI:** `33f1336d91bc454a29cdc85dca7de44026c1d08b`
+- **Promotion commit:** merge commit ở đầu nhánh stable, giữ cả lịch sử stable cũ và nhánh đã kiểm thử.
+
+## Thay đổi được chốt
+
+- Mục Live hiển thị **Đã live N phút** cạnh nút Server.
+- Thời lượng lấy từ thời điểm kickoff, làm tròn xuống phút hoàn chỉnh, không hiển thị số âm.
+- UI cập nhật thời lượng mỗi 60 giây bằng ticker hiện có; không tạo request mạng bổ sung.
+- Sự kiện sắp xếp theo kickoff giảm dần: trận mới bắt đầu gần đây nhất ở đầu danh sách.
+- Không thay đổi nguồn Live độc lập, playlist IPTV mặc định, logic chọn server hoặc playback.
+- Phạm vi chỉ là NM7 IPTV Mobile; không sửa NM7 TV Android, NM7 TV Web hay Cloudflare Worker.
+
+## CI / APK đã xác minh
+
+- **GitHub Actions:** [Run 38220807402 — SUCCESS](https://github.com/phuongnm7/iptv-player-android/actions/runs/38220807402)
+- **Artifact:** [NM7-IPTV-Mobile-1.10.135-LIVE-DURATION](https://github.com/phuongnm7/iptv-player-android/actions/runs/38220807402/artifacts/11734067803)
+- **Artifact ID:** `11734067803`
+- **SHA-256:** `e59efa2c6890794f074229190e3f5d096155c9b4dbd2110b1c0cfa112afc889e`
+- Build APK, regression guards và toàn bộ unit test đều PASS; người dùng đã xác nhận bản thử nghiệm OK.
+
+## Quy tắc phát triển tiếp theo
+
+1. Lấy `stable/mobile-1.10.135` làm baseline chính thức tiếp theo.
+2. Giữ nguyên `stable/mobile-1.10.128` để tra cứu bản stable trước đó.
+3. Chỉ sửa đúng phạm vi được yêu cầu; không tác động NM7 TV Android/Web hoặc playlist/Worker.
+4. Tăng version/versionCode, chạy build + unit tests + regression guards trước khi bàn giao.
+
+---
+
+## Lịch sử — Mobile 1.10.134: Live feed đang được người dùng kiểm thử (2026-10-12)
+
+- **Trạng thái thực tế:** người dùng báo mục Live hiện đã lọc được các trận đang live; đang tiếp tục kiểm thử. Đây là kết quả ban đầu, **chưa xác nhận đã đủ tất cả trận** hoặc mọi luồng đều phát được.
+- **Candidate:** 1.10.134 / `versionCode 150`, nhánh `work/mobile-live-feed-lau-style-20261012`. Không chuyển sang stable khi chưa có xác nhận kiểm thử cuối cùng.
+- **Nguồn Live độc lập:** `https://thethaonm7.phuongnm7-iptv.workers.dev/playlist.m3u`. Mục Live lấy dữ liệu từ feed này, không phụ thuộc playlist người dùng đang chọn.
+- **Các xử lý trong candidate:** làm mới feed có cache-busting; nhận dạng thêm định dạng ngày/giờ `HH:mm DD/MM` và `DD/MM HH:mm`; nhận dạng trạng thái live qua emoji xanh và marker văn bản như `[LIVE]`, `live now`, `currently live`, `đang live`, `trực tiếp`; giữ sự kiện được đánh dấu live tối đa 8 giờ trong khi dữ liệu thông thường vẫn theo cửa sổ 180 phút; loại marker trận đã kết thúc/đỏ; nới dung sai giờ kickoff để gộp cùng trận giữa các provider khi tên đội khớp; sửa hộp chọn server để hiện danh sách lựa chọn.
+- **Kiểm thử tự động:** GitHub Actions [run 38185598470](https://github.com/phuongnm7/iptv-player-android/actions/runs/38185598470) thành công; build Mobile, toàn bộ unit test, kiểm tra tĩnh và bước chẩn đoán feed riêng đều PASS. APK artifact đã được tải về và SHA-256 đối chiếu thành công với file checksum của CI.
+- **Giới hạn xác nhận:** CI không chứng minh dữ liệu live trên thiết bị đã đầy đủ hoặc mọi server phát được. Cần tiếp tục đối chiếu danh sách trận trong app với feed gốc và kiểm tra phát/chuyển server trên thiết bị.
+- **Stable:** `stable/mobile-1.10.128` vẫn được giữ nguyên. Candidate chưa phải bản phát hành ổn định.
+- **Việc tiếp theo:** trong lúc người dùng kiểm thử, ghi nhận các trận còn thiếu/trùng, trạng thái trận, server và kết quả phát; chỉ sửa tiếp khi có dữ liệu đối chiếu cụ thể. Không sửa NM7 TV Android, NM7 Web, URL playlist mặc định hoặc Cloudflare Worker trong công việc Mobile Live này.
+
+---
+
+# LỊCH SỬ — STABLE BASELINE 1.10.128 — 2026-10-08 (đã được thay thế)
+
+> **1.10.128 từng là bản ổn định chính thức trước khi được thay thế bởi 1.10.135.** Người dùng đã test thực tế và xác nhận bản 1.10.128 ổn định tại thời điểm 2026-10-08.
 
 ## Mốc ổn định đã chốt
 
@@ -31,20 +84,93 @@
 - [GitHub Actions](https://github.com/phuongnm7/iptv-player-android/actions/runs/37776866236)
 - [APK Artifact](https://github.com/phuongnm7/iptv-player-android/actions/runs/37776866236/artifacts/11550202229)
 
-## Quy tắc phát triển bắt buộc từ 1.10.128
+## Quy tắc phát triển được áp dụng tại thời điểm 1.10.128
 
-1. **Mọi bản Mobile tiếp theo phải lấy 1.10.128 làm nền.**
+1. **Tại thời điểm đó, 1.10.128 là baseline để phát triển bản kế tiếp.** Baseline hiện tại là 1.10.135 trên `stable/mobile-1.10.135`.
 2. Baseline nguồn là commit **`ce19a4cb9ed65b3953107ffff8b2eaf9605ff74a`** và stable branch **`stable/mobile-1.10.128`**.
 3. Không tự ý quay lại 1.10.127, 1.10.123, 1.10.112 hoặc baseline cũ hơn nếu người dùng không yêu cầu.
 4. Không thay đổi các phần đã được người dùng xác nhận ổn định nếu không có yêu cầu cụ thể hoặc bằng chứng regression.
 5. Bản sửa tiếp theo phải tăng version/versionCode và phải build/verify trên GitHub Actions trước khi giao.
 6. Chỉ khi người dùng test thực tế và xác nhận bản mới ổn định thì mới chuyển stable baseline sang bản mới.
 
-## Trạng thái hiện tại
+## Trạng thái tại thời điểm 2026-10-08
 
-**STABLE — 1.10.128**
+**STABLE khi đó — 1.10.128; đã được thay thế bởi 1.10.135 ngày 2026-10-12.**
 
 Logo YouTube hiện đã đúng nguồn hình người dùng cung cấp và đã được tăng nhẹ kích thước theo yêu cầu cuối cùng. Bản này được **chốt làm mốc ổn định đến hiện tại**.
+
+---
+
+## Lịch sử ứng viên — 1.10.132 LauTV-style Live Events (CI PASS, chờ test thiết bị)
+
+## Lịch sử ứng viên — 1.10.132 LauTV-style Live Events (CI PASS, chờ test thiết bị)
+
+- **Mục tiêu:** đưa mục `⚽ LIVE (n)` vào hàng chip trên màn hình Kênh, theo mẫu LauTV trong video người dùng cung cấp.
+- **Nhánh:** `work/mobile-live-events-v132`; dựa trên nhánh candidate Mobile 1.10.130 tại commit `d62f9ea5b106ab3b7e1cb47ffdc0642d466abc48`.
+- **Version:** 1.10.132 / `versionCode 148`. Candidate riêng, chưa stable; nhánh `stable/mobile-1.10.128` giữ nguyên.
+- **Thẻ Live:** một sự kiện có tiêu đề, logo, badge LIVE, nhóm và số server. Nhiều entry cùng trận được gộp; server phụ có thể đến từ entry `Server 1/2` hoặc metadata `#NM7-ALT-URL:`.
+- **Điều khiển:** nhấn thẻ phát bằng inline player Mobile hiện có; nút số server mở bộ chọn máy chủ chính/dự phòng; yêu thích và máy chủ đã chọn được lưu cục bộ.
+- **Nguồn dữ liệu:** playlist M3U đang dùng. Nhận diện nhóm LIVE/Event/Sự kiện và trận `vs` trong nhóm thể thao; không thay URL playlist mặc định và không đụng dự án NM7 TV Android/Web.
+- **CI PASS:** [Run 38156013028](https://github.com/phuongnm7/iptv-player-android/actions/runs/38156013028), mã `de28e3b3f11f6129c13716f948340fc3fecc17c0`. Build Mobile + full unit test suite thành công; không đưa vào stable.
+- **Artifact:** `NM7-IPTV-Mobile-1.10.132-LIVE-EVENTS`, ID `11707969756`. APK SHA-256: `6b56db820849d902af8a94ddcd98bb2e3bf734de48a59db174f9e0445b737b84`.
+- **Chưa runtime PASS:** CI không thay thế việc cài APK trên điện thoại thật. Cần xác nhận chip LIVE, card sự kiện, chọn server, phát inline và yêu thích trước khi chốt STABLE.
+
+---
+
+
+## Lịch sử ứng viên — 1.10.133 Dedicated Live Feed (trước khi được chốt 1.10.135)
+
+- **Nhánh làm việc:** `work/mobile-live-feed-lau-style-20261012`.
+- **Phiên bản ứng viên:** 1.10.133 / `versionCode 149`. Nhánh stable `stable/mobile-1.10.128` không thay đổi.
+- **Phạm vi:** chỉ NM7 IPTV Mobile. Không đổi NM7 TV Android, NM7 Web, default playlist của IPTV, hoặc Cloudflare Worker.
+- **Nguồn Live độc lập:** `https://thethaonm7.phuongnm7-iptv.workers.dev/playlist.m3u`. Mục Live không lấy danh sách trận từ nguồn playlist do người dùng đang chọn.
+- **Nhận diện:** phân tích giờ/ngày, trạng thái trận và cặp đội; chỉ hiển thị fixture được đánh dấu đang diễn ra (🟢) và trong cửa sổ thời gian 180 phút. Trận sắp diễn ra (🟡), trận cũ hoặc entry không nhận diện được giờ/trận không được đưa vào Live.
+- **Gộp sự kiện:** hợp nhất tên đội có biến thể phổ biến giữa các provider, giờ đá lệch nhẹ, tên bình luận viên và định dạng HLS/FLV; mỗi URL duy nhất trở thành một server của cùng một trận.
+- **Thẻ sự kiện:** ưu tiên logo từ metadata của feed, tên trận đã chuẩn hóa, trạng thái LIVE, môn thể thao, số server và yêu thích.
+- **Player:** có thể đổi server ngay trong inline player Mobile; player Activity dự phòng cũng có nút chọn server. Lựa chọn server và yêu thích được lưu cục bộ. Feed cache riêng và làm mới mỗi 5 phút.
+- **Khả năng phục hồi:** nếu mạng lỗi, dùng M3U Live cache riêng và vẫn lọc theo thời gian hiện tại; không ghi dữ liệu Live vào playlist/session của người dùng.
+- **CI PASS:** [Run 38161961835](https://github.com/phuongnm7/iptv-player-android/actions/runs/38161961835), mã nguồn/workflow `ef40439eb7995a0b4caaa42e6d82549cda750217`. 18/18 điều kiện kiểm tra tĩnh PASS; build `:app:assembleMobileDebug` và toàn bộ `:app:testMobileDebugUnitTest` đều thành công.
+- **Artifact:** `NM7-IPTV-Mobile-1.10.133-LIVE-FEED`, ID `11710189331`. APK SHA-256: `a364e0424ea47c77f5fb75265dc64fa6284d55cef055ad0a2b50721e560ce6b8`.
+- **Chưa runtime PASS:** chưa xác nhận phát mọi server trên thiết bị thật; CI không chứng minh từng luồng còn hoạt động. Giữ là candidate, chưa chuyển stable.
+- **Quy tắc phát hành:** candidate không tự động thành stable; không merge hoặc đổi stable nếu chưa qua CI và chưa kiểm thử thực tế.
+
+> **1.10.128 là mốc ổn định chính thức hiện tại.** Mọi bản Mobile tiếp theo phải lấy đúng commit nền dưới đây; không tự ý quay lại baseline cũ.
+
+## Mốc ổn định chính thức
+
+- **Version:** 1.10.128
+- **versionCode:** 144
+- **Stable branch:** `stable/mobile-1.10.128`
+- **Development branch:** `work/mobile-youtube-pull-refresh-v130`
+- **Baseline commit:** `ce19a4cb9ed65b3953107ffff8b2eaf9605ff74a`
+- **GitHub Actions run:** `37776866236` — **SUCCESS**
+- **Artifact:** `NM7-IPTV-Mobile-1.10.128-FINAL`
+- **Artifact ID:** `11550202229`
+- **Baseline status:** giữ nguyên; bản candidate mới không tự động được chốt STABLE.
+
+## Phạm vi đã chốt ở 1.10.128
+
+- Logo YouTube được tăng nhẹ theo ảnh người dùng gửi, hộp logo 84dp × 32dp.
+- Giữ nguyên layout, phát IPTV/YouTube, điều hướng, trạng thái player và Android TV.
+- Chỉ đổi mốc STABLE sau khi người dùng kiểm thử bản mới và xác nhận ổn định.
+
+## Ứng viên tiếp theo — 1.10.130 YouTube pull-to-refresh
+
+- **Version candidate:** 1.10.130
+- **versionCode:** 146
+- **Development branch:** `work/mobile-youtube-pull-refresh-v130`
+- **Nguồn phát triển:** tiếp tục từ nhánh candidate, giữ nguyên mốc STABLE `stable/mobile-1.10.128`.
+- **Lý do làm lại:** người dùng xác nhận 1.10.129 không có thay đổi runtime so với 1.10.128; build thành công trước đó nhưng chưa đạt tiêu chí tính năng.
+- **Cách xử lý:** giữ `SwipeRefreshLayout` làm indicator/handler chuẩn, bổ sung bộ theo dõi gesture tại `BrowseActivity.dispatchTouchEvent` để xử lý trường hợp feed Home có hàng RecyclerView lồng ngang.
+- **Điều kiện kích hoạt:** chỉ khi touch bắt đầu trong content Trang chủ, section đang là `MediaGroup.TYPE_HOME`, feed ở đầu; yêu cầu kéo dọc xuống tối thiểu 96dp và loại trừ vuốt ngang.
+- **Tải lại:** dùng `BrowsePresenter.refresh(false)`, không dựng lại Activity, không chủ động đổi tab hoặc player; timeout 20 giây để tránh spinner bị kẹt.
+- **Kiểm chứng CI:** phải qua verifier riêng cho đường đi gesture, build và kiểm tra mã trong APK. Build success chưa được xem là runtime pass.
+- **Baseline:** 1.10.128 vẫn giữ nguyên, không chuyển stable cho tới khi người dùng xác nhận bản mới chạy thật trên máy.
+
+## APK ổn định hiện tại
+
+- [GitHub Actions 1.10.128](https://github.com/phuongnm7/iptv-player-android/actions/runs/37776866236)
+- [Artifact 1.10.128](https://github.com/phuongnm7/iptv-player-android/actions/runs/37776866236/artifacts/11550202229)
 
 ---
 
