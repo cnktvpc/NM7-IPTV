@@ -1,3 +1,16 @@
+## Cập nhật mới nhất — Mobile 1.10.135: thời lượng Live + trận mới nhất hiển thị trước
+
+- **Candidate:** 1.10.135 / `versionCode 151` trên nhánh `work/mobile-live-feed-lau-style-20261012`. Stable `stable/mobile-1.10.128` giữ nguyên.
+- **Thời lượng:** thẻ Live hiển thị `Đã live N phút` cạnh nút Server. Tính từ kickoff, làm tròn xuống phút hoàn chỉnh và chặn số âm.
+- **Cập nhật nhãn:** ticker UI hiện có làm mới thẻ Live mỗi 60 giây; không có request mạng thêm, feed vẫn làm mới mỗi 5 phút.
+- **Thứ tự:** kickoff giảm dần để trận bắt đầu gần đây nhất nằm đầu danh sách.
+- **Kiểm thử:** GitHub Actions [run 38220807402](https://github.com/phuongnm7/iptv-player-android/actions/runs/38220807402) — build APK, regression guards và toàn bộ unit test đều PASS.
+- **APK:** [Tải NM7-IPTV-Mobile-1.10.135-LIVE-DURATION](https://github.com/phuongnm7/iptv-player-android/actions/runs/38220807402/artifacts/11734067803). Artifact ID `11734067803`.
+- **SHA-256 APK:** `e59efa2c6890794f074229190e3f5d096155c9b4dbd2110b1c0cfa112afc889e` (đã đối chiếu khớp với `SHA256SUMS.txt` do CI tạo).
+- **Trạng thái phát hành:** đây vẫn là candidate, chưa được chuyển sang stable. Cần người dùng xác nhận giao diện và playback trên điện thoại thật.
+- **Phạm vi:** chỉ Mobile thay đổi. NM7 TV Android/Web, feed độc lập, playlist mặc định và playback không đổi.
+
+---
 ## Lịch sử — Mobile 1.10.134: Live feed đang được người dùng kiểm thử (2026-10-12)
 
 - **Trạng thái thực tế:** người dùng báo mục Live hiện đã lọc được các trận đang live; đang tiếp tục kiểm thử. Đây là kết quả ban đầu, **chưa xác nhận đã đủ tất cả trận** hoặc mọi luồng đều phát được.
