@@ -68,6 +68,38 @@ public class LiveEventTest {
         assertEquals(0, fresh.withPreferredUrl("https://unknown.example/a.m3u8").selectedIndex());
     }
 
+    @Test public void elapsedLiveMinutesAreWholeAndNeverNegative() {
+        Channel source = channel("Team A vs Team B", "Provider", "https://duration.example/live.m3u8");
+        LiveEvent event = LiveEvent.restored("duration", "Team A vs Team B", "Bóng đá",
+                Collections.singletonList(source), Collections.singletonList("Provider"),
+                1_000L, "Bóng đá", source.url());
+
+        assertNotNull(event);
+        assertEquals(0L, event.elapsedLiveMinutes(1_000L + 59_999L));
+        assertEquals(30L, event.elapsedLiveMinutes(1_000L + 30L * 60_000L));
+        assertEquals(125L, event.elapsedLiveMinutes(1_000L + 125L * 60_000L));
+        assertEquals(0L, event.elapsedLiveMinutes(500L));
+    }
+
+    @Test public void dedicatedFeedOrdersNewestLiveKickoffFirst() {
+        String m3u = "#EXTM3U\n"
+                + "#EXTINF:-1 group-title=\"Provider A\", 🟢 00:10 12/10 ⚽ Match Earlier vs Opponent A [hls]\n"
+                + "https://stream.example/earlier.m3u8\n"
+                + "#EXTINF:-1 group-title=\"Provider B\", 🟢 00:15 12/10 ⚽ Match Newest vs Opponent B [hls]\n"
+                + "https://stream.example/newest.m3u8\n";
+        long now = java.time.LocalDateTime.of(2026, 10, 12, 0, 30)
+                .atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toInstant().toEpochMilli();
+        List<Channel> channels = new M3uParser().parse(m3u, LiveFeedRepository.FEED_URL).channels;
+
+        List<LiveEvent> events = LiveEvent.fromDedicatedFeed(channels, now);
+
+        assertEquals(2, events.size());
+        assertTrue("The match with the latest kickoff should be first",
+                events.get(0).title().contains("Match Newest"));
+        assertTrue(events.get(0).kickoffMillis() > events.get(1).kickoffMillis());
+        assertTrue(events.get(1).title().contains("Match Earlier"));
+    }
+
     @Test public void dedicatedFeedGroupsProviderAndTransportVariantsIntoOneFreshLiveMatch() {
         String m3u = "#EXTM3U\n"
                 + "#EXTINF:-1 tvg-logo=\"https://logo.example/rennes.png\" group-title=\"Vua Sân Cỏ TV\", 🟢 22:15 11/10 ⚽ Stade Rennais FC vs AJ Auxerre (Trần Hoàng)\n"

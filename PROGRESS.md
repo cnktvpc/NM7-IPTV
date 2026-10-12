@@ -1,4 +1,26 @@
-# CẬP NHẬT TIẾN ĐỘ — 2026-10-12 — MOBILE 1.10.134 / LIVE FEED ĐANG ĐƯỢC TEST
+# TIẾN ĐỘ — NM7 IPTV MOBILE 1.10.135 — THỜI LƯỢNG LIVE + SỰ KIỆN MỚI NHẤT TRƯỚC — 2026-10-12
+
+## Phạm vi
+- Candidate phát triển trực tiếp từ nhánh `work/mobile-live-feed-lau-style-20261012` trên nền 1.10.134 / `versionCode 150`.
+- Candidate mới: **1.10.135 / `versionCode 151`**.
+- Chỉ sửa NM7 IPTV Mobile. Giữ nguyên NM7 TV Android, NM7 TV Web, feed độc lập, playlist IPTV mặc định, chọn server và playback.
+- Nhánh stable `stable/mobile-1.10.128` không đổi; candidate không được coi là stable trước khi CI và người dùng kiểm thử xác nhận.
+
+## Thay đổi
+1. Thêm nhãn **Đã live N phút** ngay bên cạnh nút Server trên thẻ Live, theo cách tính của NM7 TV 1.0.74.
+2. Thời lượng tính từ kickoff: `(nowMillis - kickoffMillis) / 60,000`, chỉ hiển thị phút hoàn chỉnh; timestamp thiếu hoặc kickoff ở tương lai hiển thị 0, không âm.
+3. Tận dụng ticker UI hiện có trong `MainActivity` để làm mới Live adapter mỗi 60 giây. Không có request mạng bổ sung; feed vẫn refresh theo chu kỳ 5 phút.
+4. Sắp xếp kickoff giảm dần: trận có thời điểm bắt đầu mới nhất lên đầu; tiêu đề tăng dần làm tiêu chí phụ khi kickoff trùng.
+5. Thêm unit test cho 0 phút dưới 60 giây, 30 phút, 125 phút, kickoff tương lai và thứ tự sự kiện mới nhất trước.
+6. Thêm regression guards cho helper thời lượng, nhãn UI, ticker, thứ tự giảm dần và version.
+
+## Kiểm chứng
+- Trạng thái build/test: chờ GitHub Actions của candidate 1.10.135.
+- CI PASS xác nhận build, unit test và regression guards; vẫn cần người dùng xác nhận hiển thị/thứ tự trên điện thoại thật.
+- Không tự động chuyển candidate sang stable. Artifact/checksum chỉ ghi nhận sau khi CI thành công.
+
+---
+# LỊCH SỬ TIẾN ĐỘ — 2026-10-12 — MOBILE 1.10.134 / LIVE FEED ĐANG ĐƯỢC TEST
 
 ## Trạng thái mới nhất theo phản hồi người dùng
 - Người dùng báo rằng **mục Live hiện tạm thời đã lọc được các trận đang live** và đang tiếp tục kiểm thử.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail-closed regression checks for the dedicated NM7 Mobile Live feed."""
+"""Fail-closed regression checks for NM7 Mobile Live feed, elapsed duration and newest-first ordering."""
 from pathlib import Path
 
 read = lambda p: Path(p).read_text(encoding="utf-8")
@@ -21,6 +21,9 @@ method_end = main.index("private void", method_start + 20)
 live_events_method = main[method_start:method_end]
 
 checks = [
+    ("Live duration uses whole minutes and clamps future kickoff to zero", "elapsedLiveMinutes(long nowMillis)" in event and "return (nowMillis - kickoffMillis) / 60_000L" in event),
+    ("Live events are ordered newest kickoff first", "Comparator.comparingLong(LiveEvent::kickoffMillis).reversed()" in event),
+    ("Live card shows elapsed duration beside server picker and minute ticker refreshes it", "txtLiveDuration" in layout and "txtLiveDuration" in adapter and "Đã live " in adapter and "liveAdapter.notifyDataSetChanged()" in main),
     ("dedicated feed URL is exactly the user-specified source", 'https://thethaonm7.phuongnm7-iptv.workers.dev/playlist.m3u' in feed),
     ("Live source cache/download is separate and cache-busted on refresh", "nm7-live-feed.m3u" in feed and "HttpURLConnection" in feed and "M3uParser" in feed and "_nm7_refresh=" in feed),
     ("feed is refreshed on a five-minute cadence", "LIVE_FEED_REFRESH_MS = 5L * 60L * 1000L" in main and "loadLiveFeed()" in main),
@@ -36,12 +39,12 @@ checks = [
     ("player bridge serializes the match and every selectable source", "JSONObject" in session and "LiveEvent.restored(" in session and "encode(LiveEvent event)" in session),
     ("the inline player provides an in-player server selector", "liveServerButton" in inline and "showLiveServerPicker()" in inline and "LiveEventStore.setSelectedUrl" in inline),
     ("the full player provides an in-player server selector", "btnLiveServer" in player_layout and "showLiveServerPicker()" in player and "EXTRA_LIVE_EVENT" in player),
-    ("event cards expose title, live state, source count and favorite", all(v in layout for v in ("txtLiveEventTitle", "txtLiveBadge", "btnLiveServers", "btnLiveFavorite"))),
+    ("event cards expose title, live state, source count and favorite", all(v in layout for v in ("txtLiveEventTitle", "txtLiveBadge", "btnLiveServers", "txtLiveDuration", "btnLiveFavorite"))),
     ("the regular playlist default remains owned by the existing source store", "PlaylistSourceStore.DEFAULT_URL" in main and "DEFAULT_URL" in playlist_store),
-    ("tests cover provider time skew, alternate timestamp order, merge/filtering and server restore", all(v in tests for v in ("dedicatedFeedGroupsProviderAndTransportVariantsIntoOneFreshLiveMatch", "dedicatedFeedDoesNotDependOnUserPlaylistLiveGroups", "dedicatedFeedMergesSameFixtureWithProviderKickoffSkewAndLongRunningLiveStatus", "dedicatedFeedAcceptsDateBeforeTimeAndTextLiveMarker", "restoredLiveEventPreservesServerLabelsAndSelectedUrl"))),
+    ("tests cover provider time skew, alternate timestamp order, merge/filtering and server restore", all(v in tests for v in ("dedicatedFeedGroupsProviderAndTransportVariantsIntoOneFreshLiveMatch", "dedicatedFeedDoesNotDependOnUserPlaylistLiveGroups", "dedicatedFeedMergesSameFixtureWithProviderKickoffSkewAndLongRunningLiveStatus", "dedicatedFeedAcceptsDateBeforeTimeAndTextLiveMarker", "restoredLiveEventPreservesServerLabelsAndSelectedUrl", "elapsedLiveMinutesAreWholeAndNeverNegative", "dedicatedFeedOrdersNewestLiveKickoffFirst"))),
     ("server picker renders selectable source rows without the broken message/list combination", "setItems(labels" in main and "Do not combine a message panel with a choice list" in main),
     ("M3U fixture tests use valid Java escaped newlines and quotes", r"\\n" not in tests and r'\\"' not in tests),
-    ("version is 1.10.134 / code 149", 'versionName = "1.10.134"' in gradle and "versionCode = 150" in gradle),
+    ("version is 1.10.135 / code 151", 'versionName = "1.10.135"' in gradle and "versionCode = 151" in gradle),
     ("temporary inspection files have been removed", not Path(".github/workflows/inspect-live-feed.yml").exists() and not Path("LIVE_FEED_INSPECTION.md").exists() and not Path("LIVE_BRANCH_PROBE.txt").exists()),
 ]
 for label, ok in checks:

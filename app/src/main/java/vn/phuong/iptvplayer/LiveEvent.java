@@ -73,6 +73,11 @@ public final class LiveEvent {
     public int selectedIndex() { return selectedIndex; }
     public Channel primary() { return sources.get(selectedIndex); }
     public long kickoffMillis() { return kickoffMillis; }
+    /** Whole minutes since kickoff; clamped to zero for future or unavailable timestamps. */
+    public long elapsedLiveMinutes(long nowMillis) {
+        if (kickoffMillis <= 0L || nowMillis <= kickoffMillis) return 0L;
+        return (nowMillis - kickoffMillis) / 60_000L;
+    }
     public String sport() { return sport; }
     public int indexOfUrl(String url) {
         if (url == null) return -1;
@@ -210,7 +215,7 @@ public final class LiveEvent {
             String displayGroup = sport;
             live.add(new LiveEvent(id, fixture.title, displayGroup, sources, labels, 0, activeKickoff, sport));
         }
-        live.sort(Comparator.comparingLong(LiveEvent::kickoffMillis).thenComparing(LiveEvent::title));
+        live.sort(Comparator.comparingLong(LiveEvent::kickoffMillis).reversed().thenComparing(LiveEvent::title));
         return Collections.unmodifiableList(live);
     }
 

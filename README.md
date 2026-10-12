@@ -1,4 +1,4 @@
-## Cập nhật mới nhất — Mobile 1.10.134: Live feed đang được người dùng kiểm thử (2026-10-12)
+## Lịch sử — Mobile 1.10.134: Live feed đang được người dùng kiểm thử (2026-10-12)
 
 - **Trạng thái thực tế:** người dùng báo mục Live hiện đã lọc được các trận đang live; đang tiếp tục kiểm thử. Đây là kết quả ban đầu, **chưa xác nhận đã đủ tất cả trận** hoặc mọi luồng đều phát được.
 - **Candidate:** 1.10.134 / `versionCode 150`, nhánh `work/mobile-live-feed-lau-style-20261012`. Không chuyển sang stable khi chưa có xác nhận kiểm thử cuối cùng.

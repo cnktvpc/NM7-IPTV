@@ -63,6 +63,7 @@ public final class LiveEventAdapter extends BaseAdapter {
         holder.group.setText(event.group().isEmpty() ? "LIVE" : "LIVE  •  " + event.group());
         int servers = event.sources().size();
         holder.servers.setText(servers + " Server" + "  ▸");
+        holder.duration.setText("Đã live " + event.elapsedLiveMinutes(System.currentTimeMillis()) + " phút");
         holder.servers.setContentDescription("Chọn máy chủ phát sóng, " + servers + " nguồn");
         holder.servers.setOnClickListener(v -> listener.onServersRequested(event));
 
@@ -87,13 +88,14 @@ public final class LiveEventAdapter extends BaseAdapter {
 
     private static final class Holder {
         final ImageView logo;
-        final TextView badge, title, group, servers, favorite;
+        final TextView badge, title, group, servers, duration, favorite;
         Holder(View root) {
             logo = root.findViewById(R.id.imgChannelLogo);
             badge = root.findViewById(R.id.txtChannelBadge);
             title = root.findViewById(R.id.txtLiveEventTitle);
             group = root.findViewById(R.id.txtLiveGroup);
             servers = root.findViewById(R.id.btnLiveServers);
+            duration = root.findViewById(R.id.txtLiveDuration);
             favorite = root.findViewById(R.id.btnLiveFavorite);
         }
     }

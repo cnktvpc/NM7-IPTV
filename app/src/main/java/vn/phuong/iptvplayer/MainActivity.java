@@ -66,7 +66,7 @@ public final class MainActivity extends Activity {
     private static final String LIVE_GROUP_TAG = "__NM7_LIVE_EVENTS__";
     private int wallpaperGeneration, playlistRequestGeneration;
     private final android.os.Handler epgHandler=new android.os.Handler(android.os.Looper.getMainLooper());
-    private final Runnable epgTick=new Runnable(){@Override public void run(){if(adapter!=null)adapter.notifyDataSetChanged();epgHandler.postDelayed(this,60_000);}};
+    private final Runnable epgTick=new Runnable(){@Override public void run(){if(adapter!=null)adapter.notifyDataSetChanged();if(liveAdapter!=null)liveAdapter.notifyDataSetChanged();epgHandler.postDelayed(this,60_000);}};
 
     @Override protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

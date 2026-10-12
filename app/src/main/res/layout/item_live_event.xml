@@ -83,11 +83,17 @@
             android:textColor="@color/text_secondary"
             android:textSize="11sp" />
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
         <TextView
             android:id="@+id/btnLiveServers"
             android:layout_width="wrap_content"
             android:layout_height="32dp"
-            android:layout_marginTop="2dp"
             android:background="@drawable/button_secondary"
             android:clickable="true"
             android:focusable="true"
@@ -97,6 +103,20 @@
             android:textColor="@color/live_accent"
             android:textSize="11sp"
             android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/txtLiveDuration"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:ellipsize="end"
+                android:gravity="center_vertical"
+                android:maxLines="1"
+                android:text="Đã live 0 phút"
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+        </LinearLayout>
     </LinearLayout>
 
     <TextView
