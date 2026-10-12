@@ -1,3 +1,43 @@
+# CẬP NHẬT TIẾN ĐỘ — 2026-10-12 — MOBILE 1.10.134 / LIVE FEED ĐANG ĐƯỢC TEST
+
+## Trạng thái mới nhất theo phản hồi người dùng
+- Người dùng báo rằng **mục Live hiện tạm thời đã lọc được các trận đang live** và đang tiếp tục kiểm thử.
+- Ghi nhận đây là **kết quả ban đầu trên thiết bị**, không diễn giải thành xác nhận đã tìm đủ tất cả trận hoặc mọi luồng đều chạy ổn định.
+- Candidate đang kiểm thử: **1.10.134**, `versionCode 150`.
+- Nhánh phát triển: `work/mobile-live-feed-lau-style-20261012`.
+- Nhánh stable `stable/mobile-1.10.128` giữ nguyên; không promote candidate trong khi người dùng còn kiểm thử.
+
+## Nguồn dữ liệu và ranh giới chức năng
+- Live dùng feed độc lập: `https://thethaonm7.phuongnm7-iptv.workers.dev/playlist.m3u`.
+- Danh sách Live không lấy theo playlist IPTV mà người dùng chọn trong ứng dụng.
+- Phạm vi chỉ là NM7 IPTV Mobile. Không sửa NM7 TV Android, NM7 Web, playlist mặc định của IPTV hoặc Cloudflare Worker.
+
+## Các điều chỉnh đã có trong candidate 1.10.134
+1. **Làm mới dữ liệu:** thêm tham số cache-busting khi refresh feed để tránh dùng phản hồi cache cũ.
+2. **Nhận dạng lịch thi đấu:** hỗ trợ cả hai thứ tự giờ/ngày `HH:mm DD/MM` và `DD/MM HH:mm`.
+3. **Nhận dạng trạng thái live:** nhận diện marker emoji xanh cùng các marker văn bản `[LIVE]`, `live now`, `currently live`, `đang live`, `trực tiếp`.
+4. **Cửa sổ sự kiện:** sự kiện được đánh dấu rõ là live được giữ tối đa 8 giờ để không bị loại chỉ vì lịch/giờ feed lệch; dữ liệu thông thường vẫn dùng ngưỡng 180 phút.
+5. **Loại sự kiện không còn live:** tiếp tục loại marker trận đã kết thúc/đỏ.
+6. **Gộp cùng một trận:** nới dung sai kickoff của provider đến 18 giờ khi tên đội tương ứng, để giảm tách trùng do giờ lịch giữa các nguồn lệch; cần kiểm tra thực tế để bảo đảm không gộp nhầm các trận khác nhau.
+7. **Chọn server:** sửa dialog chọn nguồn phát để dùng danh sách lựa chọn hiển thị được, thay vì kết hợp message với single-choice list khiến hàng lựa chọn không hiện.
+8. **Regression tests:** thêm test cho giờ kickoff lệch, định dạng ngày đứng trước giờ và marker live dạng chữ.
+9. **Chẩn đoán feed:** workflow có bước kiểm tra payload feed Live riêng, chỉ báo số lượng/tên sự kiện phục vụ chẩn đoán, không xuất URL luồng nhạy cảm.
+
+## CI và APK
+- GitHub Actions: [run 38185598470 — SUCCESS](https://github.com/phuongnm7/iptv-player-android/actions/runs/38185598470).
+- Các bước build Mobile, full unit-test suite, static verifiers, chẩn đoán feed và upload APK đều thành công.
+- APK candidate: **1.10.134 / versionCode 150**; artifact đã được tải về và checksum SHA-256 khớp với `SHA256SUMS.txt` do CI cung cấp.
+- **Phân biệt rõ:** CI PASS chỉ xác nhận pipeline/build/test tự động. Không tự động chứng minh danh sách trận ngoài thực tế đầy đủ, từng URL còn hoạt động hay playback trên mọi server thành công.
+
+## Kế hoạch kiểm thử tiếp theo
+- Người dùng tiếp tục test bản 1.10.134.
+- Đối chiếu các trận đang live ở feed gốc với thẻ trong ứng dụng: trận bị thiếu, trùng, bị nhầm trạng thái hoặc hiển thị sau khi đã kết thúc.
+- Kiểm tra mở trận, chuyển server, và refresh Live sau khi feed cập nhật.
+- Nếu phát hiện sai lệch, ghi lại tên trận, trạng thái/giờ trong feed và ảnh chụp danh sách Live để xác định có phải parser, bộ lọc thời gian, logic gộp trận hay dữ liệu nguồn.
+- Chỉ kết luận **runtime PASS** sau khi kết quả thiết bị xác nhận. Không thay đổi stable branch cho đến khi người dùng xác nhận ổn định.
+
+---
+
 # TIẾN ĐỘ — NM7 IPTV MOBILE 1.10.133 — DEDICATED LAUTV-STYLE LIVE FEED
 
 ## Phạm vi và ranh giới
