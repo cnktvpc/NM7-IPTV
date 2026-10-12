@@ -1,3 +1,16 @@
+## Cập nhật mới nhất — Mobile 1.10.134: Live feed đang được người dùng kiểm thử (2026-10-12)
+
+- **Trạng thái thực tế:** người dùng báo mục Live hiện đã lọc được các trận đang live; đang tiếp tục kiểm thử. Đây là kết quả ban đầu, **chưa xác nhận đã đủ tất cả trận** hoặc mọi luồng đều phát được.
+- **Candidate:** 1.10.134 / `versionCode 150`, nhánh `work/mobile-live-feed-lau-style-20261012`. Không chuyển sang stable khi chưa có xác nhận kiểm thử cuối cùng.
+- **Nguồn Live độc lập:** `https://thethaonm7.phuongnm7-iptv.workers.dev/playlist.m3u`. Mục Live lấy dữ liệu từ feed này, không phụ thuộc playlist người dùng đang chọn.
+- **Các xử lý trong candidate:** làm mới feed có cache-busting; nhận dạng thêm định dạng ngày/giờ `HH:mm DD/MM` và `DD/MM HH:mm`; nhận dạng trạng thái live qua emoji xanh và marker văn bản như `[LIVE]`, `live now`, `currently live`, `đang live`, `trực tiếp`; giữ sự kiện được đánh dấu live tối đa 8 giờ trong khi dữ liệu thông thường vẫn theo cửa sổ 180 phút; loại marker trận đã kết thúc/đỏ; nới dung sai giờ kickoff để gộp cùng trận giữa các provider khi tên đội khớp; sửa hộp chọn server để hiện danh sách lựa chọn.
+- **Kiểm thử tự động:** GitHub Actions [run 38185598470](https://github.com/phuongnm7/iptv-player-android/actions/runs/38185598470) thành công; build Mobile, toàn bộ unit test, kiểm tra tĩnh và bước chẩn đoán feed riêng đều PASS. APK artifact đã được tải về và SHA-256 đối chiếu thành công với file checksum của CI.
+- **Giới hạn xác nhận:** CI không chứng minh dữ liệu live trên thiết bị đã đầy đủ hoặc mọi server phát được. Cần tiếp tục đối chiếu danh sách trận trong app với feed gốc và kiểm tra phát/chuyển server trên thiết bị.
+- **Stable:** `stable/mobile-1.10.128` vẫn được giữ nguyên. Candidate chưa phải bản phát hành ổn định.
+- **Việc tiếp theo:** trong lúc người dùng kiểm thử, ghi nhận các trận còn thiếu/trùng, trạng thái trận, server và kết quả phát; chỉ sửa tiếp khi có dữ liệu đối chiếu cụ thể. Không sửa NM7 TV Android, NM7 Web, URL playlist mặc định hoặc Cloudflare Worker trong công việc Mobile Live này.
+
+---
+
 # NM7 IPTV Mobile — STABLE BASELINE 1.10.128 — 2026-10-08
 
 ## Ứng viên Mobile tiếp theo — 1.10.132 LauTV-style Live Events (CI PASS, chờ test thiết bị)
