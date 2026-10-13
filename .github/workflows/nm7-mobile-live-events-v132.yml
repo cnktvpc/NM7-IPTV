@@ -1,14 +1,17 @@
-name: NM7 IPTV Mobile 1.10.135 Live Duration + Newest-First — Build
-# Dedicated feed-based LauTV-style Live module with elapsed duration and newest-first sorting — candidate v135.
+name: NM7 IPTV Mobile 1.10.136 Live Fullscreen Server Selector — Build
+# CI retry: re-run candidate validation if the hosted runner stalls before emitting job steps.
+# Dedicated feed-based LauTV-style Live module with elapsed duration and newest-first sorting, plus in-player fullscreen server selection — candidate v136.
 # Build is gated on Live feature checks, baseline pull-to-refresh checks, and the full unit-test suite.
 
 "on":
   push:
     branches:
       - "work/mobile-live-feed-lau-style-20261012"
+      - "fix/mobile-1.10.136-live-fullscreen-server"
     paths:
       - "app/**"
       - "scripts/verify-mobile-live-feed-v134.py"
+      - "scripts/verify-mobile-live-fullscreen-server-v136.py"
       - "scripts/diagnose-mobile-live-feed.py"
       - ".github/workflows/nm7-mobile-live-events-v132.yml"
   workflow_dispatch:
@@ -18,7 +21,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: nm7-mobile-live-feed-v135
+  group: nm7-mobile-live-feed-v136
   cancel-in-progress: true
 
 jobs:
@@ -50,7 +53,7 @@ jobs:
           report_dir="$(mktemp -d)"
           git clone --quiet --depth 1 --branch "$branch" "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git" "$report_dir"
           cd "$report_dir"
-          printf '# NM7 IPTV Mobile 1.10.135 — CI result\n\n- Status: **RUNNING**\n- Branch: `%s`\n- Source commit: `%s`\n- Workflow run: https://github.com/%s/actions/runs/%s\n\nBuild and full unit tests are in progress.\n' "$branch" "$GITHUB_SHA" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > LIVE_FEED_CI_RESULT.md
+          printf '# NM7 IPTV Mobile 1.10.136 — CI result\n\n- Status: **RUNNING**\n- Branch: `%s`\n- Source commit: `%s`\n- Workflow run: https://github.com/%s/actions/runs/%s\n\nBuild and full unit tests are in progress.\n' "$branch" "$GITHUB_SHA" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > LIVE_FEED_CI_RESULT.md
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add LIVE_FEED_CI_RESULT.md
@@ -115,16 +118,21 @@ jobs:
           set -euxo pipefail
           python3 scripts/verify-mobile-pull-refresh.py
 
-      - name: Verify 1.10.135 build configuration
+      - name: Verify 1.10.136 build configuration
         run: |
           set -euxo pipefail
-          test "$(grep -c 'versionName = "1.10.135"' app/build.gradle.kts)" -eq 1
-          test "$(grep -c 'versionCode = 151' app/build.gradle.kts)" -eq 1
+          test "$(grep -c 'versionName = "1.10.136"' app/build.gradle.kts)" -eq 1
+          test "$(grep -c 'versionCode = 152' app/build.gradle.kts)" -eq 1
 
       - name: Verify NM7 dedicated Live feed implementation
         run: |
           set -euxo pipefail
           python3 scripts/verify-mobile-live-feed-v134.py
+
+      - name: Verify Live server selector in fullscreen player
+        run: |
+          set -euxo pipefail
+          python3 scripts/verify-mobile-live-fullscreen-server-v136.py
 
       - name: Check Mobile lifecycle regression guards
         run: |
@@ -249,7 +257,7 @@ jobs:
               p.write_text(''.join(lines))
           PY
 
-      - name: Build Mobile 1.10.135 (elapsed Live duration + newest-first candidate)
+      - name: Build Mobile 1.10.136 (fullscreen Live server selector + elapsed duration)
         run: |
           set -o pipefail
           gradle --no-daemon --console=plain \
@@ -283,7 +291,7 @@ jobs:
       - name: Upload Mobile APK
         uses: actions/upload-artifact@v4
         with:
-          name: NM7-IPTV-Mobile-1.10.135-LIVE-DURATION
+          name: NM7-IPTV-Mobile-1.10.136-LIVE-FULLSCREEN-SERVER
           path: dist/mobile/
           retention-days: 30
           if-no-files-found: error
@@ -296,7 +304,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          artifact_id="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts" --jq '.artifacts[] | select(.name == "NM7-IPTV-Mobile-1.10.135-LIVE-DURATION") | .id' | head -n1)"
+          artifact_id="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts" --jq '.artifacts[] | select(.name == "NM7-IPTV-Mobile-1.10.136-LIVE-FULLSCREEN-SERVER") | .id' | head -n1)"
           test -n "$artifact_id"
           branch="$GITHUB_REF_NAME"
           short_sha="${GITHUB_SHA:0:12}"
@@ -304,13 +312,13 @@ jobs:
           git clone --quiet --depth 1 --branch "$branch" "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git" "$report_dir"
           cd "$report_dir"
           {
-            echo "# NM7 IPTV Mobile 1.10.135 — CI result"
+            echo "# NM7 IPTV Mobile 1.10.136 — CI result"
             echo
             echo "- Result: **PASS** (APK build and full Mobile unit-test suite completed successfully)"
             echo "- Branch: $branch"
             echo "- Source commit: $GITHUB_SHA"
             echo "- Workflow run: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-            echo "- Artifact: [Download NM7-IPTV-Mobile-1.10.135-LIVE-DURATION](https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts/$artifact_id)"
+            echo "- Artifact: [Download NM7-IPTV-Mobile-1.10.136-LIVE-FULLSCREEN-SERVER](https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts/$artifact_id)"
             echo "- Artifact ID: $artifact_id"
             echo
             echo "## SHA-256"
@@ -339,7 +347,7 @@ jobs:
           report_dir="$(mktemp -d)"
           git clone --quiet --depth 1 --branch "$branch" "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git" "$report_dir"
           cd "$report_dir"
-          printf '# NM7 IPTV Mobile 1.10.135 — CI result\n\n- Status: **FAILED**\n- Branch: `%s`\n- Source commit: `%s`\n- Workflow run: https://github.com/%s/actions/runs/%s\n\nCheck this run for the failing build or unit-test step.\n' "$branch" "$GITHUB_SHA" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > LIVE_FEED_CI_RESULT.md
+          printf '# NM7 IPTV Mobile 1.10.136 — CI result\n\n- Status: **FAILED**\n- Branch: `%s`\n- Source commit: `%s`\n- Workflow run: https://github.com/%s/actions/runs/%s\n\nCheck this run for the failing build or unit-test step.\n' "$branch" "$GITHUB_SHA" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > LIVE_FEED_CI_RESULT.md
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add LIVE_FEED_CI_RESULT.md

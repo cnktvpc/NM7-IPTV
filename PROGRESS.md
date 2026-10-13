@@ -1,30 +1,40 @@
-# TIẾN ĐỘ PHÁT HÀNH — NM7 IPTV MOBILE 1.10.135 — STABLE — 2026-10-12
+# TIẾN ĐỘ PHÁT HÀNH — NM7 IPTV MOBILE 1.10.136 — STABLE — 2026-10-14
 
 ## Trạng thái
-- **ĐÃ CHỐT STABLE** sau khi người dùng xác nhận bản 1.10.135 hoạt động OK.
-- Version: **1.10.135 / versionCode 151**.
-- Nhánh ổn định mới: `stable/mobile-1.10.135`.
-- Nhánh ổn định trước `stable/mobile-1.10.128` được giữ nguyên, không ghi đè.
-- Nhánh nguồn phát triển: `work/mobile-live-feed-lau-style-20261012`.
+- **ĐÃ CHỐT STABLE:** người dùng đã cài thử 1.10.136 và xác nhận nút đổi server toàn màn hình hoạt động OK.
+- **Version:** 1.10.136 / `versionCode 152`.
+- **Nhánh stable mới:** `stable/mobile-1.10.136`.
+- Nhánh stable cũ `stable/mobile-1.10.135` được giữ nguyên làm mốc trước đó; `stable/mobile-1.10.128` không bị thay đổi.
+- Nhánh candidate đã kiểm thử: `fix/mobile-1.10.136-live-fullscreen-server`.
 
 ## Thay đổi được phát hành
-1. Hiển thị **Đã live N phút** cạnh nút Server trên thẻ Live.
-2. Tính số phút hoàn chỉnh từ kickoff; clamp 0 cho timestamp thiếu hoặc kickoff tương lai.
-3. Ticker UI sẵn có làm mới thẻ Live mỗi 60 giây, không thêm request mạng.
-4. Sắp xếp kickoff giảm dần để trận bắt đầu mới nhất hiển thị trước.
-5. Bổ sung unit test duration 0/30/125 phút, kickoff tương lai và thứ tự sự kiện.
+1. Thêm nút `Server n/N ▾` ngay trong hàng điều khiển phủ trên video khi xem trận Live ở chế độ toàn màn hình.
+2. Chỉ hiển thị nút khi sự kiện Live có ít nhất hai server; ẩn cho kênh thường hoặc chỉ có một nguồn.
+3. Nút dùng chung hộp chọn server và luồng chuyển nguồn/lưu server hiện có.
+4. Giữ nguyên nút đổi server bên dưới player ở chế độ xem thường.
+5. Giữ nguyên tính năng của 1.10.135: hiển thị số phút đã live và xếp trận mới bắt đầu trước.
 
-## Kiểm thử và APK
-- GitHub Actions [run 38220807402](https://github.com/phuongnm7/iptv-player-android/actions/runs/38220807402): **SUCCESS**.
-- Build APK, regression guards, toàn bộ unit tests và upload artifact đều PASS.
-- Artifact: [NM7-IPTV-Mobile-1.10.135-LIVE-DURATION](https://github.com/phuongnm7/iptv-player-android/actions/runs/38220807402/artifacts/11734067803), ID `11734067803`.
-- SHA-256: `e59efa2c6890794f074229190e3f5d096155c9b4dbd2110b1c0cfa112afc889e`.
-- Người dùng đã cài/test và xác nhận OK; bản 1.10.135 được chuyển sang stable.
+## Kiểm thử và artifact
+- GitHub Actions [run 38467292630](https://github.com/phuongnm7/iptv-player-android/actions/runs/38467292630): **SUCCESS**.
+- Build APK và toàn bộ Mobile unit tests: **PASS**.
+- Regression verifier: **26 kiểm tra Live + 7 kiểm tra fullscreen server**, tất cả PASS.
+- Artifact [NM7-IPTV-Mobile-1.10.136-LIVE-FULLSCREEN-SERVER](https://github.com/phuongnm7/iptv-player-android/actions/runs/38467292630/artifacts/11849217586), ID `11849217586`.
+- SHA-256: `8dd23d2d80fbb569b008522ddf1d381d1b46ca71a561c8e0b5490c8c64688230`.
+- User test: OK; đủ điều kiện đưa lên nhánh stable.
 
-## Ranh giới
+## Phạm vi
 - Chỉ NM7 IPTV Mobile được thay đổi.
-- Không sửa NM7 TV Android, NM7 TV Web, playlist mặc định, nguồn Live độc lập hoặc Cloudflare Worker.
-- Các bản Mobile tiếp theo lấy `stable/mobile-1.10.135` làm baseline.
+- Không sửa NM7 TV Android, NM7 TV Web, playlist IPTV mặc định hoặc Cloudflare Worker.
+- Các bản Mobile tiếp theo lấy `stable/mobile-1.10.136` làm baseline.
+
+---
+
+# LỊCH SỬ — STABLE 1.10.135 — 2026-10-12 (đã được thay thế)
+
+- Nhánh: `stable/mobile-1.10.135`; version 1.10.135 / code 151.
+- Người dùng đã xác nhận bản này OK trước khi yêu cầu thêm nút đổi server ngay trên player fullscreen.
+- CI run `38220807402` PASS; artifact ID `11734067803`.
+- Tính năng khi phát hành: hiển thị thời lượng live bên cạnh nút server và sắp xếp kickoff mới nhất trước.
 
 ---
 # LỊCH SỬ TIẾN ĐỘ — 2026-10-12 — MOBILE 1.10.134 / LIVE FEED ĐANG ĐƯỢC TEST

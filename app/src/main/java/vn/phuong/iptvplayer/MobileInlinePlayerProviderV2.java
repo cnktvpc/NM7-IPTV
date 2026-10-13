@@ -87,6 +87,7 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
     private TextView programme;
     private TextView stats;
     private android.widget.Button liveServerButton;
+    private android.widget.Button fullscreenLiveServerButton;
     private ImageButton fullscreenButton;
     private ListView channelList;
     private AdapterView.OnItemClickListener originalClick;
@@ -344,6 +345,30 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
         }
         int index = parent.indexOfChild(settings);
         parent.addView(fullscreenButton, Math.max(0, index), params);
+
+        // Overlay the Live selector in the Media3 controller so it remains available
+        // over the video in fullscreen and follows the controller's show/hide behavior.
+        fullscreenLiveServerButton = new android.widget.Button(activity);
+        fullscreenLiveServerButton.setAllCaps(false);
+        fullscreenLiveServerButton.setSingleLine(true);
+        fullscreenLiveServerButton.setTextSize(11);
+        fullscreenLiveServerButton.setTextColor(activity.getColor(R.color.live_accent));
+        fullscreenLiveServerButton.setBackgroundResource(R.drawable.button_secondary);
+        fullscreenLiveServerButton.setText("Server ▾");
+        fullscreenLiveServerButton.setContentDescription("Đổi máy chủ phát sóng");
+        fullscreenLiveServerButton.setPadding(dp(activity, 8), 0, dp(activity, 8), 0);
+        fullscreenLiveServerButton.setVisibility(View.GONE);
+        fullscreenLiveServerButton.setOnClickListener(v -> showLiveServerPicker());
+        ViewGroup.LayoutParams serverParams;
+        if (parent instanceof LinearLayout) {
+            serverParams = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, dp(activity, 48));
+        } else {
+            serverParams = new ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, dp(activity, 48));
+        }
+        int serverIndex = parent.indexOfChild(settings);
+        parent.addView(fullscreenLiveServerButton, Math.max(0, serverIndex), serverParams);
     }
 
     private void updateFullscreenIcon() {
@@ -358,6 +383,7 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
         if (event == null || event.sources().size() < 2) {
             LivePlaybackSession.clearIfNotLiveSource(channel);
             liveServerButton.setVisibility(View.GONE);
+            updateFullscreenLiveServerButton(channel);
             return;
         }
         LivePlaybackSession.setActive(event);
@@ -365,6 +391,26 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
         liveServerButton.setText("Server " + (selected + 1) + "/" + event.sources().size() + "  ▾");
         liveServerButton.setContentDescription("Đang phát " + event.sourceLabel(selected) + ". Nhấn để đổi máy chủ");
         liveServerButton.setVisibility(View.VISIBLE);
+        updateFullscreenLiveServerButton(channel);
+    }
+
+    private void updateFullscreenLiveServerButton(Channel channel) {
+        if (fullscreenLiveServerButton == null) return;
+        LiveEvent event = LivePlaybackSession.activeFor(channel);
+        if (!fullscreen || channel == null || event == null || event.sources().size() < 2) {
+            fullscreenLiveServerButton.setVisibility(View.GONE);
+            return;
+        }
+        int selected = event.indexOfUrl(channel.url());
+        if (selected < 0) {
+            fullscreenLiveServerButton.setVisibility(View.GONE);
+            return;
+        }
+        fullscreenLiveServerButton.setText(
+                "Server " + (selected + 1) + "/" + event.sources().size() + "  ▾");
+        fullscreenLiveServerButton.setContentDescription(
+                "Đang phát " + event.sourceLabel(selected) + ". Nhấn để đổi máy chủ");
+        fullscreenLiveServerButton.setVisibility(View.VISIBLE);
     }
 
     private void showLiveServerPicker() {
@@ -413,6 +459,7 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
         ViewGroup parent = (ViewGroup) videoContainer.getParent();
         if (parent != null) parent.removeView(videoContainer);
         fullscreen = true;
+        updateFullscreenLiveServerButton(currentChannel);
         FrameLayout.LayoutParams full = new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT);
         fullscreenHost.addView(videoContainer, full);
@@ -428,6 +475,7 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
         ViewGroup parent = (ViewGroup) videoContainer.getParent();
         if (parent != null) parent.removeView(videoContainer);
         fullscreen = false;
+        updateFullscreenLiveServerButton(currentChannel);
         int width = currentActivity.getResources().getDisplayMetrics().widthPixels;
         panel.addView(videoContainer, 0, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, calculateVideoHeight(currentActivity, width)));
