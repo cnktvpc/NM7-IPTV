@@ -1,4 +1,5 @@
 name: NM7 IPTV Mobile 1.10.136 Live Fullscreen Server Selector — Build
+# CI retry: re-run candidate validation if the hosted runner stalls before emitting job steps.
 # Dedicated feed-based LauTV-style Live module with elapsed duration and newest-first sorting, plus in-player fullscreen server selection — candidate v136.
 # Build is gated on Live feature checks, baseline pull-to-refresh checks, and the full unit-test suite.
 
