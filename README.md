@@ -2,6 +2,14 @@
 
 > **1.10.135 là bản ổn định chính thức hiện tại.** Người dùng đã cài thử và xác nhận bản này hoạt động ổn.
 
+## Candidate đang phát triển — NM7 IPTV Mobile 1.10.136
+
+- **Trạng thái:** bản thử nghiệm, chưa thay thế stable 1.10.135.
+- **Version:** 1.10.136 / **versionCode:** 152.
+- **Nhánh:** `fix/mobile-1.10.136-live-fullscreen-server`.
+- **Thay đổi mới:** khi xem trận ở mục Live và bật toàn màn hình, nút `Server n/N ▾` xuất hiện ngay trong hàng điều khiển phủ trên video, cạnh nút toàn màn hình/cài đặt. Nút chỉ hiện khi sự kiện có từ hai nguồn phát trở lên; mở cùng hộp chọn server hiện có và giữ việc ghi nhớ server đã chọn. Nút đổi server bên dưới player khi xem thường vẫn được giữ nguyên.
+- **Kiểm thử:** GitHub Actions chạy build APK, toàn bộ Mobile unit tests, regression verifier Live và kiểm tra riêng nút server fullscreen. Không promote candidate lên stable trước khi kiểm tra phát/chuyển server thực tế.
+- **Phạm vi:** chỉ NM7 IPTV Mobile; không sửa NM7 TV Android, NM7 TV Web, playlist mặc định hoặc Cloudflare Worker.
 ## Mốc ổn định đã chốt
 
 - **Version:** 1.10.135

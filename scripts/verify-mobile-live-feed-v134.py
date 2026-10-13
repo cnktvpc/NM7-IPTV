@@ -38,13 +38,14 @@ checks = [
     ("independent cache failures cannot overwrite the user's selected playlist", "LiveFeedRepository" in main and "refreshLiveFeedUi()" in main and "showPlaylist(" not in main[main.index("private void loadLiveFeed"):main.index("private void loadFromUrl",main.index("private void loadLiveFeed"))]),
     ("player bridge serializes the match and every selectable source", "JSONObject" in session and "LiveEvent.restored(" in session and "encode(LiveEvent event)" in session),
     ("the inline player provides an in-player server selector", "liveServerButton" in inline and "showLiveServerPicker()" in inline and "LiveEventStore.setSelectedUrl" in inline),
+    ("fullscreen Live server button is in the Media3 controller and reuses picker", "fullscreenLiveServerButton" in inline and "updateFullscreenLiveServerButton" in inline and "fullscreenLiveServerButton.setOnClickListener(v -> showLiveServerPicker())" in inline and "fullscreenLiveServerButton.setVisibility(View.VISIBLE)" in inline and "fullscreenLiveServerButton.setVisibility(View.GONE)" in inline),
     ("the full player provides an in-player server selector", "btnLiveServer" in player_layout and "showLiveServerPicker()" in player and "EXTRA_LIVE_EVENT" in player),
     ("event cards expose title, live state, source count and favorite", all(v in layout for v in ("txtLiveEventTitle", "txtLiveBadge", "btnLiveServers", "txtLiveDuration", "btnLiveFavorite"))),
     ("the regular playlist default remains owned by the existing source store", "PlaylistSourceStore.DEFAULT_URL" in main and "DEFAULT_URL" in playlist_store),
     ("tests cover provider time skew, alternate timestamp order, merge/filtering and server restore", all(v in tests for v in ("dedicatedFeedGroupsProviderAndTransportVariantsIntoOneFreshLiveMatch", "dedicatedFeedDoesNotDependOnUserPlaylistLiveGroups", "dedicatedFeedMergesSameFixtureWithProviderKickoffSkewAndLongRunningLiveStatus", "dedicatedFeedAcceptsDateBeforeTimeAndTextLiveMarker", "restoredLiveEventPreservesServerLabelsAndSelectedUrl", "elapsedLiveMinutesAreWholeAndNeverNegative", "dedicatedFeedOrdersNewestLiveKickoffFirst"))),
     ("server picker renders selectable source rows without the broken message/list combination", "setItems(labels" in main and "Do not combine a message panel with a choice list" in main),
     ("M3U fixture tests use valid Java escaped newlines and quotes", r"\\n" not in tests and r'\\"' not in tests),
-    ("version is 1.10.135 / code 151", 'versionName = "1.10.135"' in gradle and "versionCode = 151" in gradle),
+    ("version is 1.10.136 / code 152", 'versionName = "1.10.136"' in gradle and "versionCode = 152" in gradle),
     ("temporary inspection files have been removed", not Path(".github/workflows/inspect-live-feed.yml").exists() and not Path("LIVE_FEED_INSPECTION.md").exists() and not Path("LIVE_BRANCH_PROBE.txt").exists()),
 ]
 for label, ok in checks:

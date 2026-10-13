@@ -1,3 +1,25 @@
+# TIẾN ĐỘ — NM7 IPTV MOBILE 1.10.136 — LIVE FULLSCREEN SERVER — 2026-10-14
+
+## Trạng thái hiện tại
+- **Candidate đang phát triển; chưa phát hành stable.**
+- Baseline: `stable/mobile-1.10.135` (1.10.135 / versionCode 151), không ghi đè nhánh stable.
+- Candidate: `fix/mobile-1.10.136-live-fullscreen-server`, 1.10.136 / versionCode 152.
+- Phạm vi đúng một lỗi: nút đổi server không nằm trên video khi xem trận ở mục Live trong chế độ toàn màn hình.
+
+## Sửa đổi
+1. Thêm nút `Server n/N ▾` vào hàng điều khiển của player Media3, ở lớp phủ trên video; nút nằm cạnh nút toàn màn hình/cài đặt.
+2. Nút chỉ hiện ở chế độ fullscreen khi sự kiện Live có từ hai server trở lên; trường hợp kênh thường hoặc chỉ có một nguồn thì ẩn.
+3. Nút dùng lại hộp chọn server hiện tại và luồng `LivePlaybackSession` / `LiveEventStore`, tránh tạo logic phát hoặc lưu server thứ hai.
+4. Giữ nguyên nút đổi server ở dưới player khi xem không toàn màn hình.
+
+## Kiểm tra / bàn giao
+- Dedicated verifier: `scripts/verify-mobile-live-fullscreen-server-v136.py`.
+- Shared Live verifier cập nhật để yêu cầu version 1.10.136 / code 152 và phát hiện nút selector fullscreen.
+- GitHub Actions candidate được cấu hình chạy build APK, toàn bộ Mobile unit tests và regression checks.
+- Cần xác nhận bằng thao tác thực tế trên thiết bị: Live có nhiều server → bật fullscreen → mở danh sách server → chọn server khác → xác nhận stream chuyển nguồn; thoát fullscreen và xác nhận nút bên dưới vẫn hoạt động.
+- Không sửa NM7 TV Android, NM7 TV Web, playlist mặc định hoặc Cloudflare Worker. Chỉ promote stable sau khi candidate được kiểm thử.
+
+---
 # TIẾN ĐỘ PHÁT HÀNH — NM7 IPTV MOBILE 1.10.135 — STABLE — 2026-10-12
 
 ## Trạng thái
