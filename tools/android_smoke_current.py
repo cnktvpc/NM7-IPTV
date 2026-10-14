@@ -50,10 +50,27 @@ def live_button_node(root):
             return node
     return None
 
-def live_event_title_node(root):
-    return next((n for n in root.iter("node")
-                 if n.get("resource-id") == PACKAGE + ":id/txtLiveEventTitle"
-                 and n.get("text", "").strip()), None)
+def live_event_row_node(root):
+    list_view = next((n for n in root.iter("node")
+                      if n.get("resource-id") == PACKAGE + ":id/listChannels"), None)
+    if list_view is None:
+        return None
+    for row in list_view.findall("node"):
+        if any(n.get("resource-id") == PACKAGE + ":id/txtLiveEventTitle"
+               and n.get("text", "").strip() for n in row.iter("node")):
+            return row
+    return None
+
+def tap_row_surface(node):
+    if node is None:
+        return False
+    match = re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", node.get("bounds", ""))
+    if not match:
+        return False
+    x1, y1, x2, y2 = map(int, match.groups())
+    # Tap in the card's own left padding, away from server/favorite child controls.
+    adb("shell", "input", "tap", str(x1 + 7), str((y1 + y2) // 2))
+    return True
 
 def wait_for_initial_playlist_settle(timeout=35):
     end = time.monotonic() + timeout
@@ -104,22 +121,22 @@ def smoke_test_live_inline_if_feed_available():
         raise AssertionError("LIVE group exists with events but could not be tapped")
 
     end = time.monotonic() + 10
-    title = None
+    row = None
     while time.monotonic() < end:
         try:
             root = hierarchy()
-            title = live_event_title_node(root)
-            if title is not None:
+            row = live_event_row_node(root)
+            if row is not None:
                 break
         except Exception:
             pass
         time.sleep(.5)
-    if title is None:
+    if row is None:
         print_diagnostics()
         raise AssertionError("LIVE group reported events but no event card was displayed")
-    if not tap_node(title):
+    if not tap_row_surface(row):
         print_diagnostics()
-        raise AssertionError("Could not tap the first LIVE event card")
+        raise AssertionError("Could not tap the first LIVE event card surface")
 
     end = time.monotonic() + 12
     while time.monotonic() < end:

@@ -76,6 +76,7 @@ public final class MainActivity extends Activity {
         adapter=new ChannelAdapter(this,new ChannelAdapter.Listener(){@Override public void onSelectionChanged(){updateSummary();}@Override public void onFavoriteChanged(Channel c,boolean f){toast(f?"Đã thêm vào Yêu thích":"Đã bỏ khỏi Yêu thích");if(activeSection==1)filter();else adapter.notifyDataSetChanged();}});
         channelList = list;
         liveAdapter = new LiveEventAdapter(this, adapter, new LiveEventAdapter.Listener() {
+            @Override public void onEventSelected(LiveEvent event) { playLiveEvent(event); }
             @Override public void onServersRequested(LiveEvent event) { showLiveServerPicker(event); }
             @Override public void onFavoriteChanged(LiveEvent event, boolean favorite) {
                 toast(favorite ? "Đã thêm sự kiện Live vào Yêu thích" : "Đã bỏ sự kiện Live khỏi Yêu thích");

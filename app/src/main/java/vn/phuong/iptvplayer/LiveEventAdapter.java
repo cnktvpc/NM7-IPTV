@@ -14,6 +14,7 @@ import java.util.List;
 /** LauTV-style event cards: one card per logical event and a separate server picker. */
 public final class LiveEventAdapter extends BaseAdapter {
     public interface Listener {
+        void onEventSelected(LiveEvent event);
         void onServersRequested(LiveEvent event);
         void onFavoriteChanged(LiveEvent event, boolean favorite);
     }
@@ -59,6 +60,10 @@ public final class LiveEventAdapter extends BaseAdapter {
         }
 
         LiveEvent event = getItem(position);
+        // Make the whole match card an explicit tap target. Do not rely on ListView's
+        // item-click dispatch: embedded child controls can intercept touch handling.
+        convertView.setClickable(true);
+        convertView.setOnClickListener(v -> listener.onEventSelected(event));
         holder.title.setText(event.title());
         holder.group.setText(event.group().isEmpty() ? "LIVE" : "LIVE  •  " + event.group());
         int servers = event.sources().size();
