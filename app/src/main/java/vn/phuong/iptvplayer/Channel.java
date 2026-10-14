@@ -13,6 +13,8 @@ public final class Channel {
     private final String group;
     private final String url;
     private final String logo;
+    private final String logoUrl;
+    private final String iconUrl;
     private final String tvgId;
     private final Map<String, String> headers;
     private boolean selected = true;
@@ -21,10 +23,17 @@ public final class Channel {
 
     public Channel(String name, String group, String url, String logo, String tvgId,
                    Map<String, String> headers) {
+        this(name, group, url, logo, logo, "", tvgId, headers);
+    }
+
+    public Channel(String name, String group, String url, String tvgLogo, String logoUrl,
+                   String iconUrl, String tvgId, Map<String, String> headers) {
         this.name = clean(name, "Kênh không tên");
         this.group = clean(group, "Chưa phân nhóm");
         this.url = clean(url, "");
-        this.logo = clean(logo, "");
+        this.logo = clean(tvgLogo, "");
+        this.logoUrl = clean(logoUrl, "");
+        this.iconUrl = clean(iconUrl, "");
         this.tvgId = clean(tvgId, "");
         this.headers = Collections.unmodifiableMap(new LinkedHashMap<>(headers));
     }
@@ -38,6 +47,14 @@ public final class Channel {
     public String group() { return group; }
     public String url() { return url; }
     public String logo() { return logo; }
+    public String tvgLogo() { return logo; }
+    public String logoUrl() { return logoUrl; }
+    public String iconUrl() { return iconUrl; }
+    public String effectiveLogoUrl() {
+        if (!logoUrl.isEmpty()) return logoUrl;
+        if (!logo.isEmpty()) return logo;
+        return iconUrl;
+    }
     public String tvgId() { return tvgId; }
     public Map<String, String> headers() { return headers; }
     public boolean selected() { return selected; }
