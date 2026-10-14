@@ -1,9 +1,8 @@
-# NM7 IPTV Mobile 1.10.137 — DEVELOPMENT CI STATUS
+# NM7 IPTV Mobile 1.10.137 — CI result
 
+- Status: **RUNNING**
 - Branch: `feature/mobile-1.10.137-live-events-20261015`
-- Baseline: `stable/mobile-1.10.136`
-- Version: `1.10.137` / `versionCode 153`
-- Status: **WAITING FOR GITHUB ACTIONS**
-- Workflow: [nm7-mobile-live-events-v132.yml](https://github.com/phuongnm7/iptv-player-android/blob/feature/mobile-1.10.137-live-events-20261015/.github/workflows/nm7-mobile-live-events-v132.yml)
+- Source commit: `b29b43f057032b659f38cfdbdad343e5a8a41c7b`
+- Workflow run: https://github.com/phuongnm7/iptv-player-android/actions/runs/38609933196
 
-CI must complete the APK build, full Mobile unit-test suite, Live regression verifier, and fullscreen server-selector verifier before this candidate can be considered validated. This branch is not stable yet.
+Build and full unit tests are in progress.
