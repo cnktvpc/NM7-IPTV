@@ -361,7 +361,14 @@ public final class MainActivity extends Activity {
         LiveEvent selectedEvent = event.withPreferredUrl(LiveEventStore.selectedUrl(this, event.id()));
         LivePlaybackSession.setActive(selectedEvent);
         if (liveAdapter != null) liveAdapter.setPlayingEvent(selectedEvent.id());
-        play(selectedEvent.primary(), selectedEvent);
+
+        // Match the 1.10.136 layout: keep MainActivity and its LIVE event list visible,
+        // placing the inline player above the filters/list. Only fall back to PlayerActivity
+        // if the inline player is not attached (for example, the TV interface is active).
+        Channel selected = selectedEvent.primary();
+        if (!MobileInlinePlayerProviderV2.playLiveChannel(selected)) {
+            play(selected, selectedEvent);
+        }
     }
 
     private void showLiveServerPicker(LiveEvent event) {
