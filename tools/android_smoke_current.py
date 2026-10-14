@@ -8,7 +8,10 @@ import re
 import subprocess
 import sys
 import time
+import tempfile
 import xml.etree.ElementTree as ET
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 APK = sys.argv[1]
 PACKAGE = ""
@@ -23,6 +26,36 @@ def resolve_package(apk):
     if not match:
         raise AssertionError("Cannot determine APK package id")
     return match.group(1)
+
+def seed_live_feed_fixture():
+    # Keep fullscreen server-selector smoke testing independent of an external feed.
+    # This only writes the cache inside the temporary debug emulator.
+    if os.environ.get("NM7_SMOKE_LIVE_FIXTURE") != "1":
+        return
+    kickoff = datetime.now(ZoneInfo("Asia/Ho_Chi_Minh")).strftime("%H:%M %d/%m")
+    fixture = (
+        "#EXTM3U\\n"
+        f'#EXTINF:-1 group-title="Bóng đá",{kickoff} [LIVE] NM7 Smoke Home vs NM7 Smoke Away - Server 1\\n'
+        "https://example.com/nm7-smoke-server-1.m3u8\\n"
+        f'#EXTINF:-1 group-title="Bóng đá",{kickoff} [LIVE] NM7 Smoke Home vs NM7 Smoke Away - Server 2\\n'
+        "https://example.com/nm7-smoke-server-2.m3u8\\n"
+    )
+    temp_path = None
+    try:
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as fixture_file:
+            fixture_file.write(fixture)
+            temp_path = fixture_file.name
+        adb("push", temp_path, "/sdcard/nm7-live-feed.m3u")
+        result = run_adb("shell", "run-as", PACKAGE, "cp",
+                         "/sdcard/nm7-live-feed.m3u", "cache/nm7-live-feed.m3u",
+                         check=False)
+        if result.returncode:
+            raise AssertionError("Could not seed deterministic LIVE feed cache: " + result.stderr)
+        run_adb("shell", "rm", "-f", "/sdcard/nm7-live-feed.m3u", check=False)
+        print("INFO: seeded deterministic two-server LIVE fixture in the debug emulator cache")
+    finally:
+        if temp_path and os.path.exists(temp_path):
+            os.unlink(temp_path)
 
 def run_adb(*args, timeout=40, check=True):
     result = subprocess.run(["adb", *args], check=False, capture_output=True, text=True, timeout=timeout)
@@ -138,6 +171,9 @@ def smoke_test_live_inline_if_feed_available():
             pass
         time.sleep(.7)
     if button is None:
+        if os.environ.get("NM7_SMOKE_LIVE_FIXTURE") == "1":
+            print_diagnostics()
+            raise AssertionError("Seeded LIVE fixture was not displayed by MainActivity")
         print("SKIP: dedicated LIVE feed had no event available in CI; inline event tap was not exercised")
         return
     if not tap_node(button):
@@ -156,6 +192,9 @@ def smoke_test_live_inline_if_feed_available():
             pass
         time.sleep(.5)
     if row is None:
+        if os.environ.get("NM7_SMOKE_LIVE_FIXTURE") == "1":
+            print_diagnostics()
+            raise AssertionError("Seeded two-server LIVE fixture was not visible for fullscreen server-selector testing")
         print("SKIP: no visible multi-server LIVE event available to verify fullscreen server selection")
         return
     if not tap_row_surface(row):
@@ -389,6 +428,7 @@ def assert_consolidated_header(root, label):
 PACKAGE = resolve_package(APK)
 print("INFO: APK package id:", PACKAGE)
 adb("install", "-r", APK, timeout=90)
+seed_live_feed_fixture()
 adb("shell", "input", "keyevent", "KEYCODE_WAKEUP")
 run_adb("shell", "wm", "dismiss-keyguard", check=False)
 run_adb("logcat", "-c", check=False)
