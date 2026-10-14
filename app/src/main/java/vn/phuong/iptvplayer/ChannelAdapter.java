@@ -64,16 +64,10 @@ public final class ChannelAdapter extends BaseAdapter {
      * This gives us connection pooling, HTTP/2 multiplexing and transparent
      * gzip handling instead of opening a new HttpURLConnection for each row.
      */
-    private static final OkHttpClient LOGO_HTTP = new OkHttpClient.Builder()
-            .connectTimeout(CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-            .readTimeout(READ_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-            .callTimeout(READ_TIMEOUT_MS + CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-            .followRedirects(true)
-            .followSslRedirects(true)
-            .retryOnConnectionFailure(true)
-            .dispatcher(new okhttp3.Dispatcher())
-            .connectionPool(new okhttp3.ConnectionPool(8, 5, TimeUnit.MINUTES))
-            .build();
+    private static final OkHttpClient LOGO_HTTP = NetworkClient.LOGO_HTTP;
+    private static final java.util.regex.Pattern SAFE_HEADER_KEY = java.util.regex.Pattern.compile("[!#$%&'*+.^_|~0-9A-Za-z-]+");
+    private static final long MAX_DISK_CACHE_BYTES = 40L * 1024L * 1024L;
+    private static volatile boolean diskCacheTrimScheduled;
 
     private final LayoutInflater inflater;
     private final Context context;
@@ -90,6 +84,10 @@ public final class ChannelAdapter extends BaseAdapter {
         this.listener = listener;
         logoCacheDir = new File(context.getCacheDir(), "channel-logos-v4");
         if (!logoCacheDir.exists()) logoCacheDir.mkdirs();
+        if (!diskCacheTrimScheduled) {
+            diskCacheTrimScheduled = true;
+            diskIo.execute(this::trimDiskCacheIfNeeded);
+        }
     }
 
     public void submit(List<Channel> channels) {
@@ -109,6 +107,10 @@ public final class ChannelAdapter extends BaseAdapter {
     public void submitGuide(EpgStore.Guide guide) {
         this.guide = guide;
         notifyDataSetChanged();
+    }
+
+    EpgStore.Guide guide() {
+        return guide;
     }
 
     void setPlayingChannel(Channel channel) {
@@ -319,7 +321,7 @@ public final class ChannelAdapter extends BaseAdapter {
                     || "User-Agent".equalsIgnoreCase(key)
                     || "Cookie".equalsIgnoreCase(key)
                     || "Authorization".equalsIgnoreCase(key)) continue;
-            if (key.matches("[!#$%&'*+.^_|~0-9A-Za-z-]+")
+            if (SAFE_HEADER_KEY.matcher(key).matches()
                     && value.indexOf('\r') < 0 && value.indexOf('\n') < 0) {
                 requestBuilder.header(key, value);
             }
@@ -498,6 +500,23 @@ public final class ChannelAdapter extends BaseAdapter {
             }
         }
         return value.toString();
+    }
+
+    private void trimDiskCacheIfNeeded() {
+        try {
+            File[] files = logoCacheDir.listFiles();
+            if (files == null || files.length < 200) return;
+            long total = 0L;
+            for (File f : files) if (f.isFile()) total += f.length();
+            if (total <= MAX_DISK_CACHE_BYTES) return;
+            java.util.Arrays.sort(files, java.util.Comparator.comparingLong(File::lastModified));
+            long target = (MAX_DISK_CACHE_BYTES * 3L) / 4L;
+            for (File f : files) {
+                if (total <= target) break;
+                long len = f.length();
+                if (f.delete()) total -= len;
+            }
+        } catch (Exception ignored) { }
     }
 
     private File cacheFile(String value) {
