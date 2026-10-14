@@ -2,7 +2,7 @@
 
 - Status: **RUNNING**
 - Branch: `feature/mobile-1.10.137-live-events-20261015`
-- Source commit: `e8cfe9d35a35cb7a5e9307b2d9113d738154c62c`
-- Workflow run: https://github.com/phuongnm7/iptv-player-android/actions/runs/38615841399
+- Source commit: `a05ab2f9d1a399edf2a7517abcc8323bda54786d`
+- Workflow run: https://github.com/phuongnm7/iptv-player-android/actions/runs/38616115053
 
 Build and full unit tests are in progress.
