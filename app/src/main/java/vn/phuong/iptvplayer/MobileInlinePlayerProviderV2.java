@@ -77,6 +77,7 @@ import okhttp3.OkHttpClient;
 /** Mobile inline player with DVR seekbar, clean tap controls, fullscreen icons and background playback. */
 @UnstableApi
 public final class MobileInlinePlayerProviderV2 extends ContentProvider implements Application.ActivityLifecycleCallbacks {
+    private static MobileInlinePlayerProviderV2 instance;
     private MainActivity currentActivity;
     private ExoPlayer player;
     private PlayerView playerView;
@@ -133,9 +134,19 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
     };
 
     @Override public boolean onCreate() {
+        instance = this;
         if (getContext() != null) {
             ((Application) getContext().getApplicationContext()).registerActivityLifecycleCallbacks(this);
         }
+        return true;
+    }
+
+    /** Plays a LIVE feed source inside MainActivity so the match list remains below it. */
+    public static boolean playLiveChannel(Channel channel) {
+        MobileInlinePlayerProviderV2 owner = instance;
+        if (channel == null || owner == null || owner.currentActivity == null
+                || AppPreferences.isTvInterface(owner.currentActivity)) return false;
+        owner.playInline(channel);
         return true;
     }
 
