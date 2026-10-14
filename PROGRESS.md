@@ -1,3 +1,15 @@
+# TIẾN ĐỘ PHÁT TRIỂN — NM7 IPTV MOBILE 1.10.137 — 2026-10-15
+
+## Candidate 1.10.137
+- **Nhánh phát triển:** `feature/mobile-1.10.137-live-events-20261015`.
+- **Baseline:** `stable/mobile-1.10.136` — không sửa nhánh stable.
+- **Version:** `1.10.137` / `versionCode 153`.
+- **Phạm vi:** giữ nguyên tính năng Live và nút đổi server ngay trên player toàn màn hình của 1.10.136; nâng version và chạy lại build/regression suite.
+- **Workflow:** `.github/workflows/nm7-mobile-live-events-v132.yml`; trigger qua push trên nhánh candidate này.
+- **Trạng thái:** đang chờ GitHub Actions. Chưa đánh dấu PASS hoặc stable trước khi có kết quả CI và kiểm thử thiết bị.
+
+---
+
 # TIẾN ĐỘ PHÁT HÀNH — NM7 IPTV MOBILE 1.10.136 — STABLE — 2026-10-14
 
 ## Trạng thái
