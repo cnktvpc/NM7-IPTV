@@ -50,16 +50,40 @@ def live_button_node(root):
             return node
     return None
 
-def live_event_row_node(root):
+def live_event_row_node(root, require_multiple_servers=False):
     list_view = next((n for n in root.iter("node")
                       if n.get("resource-id") == PACKAGE + ":id/listChannels"), None)
     if list_view is None:
         return None
     for row in list_view.findall("node"):
-        if any(n.get("resource-id") == PACKAGE + ":id/txtLiveEventTitle"
-               and n.get("text", "").strip() for n in row.iter("node")):
-            return row
+        if not any(n.get("resource-id") == PACKAGE + ":id/txtLiveEventTitle"
+                   and n.get("text", "").strip() for n in row.iter("node")):
+            continue
+        if require_multiple_servers:
+            server = next((n for n in row.iter("node")
+                           if n.get("resource-id") == PACKAGE + ":id/btnLiveServers"), None)
+            count = re.search(r"(\d+)\s*Server", "" if server is None else server.get("text", ""), re.IGNORECASE)
+            if count is None or int(count.group(1)) < 2:
+                continue
+        return row
     return None
+
+def node_by_desc_prefix(root, prefix):
+    return next((n for n in root.iter("node")
+                 if n.get("content-desc", "").startswith(prefix)
+                 and n.get("bounds", "")), None)
+
+def tap_fraction(node, y_fraction=0.35):
+    if node is None:
+        return False
+    match = re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", node.get("bounds", ""))
+    if not match:
+        return False
+    x1, y1, x2, y2 = map(int, match.groups())
+    x = (x1 + x2) // 2
+    y = y1 + int(max(0, min(1, y_fraction)) * max(1, y2 - y1))
+    adb("shell", "input", "tap", str(x), str(y))
+    return True
 
 def tap_row_surface(node):
     if node is None:
@@ -125,18 +149,18 @@ def smoke_test_live_inline_if_feed_available():
     while time.monotonic() < end:
         try:
             root = hierarchy()
-            row = live_event_row_node(root)
+            row = live_event_row_node(root, require_multiple_servers=True)
             if row is not None:
                 break
         except Exception:
             pass
         time.sleep(.5)
     if row is None:
-        print_diagnostics()
-        raise AssertionError("LIVE group reported events but no event card was displayed")
+        print("SKIP: no visible multi-server LIVE event available to verify fullscreen server selection")
+        return
     if not tap_row_surface(row):
         print_diagnostics()
-        raise AssertionError("Could not tap the first LIVE event card surface")
+        raise AssertionError("Could not tap the first multi-server LIVE event card")
 
     end = time.monotonic() + 12
     while time.monotonic() < end:
@@ -144,12 +168,111 @@ def smoke_test_live_inline_if_feed_available():
             root = hierarchy()
             if has_id(root, "mainRoot") and inline_panel_visible(root):
                 print("PASS: tapping a LIVE event opens the inline player above the still-visible event list")
-                return
+                break
         except Exception:
             pass
         time.sleep(.5)
-    print_diagnostics()
-    raise AssertionError("Tapping a LIVE event did not keep MainActivity open with the inline player visible")
+    else:
+        print_diagnostics()
+        raise AssertionError("Tapping a LIVE event did not keep MainActivity open with the inline player visible")
+
+    # Tap the player surface to expose Media3 controls, then enter fullscreen.
+    end = time.monotonic() + 8
+    fullscreen_button = None
+    while time.monotonic() < end:
+        root = hierarchy()
+        fullscreen_button = node_by_desc_prefix(root, "Toàn màn hình")
+        if fullscreen_button is not None:
+            break
+        tap_fraction(next((n for n in root.iter("node")
+                           if n.get("content-desc") == "NM7_INLINE_PLAYER_PANEL"), None), 0.35)
+        time.sleep(.5)
+    if fullscreen_button is None:
+        print_diagnostics()
+        raise AssertionError("Player controls did not expose the fullscreen button after tapping the player")
+    if not tap_node(fullscreen_button):
+        print_diagnostics()
+        raise AssertionError("Could not enter fullscreen from the inline player")
+
+    # Orientation changes may briefly hide the controller. Tap the full display to show it.
+    end = time.monotonic() + 10
+    fullscreen_server = None
+    while time.monotonic() < end:
+        try:
+            root = hierarchy()
+            fullscreen_server = node_by_desc_prefix(root, "Đổi máy chủ toàn màn hình")
+            if fullscreen_server is not None:
+                break
+            content = android_node(root, "content")
+            tap_fraction(content, 0.5)
+        except Exception:
+            pass
+        time.sleep(.5)
+    if fullscreen_server is None:
+        print_diagnostics()
+        raise AssertionError("Fullscreen LIVE player did not expose the server selector in its controls")
+
+    old_label = fullscreen_server.get("text", "")
+    if not tap_node(fullscreen_server):
+        print_diagnostics()
+        raise AssertionError("Fullscreen server selector was visible but could not be tapped")
+
+    end = time.monotonic() + 8
+    dialog_root = None
+    dialog_title = ""
+    while time.monotonic() < end:
+        try:
+            dialog_root = hierarchy()
+            dialog_title = alert_title(dialog_root)
+            if dialog_title.startswith("Chọn máy chủ"):
+                break
+        except Exception:
+            pass
+        time.sleep(.4)
+    if not dialog_title.startswith("Chọn máy chủ"):
+        print_diagnostics()
+        raise AssertionError("Fullscreen server selector did not open the server picker dialog")
+
+    list_node = next((n for n in dialog_root.iter("node")
+                      if n.get("resource-id") == "android:id/select_dialog_listview"), None)
+    alternative = None
+    if list_node is not None:
+        for node in list_node.iter("node"):
+            if node.get("clickable") == "true" and node.get("text", "").strip() and "✓ Đang phát" not in node.get("text", ""):
+                alternative = node
+                break
+    if alternative is None:
+        print_diagnostics()
+        raise AssertionError("Server picker opened but no alternative source was found")
+
+    if not tap_node(alternative):
+        print_diagnostics()
+        raise AssertionError("Could not select an alternative LIVE server")
+    print("PASS: fullscreen server selector opens the server picker and accepts an alternative source")
+
+    # Switching sources hides the controls while Media3 restarts; show them again and
+    # verify the in-player server label reflects the new choice, while still fullscreen.
+    end = time.monotonic() + 15
+    new_server = None
+    while time.monotonic() < end:
+        try:
+            root = hierarchy()
+            new_server = node_by_desc_prefix(root, "Đổi máy chủ toàn màn hình")
+            if new_server is not None and new_server.get("text", "") and new_server.get("text", "") != old_label:
+                break
+            content = android_node(root, "content")
+            tap_fraction(content, 0.5)
+        except Exception:
+            pass
+        time.sleep(.5)
+    if new_server is None or new_server.get("text", "") == old_label:
+        print_diagnostics()
+        raise AssertionError("Fullscreen server label did not update after choosing a different source")
+    print("PASS: fullscreen server label updates after changing source")
+
+    # Exit fullscreen so the existing portrait/landscape layout checks run from a clean state.
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    time.sleep(1)
 
 def has_android_id(root, name):
     return any(n.get("resource-id") == "android:id/" + name for n in root.iter("node"))

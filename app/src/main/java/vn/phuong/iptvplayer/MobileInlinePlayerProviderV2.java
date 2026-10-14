@@ -88,6 +88,8 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
     private TextView programme;
     private TextView stats;
     private ImageButton fullscreenButton;
+    private android.widget.Button liveServerButton;
+    private android.widget.Button fullscreenLiveServerButton;
     private ListView channelList;
     private AdapterView.OnItemClickListener originalClick;
     private Channel currentChannel;
@@ -251,6 +253,21 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
         panel.addView(stats, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 
+        // Keep the server picker below the inline player in normal portrait mode.
+        liveServerButton = new android.widget.Button(activity);
+        liveServerButton.setAllCaps(false);
+        liveServerButton.setTextSize(12);
+        liveServerButton.setTextColor(activity.getColor(R.color.live_accent));
+        liveServerButton.setBackgroundResource(R.drawable.button_secondary);
+        liveServerButton.setText("Đổi máy chủ");
+        liveServerButton.setVisibility(View.GONE);
+        liveServerButton.setOnClickListener(v -> showLiveServerPicker());
+        LinearLayout.LayoutParams serverParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, dp(activity, 40));
+        serverParams.setMarginStart(dp(activity, 10));
+        serverParams.setMarginEnd(dp(activity, 10));
+        panel.addView(liveServerButton, serverParams);
+
         LinearLayout.LayoutParams panelParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         panelParams.setMarginStart(-root.getPaddingLeft());
@@ -313,12 +330,95 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
         }
         int index = parent.indexOfChild(settings);
         parent.addView(fullscreenButton, Math.max(0, index), params);
+
+        // Add server selection to the Media3 controller so it is overlaid on the
+        // video in fullscreen and follows the controller's show/hide behavior.
+        fullscreenLiveServerButton = new android.widget.Button(activity);
+        fullscreenLiveServerButton.setAllCaps(false);
+        fullscreenLiveServerButton.setSingleLine(true);
+        fullscreenLiveServerButton.setTextSize(11);
+        fullscreenLiveServerButton.setTextColor(activity.getColor(R.color.live_accent));
+        fullscreenLiveServerButton.setBackgroundResource(R.drawable.button_secondary);
+        fullscreenLiveServerButton.setText("Server ▾");
+        fullscreenLiveServerButton.setContentDescription("Đổi máy chủ toàn màn hình");
+        fullscreenLiveServerButton.setPadding(dp(activity, 8), 0, dp(activity, 8), 0);
+        fullscreenLiveServerButton.setVisibility(View.GONE);
+        fullscreenLiveServerButton.setOnClickListener(v -> showLiveServerPicker());
+        ViewGroup.LayoutParams serverParams;
+        if (parent instanceof LinearLayout) {
+            serverParams = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, dp(activity, 48));
+        } else {
+            serverParams = new ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, dp(activity, 48));
+        }
+        int serverIndex = parent.indexOfChild(settings);
+        parent.addView(fullscreenLiveServerButton, Math.max(0, serverIndex), serverParams);
     }
 
     private void updateFullscreenIcon() {
-        if (fullscreenButton == null) return;
-        fullscreenButton.setImageResource(fullscreen ? R.drawable.ic_nm7_fullscreen_exit : R.drawable.ic_nm7_fullscreen);
-        fullscreenButton.setContentDescription(fullscreen ? "Thu nhỏ" : "Toàn màn hình");
+        if (fullscreenButton != null) {
+            fullscreenButton.setImageResource(fullscreen ? R.drawable.ic_nm7_fullscreen_exit : R.drawable.ic_nm7_fullscreen);
+            fullscreenButton.setContentDescription(fullscreen ? "Thu nhỏ" : "Toàn màn hình");
+        }
+        updateFullscreenLiveServerButton(currentChannel);
+    }
+
+    private void updateLiveServerButton(Channel channel) {
+        if (liveServerButton == null) return;
+        LiveEvent event = LivePlaybackSession.activeFor(channel);
+        if (event == null || event.sources().size() < 2) {
+            LivePlaybackSession.clearIfNotLiveSource(channel);
+            liveServerButton.setVisibility(View.GONE);
+            updateFullscreenLiveServerButton(channel);
+            return;
+        }
+        LivePlaybackSession.setActive(event);
+        int selected = event.indexOfUrl(channel.url());
+        liveServerButton.setText("Server " + (selected + 1) + "/" + event.sources().size() + "  ▾");
+        liveServerButton.setContentDescription("Đang phát " + event.sourceLabel(selected) + ". Nhấn để đổi máy chủ");
+        liveServerButton.setVisibility(View.VISIBLE);
+        updateFullscreenLiveServerButton(channel);
+    }
+
+    private void updateFullscreenLiveServerButton(Channel channel) {
+        if (fullscreenLiveServerButton == null) return;
+        LiveEvent event = LivePlaybackSession.activeFor(channel);
+        if (!fullscreen || channel == null || event == null || event.sources().size() < 2) {
+            fullscreenLiveServerButton.setVisibility(View.GONE);
+            return;
+        }
+        int selected = event.indexOfUrl(channel.url());
+        if (selected < 0) {
+            fullscreenLiveServerButton.setVisibility(View.GONE);
+            return;
+        }
+        fullscreenLiveServerButton.setText("Server " + (selected + 1) + "/" + event.sources().size() + "  ▾");
+        fullscreenLiveServerButton.setContentDescription(
+                "Đổi máy chủ toàn màn hình • Đang phát " + event.sourceLabel(selected));
+        fullscreenLiveServerButton.setVisibility(View.VISIBLE);
+    }
+
+    private void showLiveServerPicker() {
+        LiveEvent event = LivePlaybackSession.activeFor(currentChannel);
+        if (event == null || event.sources().size() < 2 || currentActivity == null) return;
+        String[] labels = new String[event.sources().size()];
+        int selected = event.indexOfUrl(currentChannel.url());
+        for (int i = 0; i < labels.length; i++) {
+            labels[i] = event.sourceLabel(i) + (i == selected ? "  ✓ Đang phát" : "");
+        }
+        new android.app.AlertDialog.Builder(currentActivity)
+                .setTitle("Chọn máy chủ • " + event.title())
+                .setSingleChoiceItems(labels, Math.max(0, selected), (dialog, which) -> {
+                    if (which < 0 || which >= event.sources().size()) return;
+                    Channel source = event.sources().get(which);
+                    LiveEventStore.setSelectedUrl(currentActivity, event.id(), source.url());
+                    LivePlaybackSession.setActive(event.withPreferredUrl(source.url()));
+                    dialog.dismiss();
+                    playInline(source);
+                })
+                .setNegativeButton("Đóng", null)
+                .show();
     }
 
     private void updateSeekUi() {
@@ -345,6 +445,7 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
         ViewGroup parent = (ViewGroup) videoContainer.getParent();
         if (parent != null) parent.removeView(videoContainer);
         fullscreen = true;
+        updateFullscreenLiveServerButton(currentChannel);
         FrameLayout.LayoutParams full = new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT);
         fullscreenHost.addView(videoContainer, full);
@@ -359,6 +460,7 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
         ViewGroup parent = (ViewGroup) videoContainer.getParent();
         if (parent != null) parent.removeView(videoContainer);
         fullscreen = false;
+        updateFullscreenLiveServerButton(currentChannel);
         int width = currentActivity.getResources().getDisplayMetrics().widthPixels;
         panel.addView(videoContainer, 0, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, calculateVideoHeight(currentActivity, width)));
@@ -436,6 +538,7 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
         lastNetworkProgressMs = lastFrameProgressMs;
         stablePlaybackSinceMs = 0;
         currentChannel = channel;
+        updateLiveServerButton(channel);
         panel.setVisibility(View.VISIBLE);
         playerView.hideController();
         title.setText(channel.name());
@@ -957,6 +1060,8 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
         fullscreenHost = null;
         playerView = null;
         fullscreenButton = null;
+        liveServerButton = null;
+        fullscreenLiveServerButton = null;
         title = null;
         programme = null;
         stats = null;

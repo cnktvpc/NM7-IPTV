@@ -1,12 +1,12 @@
-# BÀN GIAO — NM7 IPTV MOBILE 2.0.3 — LIVE INLINE PLAYER
+# BÀN GIAO — NM7 IPTV MOBILE 2.0.4 — LIVE FULLSCREEN SERVER SELECTOR
 
-- Nền: `feature/mobile-1.10.26-improvements`, commit `54ef6f84a6dfc713e4af3766b937f715b220d595` (Mobile 2.0.1).
-- Nhánh tích hợp: `feature/mobile-2.0.2-live-20261014`.
-- Mục LIVE: nguồn riêng, tự tải lại mỗi 5 phút, gộp nhiều server theo trận, hiển thị thời lượng LIVE, yêu thích và lưu server đã chọn.
-- Sửa luồng mở trận: chạm trận LIVE phát ngay trong inline player ở đầu màn hình; danh sách trận vẫn hiển thị phía dưới, theo bố cục Mobile 1.10.136. PlayerActivity riêng chỉ là phương án dự phòng nếu inline player chưa được gắn.
-- Sửa provider để MainActivity gọi trực tiếp điểm vào `MobileInlinePlayerProviderV2.playLiveChannel()`.
-- Phiên bản: `versionName 2.0.3`, `versionCode 49` để có thể cài đè/cập nhật từ APK 2.0.2 đã phát trước đó.
-- Đang xác minh: compile, unit test, lint, chữ ký APK, và smoke test Android 15 ở dọc/ngang. Không cập nhật nhánh ổn định trong công việc này.
+- Nền: Mobile 2.0.3, nhánh feature/mobile-2.0.2-live-20261014; nhánh ổn định không bị thay đổi.
+- Sửa player LIVE: thêm nút Server n/N ngay trong thanh điều khiển Media3 khi phát toàn màn hình. Nút chỉ hiện với sự kiện LIVE có ít nhất hai nguồn; cơ chế hiện/ẩn đi cùng bộ điều khiển.
+- Chạm nút mở hộp chọn server; chọn nguồn khác lưu server đã chọn và nạp nguồn đó trong phiên player hiện tại, không quay về danh sách.
+- Giữ nút đổi server ở chế độ inline như tham chiếu NM7 IPTV 1.10.136.
+- Phiên bản: versionName 2.0.4, versionCode 50.
+- Đã thêm smoke test Android 15 cho luồng mở LIVE inline → toàn màn hình → mở bộ chọn server → chọn nguồn khác → xác nhận nhãn server đổi. Kết quả CI sẽ được ghi sau khi chạy xong.
+
 ---
 
 # BÀN GIAO MỚI — NM7 IPTV MOBILE 2.0.0 — 2026-09-21

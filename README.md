@@ -1,10 +1,10 @@
-## NM7 IPTV Mobile 2.0.3 — LIVE inline player (2026-10-14)
+## NM7 IPTV Mobile 2.0.4 — LIVE fullscreen server selector (2026-10-14)
 
-- Baseline: Mobile 2.0.1 (`feature/mobile-1.10.26-improvements`, commit `54ef6f84a6dfc713e4af3766b937f715b220d595`).
-- Keeps the independent LIVE feed, refresh every five minutes, event/server grouping, elapsed LIVE minutes, favorites and saved server choice.
-- Tapping a LIVE match now opens the embedded player directly below the app logo and above the search/group controls; the LIVE event list stays visible underneath, matching Mobile 1.10.136.
-- Uses the standalone PlayerActivity only as a fallback when the embedded player is unavailable.
-- Application ID remains `vn.phuong.iptvplayer.mobile2`; versionCode 49 / versionName 2.0.3.
+- Baseline: Mobile 2.0.3 on feature/mobile-2.0.2-live-20261014.
+- Adds the LIVE server selector to the Media3 controller in fullscreen. It appears alongside playback controls and hides/shows with them; choosing another server restarts playback at the selected source without leaving fullscreen.
+- Keeps the normal inline server selector as well; only LIVE events with at least two sources show server controls.
+- Application ID remains vn.phuong.iptvplayer.mobile2; versionCode 50 / versionName 2.0.4.
+- CI smoke test verifies inline LIVE playback, entering fullscreen, showing the server selector, opening the server picker, and choosing another source when multiple sources are available.
 
 ## Trạng thái Mobile mới nhất — 2.0.0 (2026-09-21)
 
