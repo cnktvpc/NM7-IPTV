@@ -8,6 +8,7 @@ name: NM7 IPTV Mobile 1.10.137 Live Fullscreen Server Selector — Build
     branches:
       - "work/mobile-live-feed-lau-style-20261012"
       - "fix/mobile-1.10.137-live-fullscreen-server"
+      - "feature/mobile-1.10.137-live-events-20261015"
     paths:
       - "app/**"
       - "scripts/verify-mobile-live-feed-v134.py"
