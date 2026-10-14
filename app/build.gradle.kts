@@ -30,6 +30,12 @@ android {
             dimension = "device"
             manifestPlaceholders["vlcFallbackEnabled"] = "false"
             manifestPlaceholders["applicationClass"] = "vn.phuong.iptvplayer.MobileNm7Application"
+            if (project.findProperty("mobileAbiSplits") != "true"
+                    && project.findProperty("includeEmulatorAbis") != "true") {
+                ndk {
+                    abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+                }
+            }
         }
     }
 
