@@ -118,14 +118,7 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
     private boolean requestedResumePlaying = true;
     private View.OnLayoutChangeListener rootLayoutListener;
 
-    private static final OkHttpClient STREAM_HTTP = new OkHttpClient.Builder()
-            .connectTimeout(20, TimeUnit.SECONDS)
-            .readTimeout(45, TimeUnit.SECONDS)
-            .writeTimeout(20, TimeUnit.SECONDS)
-            .retryOnConnectionFailure(true)
-            .pingInterval(20, TimeUnit.SECONDS)
-            .connectionPool(new ConnectionPool(8, 5, TimeUnit.MINUTES))
-            .build();
+    private static final OkHttpClient STREAM_HTTP = NetworkClient.STREAM_HTTP;
 
     private final Runnable statsTick = new Runnable() {
         @Override public void run() {
@@ -136,10 +129,20 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
         }
     };
 
+        private static boolean lifecycleRegistered;
+
+    static synchronized void init(Application app) {
+        if (lifecycleRegistered || app == null) return;
+        
+        lifecycleRegistered = true;
+        MobileInlinePlayerProviderV2 owner = new MobileInlinePlayerProviderV2();
+        instance = owner;
+        app.registerActivityLifecycleCallbacks(owner);
+    }
+
     @Override public boolean onCreate() {
-        instance = this;
         if (getContext() != null) {
-            ((Application) getContext().getApplicationContext()).registerActivityLifecycleCallbacks(this);
+            init((Application) getContext().getApplicationContext());
         }
         return true;
     }
@@ -301,6 +304,7 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
                 mainHandler.post(this::syncOrientationUi);
         fullscreenHost.addOnLayoutChangeListener(rootLayoutListener);
         installBackHandling(activity);
+        MobileEdgeGestureProvider.onPlayerViewCreated(activity, playerView);
     }
 
     private void hideControllerView(String resourceName) {
@@ -973,9 +977,7 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
         try {
             Object adapter = channelList.getAdapter();
             if (!(adapter instanceof ChannelAdapter)) { programme.setText(channel.group()); return; }
-            Field field = ChannelAdapter.class.getDeclaredField("guide");
-            field.setAccessible(true);
-            EpgStore.Guide guide = (EpgStore.Guide) field.get(adapter);
+            EpgStore.Guide guide = ((ChannelAdapter) adapter).guide();
             EpgStore.Programme now = guide == null ? null : guide.find(channel);
             if (now == null) programme.setText(channel.group());
             else programme.setText(now.title + "  •  " + now.startText() + " - " + now.endText());
@@ -1241,6 +1243,11 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
     private boolean resumeAfterYoutube;
     private long pendingResumePositionMs;
     private boolean pendingResumePlaying;
+
+    static boolean isPanelVisible() {
+        MobileInlinePlayerProviderV2 owner = instance;
+        return owner != null && owner.panel != null && owner.panel.getVisibility() == View.VISIBLE;
+    }
 
     public static boolean hasSession() {
         return instance != null && instance.currentActivity != null && instance.currentChannel != null;
