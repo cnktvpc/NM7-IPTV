@@ -1,11 +1,10 @@
-## NM7 IPTV Mobile 2.0.2 — LIVE integration (2026-10-14)
+## NM7 IPTV Mobile 2.0.3 — LIVE inline player (2026-10-14)
 
 - Baseline: Mobile 2.0.1 (`feature/mobile-1.10.26-improvements`, commit `54ef6f84a6dfc713e4af3766b937f715b220d595`).
-- Adds an independent LIVE feed, refreshed every five minutes, without changing the user's IPTV playlist.
-- LIVE cards consolidate servers per match, show elapsed LIVE time, and support local favorites and remembering a chosen server.
-- The player exposes a server selector for LIVE events with multiple sources.
-- Application ID remains `vn.phuong.iptvplayer.mobile2`; versionCode 48 / versionName 2.0.2.
-- Build and emulator test results will be recorded after CI completes.
+- Keeps the independent LIVE feed, refresh every five minutes, event/server grouping, elapsed LIVE minutes, favorites and saved server choice.
+- Tapping a LIVE match now opens the embedded player directly below the app logo and above the search/group controls; the LIVE event list stays visible underneath, matching Mobile 1.10.136.
+- Uses the standalone PlayerActivity only as a fallback when the embedded player is unavailable.
+- Application ID remains `vn.phuong.iptvplayer.mobile2`; versionCode 49 / versionName 2.0.3.
 
 ## Trạng thái Mobile mới nhất — 2.0.0 (2026-09-21)
 

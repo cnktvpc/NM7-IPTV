@@ -1,12 +1,12 @@
-# BÀN GIAO — NM7 IPTV MOBILE 2.0.2 LIVE
+# BÀN GIAO — NM7 IPTV MOBILE 2.0.3 — LIVE INLINE PLAYER
 
 - Nền: `feature/mobile-1.10.26-improvements`, commit `54ef6f84a6dfc713e4af3766b937f715b220d595` (Mobile 2.0.1).
 - Nhánh tích hợp: `feature/mobile-2.0.2-live-20261014`.
-- Nâng cấp: mục LIVE độc lập với playlist do người dùng chọn, tự tải lại mỗi 5 phút, gom nhiều server theo trận, hiển thị thời lượng LIVE, yêu thích và lưu server đã chọn.
-- Player: bổ sung nút đổi server ngay trên player khi sự kiện có từ hai server.
-- Phiên bản: `versionName 2.0.2`, `versionCode 48`.
-- Chưa đánh dấu build thành công cho tới khi GitHub Actions hoàn tất compile, unit test, lint, xác minh chữ ký APK và Android emulator smoke test.
-
+- Mục LIVE: nguồn riêng, tự tải lại mỗi 5 phút, gộp nhiều server theo trận, hiển thị thời lượng LIVE, yêu thích và lưu server đã chọn.
+- Sửa luồng mở trận: chạm trận LIVE phát ngay trong inline player ở đầu màn hình; danh sách trận vẫn hiển thị phía dưới, theo bố cục Mobile 1.10.136. PlayerActivity riêng chỉ là phương án dự phòng nếu inline player chưa được gắn.
+- Sửa provider để MainActivity gọi trực tiếp điểm vào `MobileInlinePlayerProviderV2.playLiveChannel()`.
+- Phiên bản: `versionName 2.0.3`, `versionCode 49` để có thể cài đè/cập nhật từ APK 2.0.2 đã phát trước đó.
+- Đang xác minh: compile, unit test, lint, chữ ký APK, và smoke test Android 15 ở dọc/ngang. Không cập nhật nhánh ổn định trong công việc này.
 ---
 
 # BÀN GIAO MỚI — NM7 IPTV MOBILE 2.0.0 — 2026-09-21
