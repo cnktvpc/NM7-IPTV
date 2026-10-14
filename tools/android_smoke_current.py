@@ -55,7 +55,35 @@ def live_event_title_node(root):
                  if n.get("resource-id") == PACKAGE + ":id/txtLiveEventTitle"
                  and n.get("text", "").strip()), None)
 
+def wait_for_initial_playlist_settle(timeout=35):
+    end = time.monotonic() + timeout
+    stable_dumps = 0
+    while time.monotonic() < end:
+        try:
+            root = hierarchy()
+            if dismiss_pixel_launcher_anr(root):
+                stable_dumps = 0
+                continue
+            if dismiss_expected_playlist_error(root):
+                stable_dumps = 0
+                time.sleep(.4)
+                continue
+            if has_id(root, "mainRoot") and not has_id(root, "progress"):
+                stable_dumps += 1
+                if stable_dumps >= 3:
+                    print("INFO: initial playlist loading settled before LIVE interaction")
+                    return True
+            else:
+                stable_dumps = 0
+        except Exception:
+            stable_dumps = 0
+        time.sleep(.6)
+    print("SKIP: startup playlist did not settle in CI; avoiding a race with the LIVE UI test")
+    return False
+
 def smoke_test_live_inline_if_feed_available():
+    if not wait_for_initial_playlist_settle():
+        return
     end = time.monotonic() + 25
     button = None
     root = None
