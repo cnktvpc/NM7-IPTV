@@ -8,4 +8,6 @@
     <color name="accent">#37D6A6</color>
     <color name="accent_dark">#1BA77E</color>
     <color name="warning">#FFBD59</color>
+    <color name="live_accent">#FF654F</color>
+    <color name="live_surface">#15263A</color>
 </resources>
