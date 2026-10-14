@@ -40,25 +40,16 @@ def seed_live_feed_fixture():
         f'#EXTINF:-1 group-title="Bóng đá",{kickoff} [LIVE] NM7 Smoke Home vs NM7 Smoke Away - Server 2\n'
         "https://example.com/nm7-smoke-server-2.m3u8\n"
     )
-    temp_path = None
-    try:
-        with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as fixture_file:
-            fixture_file.write(fixture)
-            temp_path = fixture_file.name
-        adb("push", temp_path, "/sdcard/nm7-live-feed.m3u")
-        result = run_adb("shell", "run-as", PACKAGE, "cp",
-                         "/sdcard/nm7-live-feed.m3u", "cache/nm7-live-feed.m3u",
-                         check=False)
-        if result.returncode:
-            raise AssertionError("Could not seed deterministic LIVE feed cache: " + result.stderr)
-        run_adb("shell", "rm", "-f", "/sdcard/nm7-live-feed.m3u", check=False)
-        # Prevent a fast but empty online response from replacing the fixture before
-        # the UI interaction test. This affects only the disposable CI emulator.
-        run_adb("shell", "cmd", "connectivity", "airplane-mode", "enable", check=False)
-        print("INFO: seeded deterministic two-server LIVE fixture; CI emulator network isolated")
-    finally:
-        if temp_path and os.path.exists(temp_path):
-            os.unlink(temp_path)
+    # Stream the text through run-as stdin directly into app-private cache. The
+    # emulated /sdcard is not readable by run-as on all Android 15 system images.
+    result = subprocess.run(
+        ["adb", "shell", "run-as", PACKAGE, "sh", "-c", "cat > cache/nm7-live-feed.m3u"],
+        input=fixture, check=False, capture_output=True, text=True, timeout=40,
+    )
+    if result.returncode:
+        raise AssertionError("Could not seed deterministic LIVE feed cache: " + result.stderr)
+    run_adb("shell", "cmd", "connectivity", "airplane-mode", "enable", check=False)
+    print("INFO: seeded deterministic two-server LIVE fixture; CI emulator network isolated")
 
 def run_adb(*args, timeout=40, check=True):
     result = subprocess.run(["adb", *args], check=False, capture_output=True, text=True, timeout=timeout)
