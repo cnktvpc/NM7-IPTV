@@ -66,6 +66,13 @@ public final class ChannelAdapter extends BaseAdapter {
         notifyDataSetChanged();
     }
     public void submitGuide(EpgStore.Guide guide) { this.guide = guide; notifyDataSetChanged(); }
+    /** Reuse the normal asynchronous logo cache in the LIVE event card. */
+    public void bindLogo(View itemRoot, Channel channel) {
+        if (itemRoot == null) return;
+        Holder holder = new Holder(itemRoot);
+        if (holder.logo == null || holder.badge == null) return;
+        loadLogo(holder, channel == null ? "" : channel.effectiveLogoUrl());
+    }
     void setPlayingChannel(Channel channel) {
         String next = channel == null ? "" : AppPreferences.id(channel);
         if (next.equals(playingChannelId)) return;
