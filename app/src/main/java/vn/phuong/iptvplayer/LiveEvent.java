@@ -28,9 +28,9 @@ public final class LiveEvent {
     private static final Pattern LIVE_TAG = Pattern.compile(
             "(?i)(?:^\\s*\\[?live\\]?\\s*[:|–-]?\\s*|\\s*[|•–-]\\s*live\\s*$|\\s*[\\[(]\\s*live\\s*[)\\]]\\s*$)");
     private static final Pattern TIME_DATE = Pattern.compile(
-            "(?<!\\d)(?<hour>[01]?\\d|2[0-3]):(?<minute>[0-5]\\d)\\s+(?<day>\\d{1,2})/(?<month>\\d{1,2})(?:/(?<year>\\d{2,4}))?");
+            "(?<!\\d)([01]?\\d|2[0-3]):([0-5]\\d)\\s+(\\d{1,2})/(\\d{1,2})(?:/(\\d{2,4}))?");
     private static final Pattern DATE_TIME = Pattern.compile(
-            "(?<!\\d)(?<day>\\d{1,2})/(?<month>\\d{1,2})(?:/(?<year>\\d{2,4}))?\\s+(?<hour>[01]?\\d|2[0-3]):(?<minute>[0-5]\\d)");
+            "(?<!\\d)(\\d{1,2})/(\\d{1,2})(?:/(\\d{2,4}))?\\s+([01]?\\d|2[0-3]):([0-5]\\d)");
     private static final Pattern MATCH_SPLIT = Pattern.compile("(?i)\\s+(?:vs?\\.?|versus)\\s+");
     private static final TimeZone FEED_TIME_ZONE = TimeZone.getTimeZone("Asia/Ho_Chi_Minh");
     private static final long LIVE_MAX_AGE_MS = 180L * 60L * 1000L;
@@ -288,16 +288,25 @@ public final class LiveEvent {
 
     private static long parseKickoff(Matcher schedule, long nowMillis) {
         try {
-            int hour = Integer.parseInt(schedule.group("hour"));
-            int minute = Integer.parseInt(schedule.group("minute"));
-            int day = Integer.parseInt(schedule.group("day"));
-            int month = Integer.parseInt(schedule.group("month"));
+            // Named regex groups require API 26; this app still supports API 23.
+            // TIME_DATE order: hour, minute, day, month, year.
+            // DATE_TIME order: day, month, year, hour, minute.
+            boolean timeFirst = schedule.pattern() == TIME_DATE;
+            int hourGroup = timeFirst ? 1 : 4;
+            int minuteGroup = timeFirst ? 2 : 5;
+            int dayGroup = timeFirst ? 3 : 1;
+            int monthGroup = timeFirst ? 4 : 2;
+            int yearGroup = timeFirst ? 5 : 3;
+            int hour = Integer.parseInt(schedule.group(hourGroup));
+            int minute = Integer.parseInt(schedule.group(minuteGroup));
+            int day = Integer.parseInt(schedule.group(dayGroup));
+            int month = Integer.parseInt(schedule.group(monthGroup));
             Calendar now = Calendar.getInstance(FEED_TIME_ZONE, Locale.ROOT);
             now.setTimeInMillis(nowMillis);
             int currentYear = now.get(Calendar.YEAR);
             Integer explicitYear = null;
-            if (schedule.group("year") != null) {
-                int value = Integer.parseInt(schedule.group("year"));
+            if (schedule.group(yearGroup) != null) {
+                int value = Integer.parseInt(schedule.group(yearGroup));
                 explicitYear = value < 100 ? (value < 70 ? 2000 + value : 1900 + value) : value;
             }
             int[] candidateYears = explicitYear == null
