@@ -52,7 +52,10 @@ def seed_live_feed_fixture():
         if result.returncode:
             raise AssertionError("Could not seed deterministic LIVE feed cache: " + result.stderr)
         run_adb("shell", "rm", "-f", "/sdcard/nm7-live-feed.m3u", check=False)
-        print("INFO: seeded deterministic two-server LIVE fixture in the debug emulator cache")
+        # Prevent a fast but empty online response from replacing the fixture before
+        # the UI interaction test. This affects only the disposable CI emulator.
+        run_adb("shell", "cmd", "connectivity", "airplane-mode", "enable", check=False)
+        print("INFO: seeded deterministic two-server LIVE fixture; CI emulator network isolated")
     finally:
         if temp_path and os.path.exists(temp_path):
             os.unlink(temp_path)
