@@ -180,6 +180,7 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
 
         panel = new LinearLayout(activity);
         panel.setOrientation(LinearLayout.VERTICAL);
+        panel.setContentDescription("NM7_INLINE_PLAYER_PANEL");
         panel.setVisibility(View.GONE);
         panel.setBackgroundResource(R.drawable.panel);
         panel.setPadding(0, 0, 0, dp(activity, 7));

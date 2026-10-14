@@ -40,6 +40,72 @@ def hierarchy():
 def has_id(root, name):
     return any(n.get("resource-id") == PACKAGE + ":id/" + name for n in root.iter("node"))
 
+def inline_panel_visible(root):
+    return any(n.get("content-desc") == "NM7_INLINE_PLAYER_PANEL" for n in root.iter("node"))
+
+def live_button_node(root):
+    for node in root.iter("node"):
+        match = re.search(r"\bLIVE\s*\((\d+)\)", node.get("text", ""), re.IGNORECASE)
+        if match and int(match.group(1)) > 0:
+            return node
+    return None
+
+def live_event_title_node(root):
+    return next((n for n in root.iter("node")
+                 if n.get("resource-id") == PACKAGE + ":id/txtLiveEventTitle"
+                 and n.get("text", "").strip()), None)
+
+def smoke_test_live_inline_if_feed_available():
+    end = time.monotonic() + 25
+    button = None
+    root = None
+    while time.monotonic() < end:
+        try:
+            root = hierarchy()
+            button = live_button_node(root)
+            if button is not None:
+                break
+        except Exception:
+            pass
+        time.sleep(.7)
+    if button is None:
+        print("SKIP: dedicated LIVE feed had no event available in CI; inline event tap was not exercised")
+        return
+    if not tap_node(button):
+        print_diagnostics()
+        raise AssertionError("LIVE group exists with events but could not be tapped")
+
+    end = time.monotonic() + 10
+    title = None
+    while time.monotonic() < end:
+        try:
+            root = hierarchy()
+            title = live_event_title_node(root)
+            if title is not None:
+                break
+        except Exception:
+            pass
+        time.sleep(.5)
+    if title is None:
+        print_diagnostics()
+        raise AssertionError("LIVE group reported events but no event card was displayed")
+    if not tap_node(title):
+        print_diagnostics()
+        raise AssertionError("Could not tap the first LIVE event card")
+
+    end = time.monotonic() + 12
+    while time.monotonic() < end:
+        try:
+            root = hierarchy()
+            if has_id(root, "mainRoot") and inline_panel_visible(root):
+                print("PASS: tapping a LIVE event opens the inline player above the still-visible event list")
+                return
+        except Exception:
+            pass
+        time.sleep(.5)
+    print_diagnostics()
+    raise AssertionError("Tapping a LIVE event did not keep MainActivity open with the inline player visible")
+
 def has_android_id(root, name):
     return any(n.get("resource-id") == "android:id/" + name for n in root.iter("node"))
 
@@ -173,6 +239,7 @@ if not (has_id(root, "listChannels") or has_id(root, "txtEmpty")):
     raise AssertionError("Neither the channel list nor its empty state is available")
 assert_consolidated_header(root, "Portrait UI")
 print("PASS: portrait application launches and current IPTV interface is available")
+smoke_test_live_inline_if_feed_available()
 
 # Change the logical display geometry instead of user_rotation. UiAutomation's
 # rotation-state restoration can override settings user_rotation between dumps,
