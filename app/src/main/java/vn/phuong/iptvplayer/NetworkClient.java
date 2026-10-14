@@ -26,6 +26,12 @@ final class NetworkClient {
             .followRedirects(true)
             .build();
 
+    /*
+     * Media3 performs separate manifest/segment requests during playback.
+     * Keep per-read timeouts, but do not use callTimeout here: a total-call
+     * deadline would terminate a long-running media request regardless of
+     * whether useful data is still arriving.
+     */
     static final OkHttpClient STREAM_HTTP = new OkHttpClient.Builder()
             .dispatcher(streamDispatcher())
             .connectionPool(new ConnectionPool(16, 5, TimeUnit.MINUTES))
