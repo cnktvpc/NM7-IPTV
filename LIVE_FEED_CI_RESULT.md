@@ -1,8 +1,8 @@
 # NM7 IPTV Mobile 1.10.137 — CI result
 
-- Status: **FAILED**
+- Status: **RUNNING**
 - Branch: `feature/mobile-1.10.137-live-events-20261015`
-- Source commit: `381ce188bb9f4406b632661550556cb739cb2bc1`
-- Workflow run: https://github.com/phuongnm7/iptv-player-android/actions/runs/38614933783
+- Source commit: `e8cfe9d35a35cb7a5e9307b2d9113d738154c62c`
+- Workflow run: https://github.com/phuongnm7/iptv-player-android/actions/runs/38615841399
 
-Check this run for the failing build or unit-test step.
+Build and full unit tests are in progress.
