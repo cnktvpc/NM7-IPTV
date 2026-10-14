@@ -2,6 +2,7 @@ package vn.phuong.iptvplayer;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.AlertDialog;
 import android.content.pm.ActivityInfo;
 import android.net.Uri;
 import android.net.wifi.WifiManager;
@@ -58,11 +59,13 @@ public final class PlayerActivity extends Activity {
     public static final String EXTRA_NAME = "name", EXTRA_URL = "url";
     public static final String EXTRA_USER_AGENT = "user_agent", EXTRA_REFERER = "referer", EXTRA_ORIGIN = "origin";
     public static final String EXTRA_HEADERS = "headers", EXTRA_MIME = "mime", EXTRA_OPTIONS = "options";
+    public static final String EXTRA_LIVE_EVENT = "live_event";
     private ExoPlayer player;
     private PlayerView playerView;
     private TextView status;
     private TextView fpsView;
     private String url, name, mime;
+    private LiveEvent liveEvent;
     private String drmSystem = "", drmLicense = "";
     private ArrayList<String> options = new ArrayList<>();
     private Bundle currentHeaders = new Bundle();
@@ -135,6 +138,15 @@ public final class PlayerActivity extends Activity {
         if (passedOptions != null) options = passedOptions;
         Bundle passedHeaders = getIntent().getBundleExtra(EXTRA_HEADERS);
         if (passedHeaders != null) currentHeaders = passedHeaders;
+        liveEvent = LivePlaybackSession.decode(value(EXTRA_LIVE_EVENT));
+        if (liveEvent == null) {
+            LiveEvent active = LivePlaybackSession.activeEvent();
+            if (active != null && active.hasSourceUrl(url)) liveEvent = active.withPreferredUrl(url);
+        }
+        if (liveEvent != null) {
+            liveEvent = liveEvent.withPreferredUrl(url);
+            LivePlaybackSession.setActive(liveEvent);
+        }
         DrmSpec initialDrm = DrmSpec.fromOptions(options); drmSystem = initialDrm.system; drmLicense = initialDrm.license;
         if (state != null) {
             position = state.getLong("position"); resumePlayback = state.getBoolean("playing", true);
@@ -152,6 +164,8 @@ public final class PlayerActivity extends Activity {
         findViewById(R.id.btnBack).setOnClickListener(v -> finish()); findViewById(R.id.btnQuality).setOnClickListener(v -> chooseQuality());
         findViewById(R.id.btnFormat).setOnClickListener(v -> chooseFormat()); View rotateButton = findViewById(R.id.btnRotate); if (rotateButton != null) rotateButton.setOnClickListener(v -> chooseOrientation());
         findViewById(R.id.btnDrm).setOnClickListener(v -> configureDrm()); findViewById(R.id.btnResize).setOnClickListener(v -> chooseResizeMode());
+        findViewById(R.id.btnLiveServer).setOnClickListener(v -> showLiveServerPicker());
+        updateLiveServerButton();
         findViewById(R.id.btnRetry).setOnClickListener(v -> { position = 0; resumePlayback = true; releasePlayer(); startPlayer(); }); setupMobileEdgeGestures(); loadQuickChannels();
     }
     @Override protected void onStart() { super.onStart(); activityStarted = true; stopService(new android.content.Intent(this,BackgroundPlaybackService.class)); backgroundPlaybackActive=false; fpsHandler.post(fpsUpdate); clockHandler.post(clockUpdate); startPlayer(); }
@@ -295,7 +309,69 @@ public final class PlayerActivity extends Activity {
     private boolean isCurrentChannel(Channel c){if(!c.url().equals(url)||!c.options().equals(options))return false;if(currentHeaders.size()!=c.headers().size())return false;for(Map.Entry<String,String> e:c.headers().entrySet())if(!e.getValue().equals(currentHeaders.getString(e.getKey())))return false;return true;}
     private void showQuickChannels(){quickPanel.setVisibility(View.VISIBLE);filterQuickChannels();if(quickAdapter.getCount()>0)quickChannelList.post(()->quickChannelList.requestFocus());else if(quickGroupRow.getChildCount()>0)quickGroupRow.getChildAt(0).requestFocus();}
     private void hideQuickChannels(){quickPanel.setVisibility(View.GONE);playerView.requestFocus();}
-    private void switchChannel(Channel c){if(c==null)return;hideQuickChannels();if(isCurrentChannel(c))return;name=c.name();url=c.url();mime=c.mimeHint();options=new ArrayList<>(c.options());DrmSpec d=DrmSpec.fromOptions(options);drmSystem=d.system;drmLicense=d.license;currentHeaders=new Bundle();for(Map.Entry<String,String> e:c.headers().entrySet())currentHeaders.putString(e.getKey(),e.getValue());getIntent().putExtra(EXTRA_NAME,name);getIntent().putExtra(EXTRA_URL,url);getIntent().putExtra(EXTRA_HEADERS,currentHeaders);getIntent().putExtra(EXTRA_MIME,mime);getIntent().putStringArrayListExtra(EXTRA_OPTIONS,options);((TextView)findViewById(R.id.txtPlayerTitle)).setText(name);((TextView)findViewById(R.id.txtPlayerUrl)).setText(url);findViewById(R.id.playerError).setVisibility(View.GONE);AppPreferences.recordRecent(this,c);quickCurrentId=AppPreferences.id(c);position=0;resumePlayback=true;resolvingClearKey=false;resolvingStreamMime=false;recoveryAttempts=0;recoveryHandler.removeCallbacksAndMessages(null);releasePlayer();filterQuickChannels();startPlayer();}
+    private void switchChannel(Channel c) {
+        if (c == null) return;
+        hideQuickChannels();
+        if (liveEvent != null && liveEvent.hasSourceUrl(c.url())) {
+            liveEvent = liveEvent.withPreferredUrl(c.url());
+            LivePlaybackSession.setActive(liveEvent);
+            LiveEventStore.setSelectedUrl(this, liveEvent.id(), c.url());
+        } else {
+            LivePlaybackSession.clearIfNotLiveSource(c);
+            liveEvent = null;
+        }
+        if (isCurrentChannel(c)) { updateLiveServerButton(); return; }
+        name = c.name(); url = c.url(); mime = c.mimeHint(); options = new ArrayList<>(c.options());
+        if (liveEvent != null) { liveEvent = liveEvent.withPreferredUrl(url); LivePlaybackSession.setActive(liveEvent); }
+        DrmSpec drm = DrmSpec.fromOptions(options);
+        drmSystem = drm.system; drmLicense = drm.license;
+        currentHeaders = new Bundle();
+        for (Map.Entry<String, String> entry : c.headers().entrySet()) currentHeaders.putString(entry.getKey(), entry.getValue());
+        getIntent().putExtra(EXTRA_NAME, name); getIntent().putExtra(EXTRA_URL, url);
+        getIntent().putExtra(EXTRA_HEADERS, currentHeaders); getIntent().putExtra(EXTRA_MIME, mime);
+        getIntent().putStringArrayListExtra(EXTRA_OPTIONS, options);
+        if (liveEvent != null) getIntent().putExtra(EXTRA_LIVE_EVENT, LivePlaybackSession.encode(liveEvent));
+        else getIntent().removeExtra(EXTRA_LIVE_EVENT);
+        updateLiveServerButton();
+        ((TextView) findViewById(R.id.txtPlayerTitle)).setText(name);
+        ((TextView) findViewById(R.id.txtPlayerUrl)).setText(url);
+        findViewById(R.id.playerError).setVisibility(View.GONE);
+        AppPreferences.recordRecent(this, c);
+        quickCurrentId = AppPreferences.id(c);
+        position = 0; resumePlayback = true; resolvingClearKey = false; resolvingStreamMime = false;
+        recoveryAttempts = 0; recoveryHandler.removeCallbacksAndMessages(null);
+        releasePlayer(); filterQuickChannels(); startPlayer();
+    }
+
+    private void updateLiveServerButton() {
+        View button = findViewById(R.id.btnLiveServer);
+        if (button == null) return;
+        if (liveEvent == null || liveEvent.sources().size() < 2 || !liveEvent.hasSourceUrl(url)) {
+            button.setVisibility(View.GONE); return;
+        }
+        liveEvent = liveEvent.withPreferredUrl(url);
+        LivePlaybackSession.setActive(liveEvent);
+        ((Button) button).setText("Server " + (liveEvent.selectedIndex() + 1) + "/" + liveEvent.sources().size() + " ▾");
+        button.setContentDescription("Đang chọn " + liveEvent.sourceLabel(liveEvent.selectedIndex()) + ". Nhấn để đổi máy chủ");
+        button.setVisibility(View.VISIBLE);
+    }
+
+    private void showLiveServerPicker() {
+        if (liveEvent == null || liveEvent.sources().size() < 2) return;
+        String[] labels = new String[liveEvent.sources().size()];
+        for (int i = 0; i < labels.length; i++)
+            labels[i] = liveEvent.sourceLabel(i) + (i == liveEvent.selectedIndex() ? "  ✓ Đang phát" : "");
+        new AlertDialog.Builder(this).setTitle("Chọn máy chủ phát sóng")
+                .setSingleChoiceItems(labels, liveEvent.selectedIndex(), (dialog, which) -> {
+                    if (which < 0 || which >= liveEvent.sources().size()) return;
+                    Channel source = liveEvent.sources().get(which);
+                    LiveEventStore.setSelectedUrl(this, liveEvent.id(), source.url());
+                    liveEvent = liveEvent.withPreferredUrl(source.url());
+                    LivePlaybackSession.setActive(liveEvent);
+                    dialog.dismiss(); switchChannel(source); updateLiveServerButton();
+                }).setNegativeButton("Đóng", null).show();
+    }
+
     private boolean switchRelative(int delta){for(int i=0;i<quickChannels.size();i++)if(isCurrentChannel(quickChannels.get(i))){switchChannel(quickChannels.get((i+delta+quickChannels.size())%quickChannels.size()));playerView.hideController();return true;}return false;}
     @Override public boolean dispatchKeyEvent(KeyEvent event){int key=event.getKeyCode();if(event.getAction()==KeyEvent.ACTION_UP&&key==consumedRemoteKey){consumedRemoteKey=KeyEvent.KEYCODE_UNKNOWN;return true;}if(event.getAction()==KeyEvent.ACTION_DOWN){if(event.getRepeatCount()>0&&key==consumedRemoteKey)return true;boolean panel=quickPanel!=null&&quickPanel.getVisibility()==View.VISIBLE;if(key==KeyEvent.KEYCODE_BACK&&panel){hideQuickChannels();consumedRemoteKey=key;return true;}if(AppPreferences.isTvInterface(this)&&!panel){boolean controller=playerView.isControllerFullyVisible();boolean handled=false;if(key==KeyEvent.KEYCODE_BACK&&controller){playerView.hideController();playerView.requestFocus();handled=true;}else if((key==KeyEvent.KEYCODE_DPAD_CENTER||key==KeyEvent.KEYCODE_ENTER||key==KeyEvent.KEYCODE_NUMPAD_ENTER)&&!controller){playerView.showController();handled=true;}else if(!controller&&key==KeyEvent.KEYCODE_DPAD_LEFT){showQuickChannels();handled=true;}else if(!controller&&(key==KeyEvent.KEYCODE_DPAD_UP||key==KeyEvent.KEYCODE_DPAD_DOWN)){handled=switchRelative(key==KeyEvent.KEYCODE_DPAD_UP?1:-1);}else if(key==KeyEvent.KEYCODE_MENU){AppPreferences.setShowPlayerSource(this,!AppPreferences.showPlayerSource(this));findViewById(R.id.txtPlayerUrl).setVisibility(AppPreferences.showPlayerSource(this)?View.VISIBLE:View.GONE);handled=true;}if(handled){consumedRemoteKey=key;return true;}}}return super.dispatchKeyEvent(event);}
     private int dp(int value){return Math.round(value*getResources().getDisplayMetrics().density);} private void acquireMulticast(){WifiManager wifi=(WifiManager)getApplicationContext().getSystemService(WIFI_SERVICE);if(wifi!=null){multicastLock=wifi.createMulticastLock("iptv-stream");multicastLock.setReferenceCounted(false);multicastLock.acquire();}}
