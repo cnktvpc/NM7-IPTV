@@ -118,6 +118,17 @@
                 android:textAllCaps="false"
                 android:textColor="@color/text_primary" />
             <Button
+                android:id="@+id/btnLiveServer"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/button_secondary"
+                android:contentDescription="Đổi máy chủ phát sóng"
+                android:text="Server ▾"
+                android:textAllCaps="false"
+                android:textColor="@color/accent"
+                android:visibility="gone" />
+            <Button
                 android:id="@+id/btnDrm"
                 android:layout_width="wrap_content"
                 android:layout_height="40dp"
