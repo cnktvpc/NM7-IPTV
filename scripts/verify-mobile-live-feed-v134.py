@@ -45,7 +45,7 @@ checks = [
     ("tests cover provider time skew, alternate timestamp order, merge/filtering and server restore", all(v in tests for v in ("dedicatedFeedGroupsProviderAndTransportVariantsIntoOneFreshLiveMatch", "dedicatedFeedDoesNotDependOnUserPlaylistLiveGroups", "dedicatedFeedMergesSameFixtureWithProviderKickoffSkewAndLongRunningLiveStatus", "dedicatedFeedAcceptsDateBeforeTimeAndTextLiveMarker", "restoredLiveEventPreservesServerLabelsAndSelectedUrl", "elapsedLiveMinutesAreWholeAndNeverNegative", "dedicatedFeedOrdersNewestLiveKickoffFirst"))),
     ("server picker renders selectable source rows without the broken message/list combination", "setItems(labels" in main and "Do not combine a message panel with a choice list" in main),
     ("M3U fixture tests use valid Java escaped newlines and quotes", r"\\n" not in tests and r'\\"' not in tests),
-    ("version is 1.10.136 / code 152", 'versionName = "1.10.136"' in gradle and "versionCode = 152" in gradle),
+    ("version is 1.10.137 / code 153", 'versionName = "1.10.137"' in gradle and "versionCode = 153" in gradle),
     ("temporary inspection files have been removed", not Path(".github/workflows/inspect-live-feed.yml").exists() and not Path("LIVE_FEED_INSPECTION.md").exists() and not Path("LIVE_BRANCH_PROBE.txt").exists()),
 ]
 for label, ok in checks:
