@@ -1,3 +1,14 @@
+# BÀN GIAO — NM7 IPTV MOBILE 2.0.2 LIVE
+
+- Nền: `feature/mobile-1.10.26-improvements`, commit `54ef6f84a6dfc713e4af3766b937f715b220d595` (Mobile 2.0.1).
+- Nhánh tích hợp: `feature/mobile-2.0.2-live-20261014`.
+- Nâng cấp: mục LIVE độc lập với playlist do người dùng chọn, tự tải lại mỗi 5 phút, gom nhiều server theo trận, hiển thị thời lượng LIVE, yêu thích và lưu server đã chọn.
+- Player: bổ sung nút đổi server ngay trên player khi sự kiện có từ hai server.
+- Phiên bản: `versionName 2.0.2`, `versionCode 48`.
+- Chưa đánh dấu build thành công cho tới khi GitHub Actions hoàn tất compile, unit test, lint, xác minh chữ ký APK và Android emulator smoke test.
+
+---
+
 # BÀN GIAO MỚI — NM7 IPTV MOBILE 2.0.0 — 2026-09-21
 
 ## Trạng thái hiện tại
