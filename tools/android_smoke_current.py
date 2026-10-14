@@ -43,7 +43,7 @@ def seed_live_feed_fixture():
     # Stream the text through run-as stdin directly into app-private cache. The
     # emulated /sdcard is not readable by run-as on all Android 15 system images.
     result = subprocess.run(
-        ["adb", "shell", "run-as", PACKAGE, "sh", "-c", "cat > cache/nm7-live-feed.m3u"],
+        ["adb", "shell", "run-as", PACKAGE, "sh", "-c", "mkdir -p cache && cat > cache/nm7-live-feed.m3u"],
         input=fixture, check=False, capture_output=True, text=True, timeout=40,
     )
     if result.returncode:
