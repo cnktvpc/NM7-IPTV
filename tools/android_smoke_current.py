@@ -174,7 +174,10 @@ if not (has_id(root, "listChannels") or has_id(root, "txtEmpty")):
 assert_consolidated_header(root, "Portrait UI")
 print("PASS: portrait application launches and current IPTV interface is available")
 
-run_adb("shell", "settings", "put", "system", "user_rotation", "1", check=False)
+# Change the logical display geometry instead of user_rotation. UiAutomation's
+# rotation-state restoration can override settings user_rotation between dumps,
+# causing the launcher to appear even though the app itself did not crash.
+run_adb("shell", "wm", "size", "1920x1080", check=False)
 time.sleep(1.2)
 root = launch_main()
 if not has_id(root, "mainRoot"):
@@ -184,3 +187,4 @@ assert_consolidated_header(root, "Landscape Mobile UI")
 print("PASS: landscape Mobile layout launches without missing startup controls")
 print("PASS: reload playlist control is exposed on the main header")
 print("PASS: Link, source and about controls are consolidated into Mobile app options")
+run_adb("shell", "wm", "size", "reset", check=False)
