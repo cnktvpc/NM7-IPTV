@@ -34,11 +34,11 @@ def seed_live_feed_fixture():
         return
     kickoff = datetime.now(ZoneInfo("Asia/Ho_Chi_Minh")).strftime("%H:%M %d/%m")
     fixture = (
-        "#EXTM3U\\n"
-        f'#EXTINF:-1 group-title="Bóng đá",{kickoff} [LIVE] NM7 Smoke Home vs NM7 Smoke Away - Server 1\\n'
-        "https://example.com/nm7-smoke-server-1.m3u8\\n"
-        f'#EXTINF:-1 group-title="Bóng đá",{kickoff} [LIVE] NM7 Smoke Home vs NM7 Smoke Away - Server 2\\n'
-        "https://example.com/nm7-smoke-server-2.m3u8\\n"
+        "#EXTM3U\n"
+        f'#EXTINF:-1 group-title="Bóng đá",{kickoff} [LIVE] NM7 Smoke Home vs NM7 Smoke Away - Server 1\n'
+        "https://example.com/nm7-smoke-server-1.m3u8\n"
+        f'#EXTINF:-1 group-title="Bóng đá",{kickoff} [LIVE] NM7 Smoke Home vs NM7 Smoke Away - Server 2\n'
+        "https://example.com/nm7-smoke-server-2.m3u8\n"
     )
     temp_path = None
     try:
