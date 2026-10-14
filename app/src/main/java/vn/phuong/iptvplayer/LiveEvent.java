@@ -32,6 +32,64 @@ public final class LiveEvent {
     private static final Pattern DATE_TIME = Pattern.compile(
             "(?<!\\d)(?<day>\\d{1,2})/(?<month>\\d{1,2})(?:/(?<year>\\d{2,4}))?\\s+(?<hour>[01]?\\d|2[0-3]):(?<minute>[0-5]\\d)");
     private static final Pattern MATCH_SPLIT = Pattern.compile("(?i)\\s+(?:vs?\\.?|versus)\\s+");
+    private static final Pattern LIVE_MARKER_TEXT = Pattern.compile("(?i)(?:\\[\\s*live\\s*\\]|\\blive\\s+now\\b|\\bcurrently live\\b|\\bdang live\\b|\\btruc tiep\\b)");
+    private static final Pattern PARENTHETICAL = Pattern.compile("\\(([^)]{1,50})\\)");
+    private static final Pattern TRANSPORT_TAG = Pattern.compile("(?i)\\[(flv|hls(?:\\s*\\d+)?|m3u8|rtmp|dash|mpd)\\]");
+    private static final Pattern TEAM_GENERIC_WORDS = Pattern.compile("(?i)\\b(?:fc|cf|sc|afc|clb|club|ca|rcd|ud|cd|ac|us|ss|jk|f\\.?c\\.?|s\\.?c\\.?)\\b");
+    private static final Pattern COUNTRY_STATE_SUFFIX = Pattern.compile("_(?:mg|sp|rj)\\b");
+    private static final Pattern DISPLAY_RES_SUFFIX = Pattern.compile("(?i)\\s*\\((?:hd|fhd|uhd|4k|1080p|720p)\\)\\s*$");
+    private static final Pattern TITLE_NOISE_WORDS = Pattern.compile("\\b(?:hd|fhd|uhd|4k|1080p|720p|server|srv|backup|primary|main)\\b");
+    private static final String[] BASKETBALL_TEAMS = {
+            "atlanta hawks", "boston celtics", "brooklyn nets", "charlotte hornets",
+            "chicago bulls", "cleveland cavaliers", "dallas mavericks", "denver nuggets",
+            "detroit pistons", "golden state warriors", "houston rockets", "indiana pacers",
+            "la clippers", "los angeles clippers", "los angeles lakers", "la lakers",
+            "memphis grizzlies", "miami heat", "milwaukee bucks", "minnesota timberwolves",
+            "new orleans pelicans", "new york knicks", "oklahoma city thunder", "orlando magic",
+            "philadelphia 76ers", "phoenix suns", "portland trail blazers", "sacramento kings",
+            "san antonio spurs", "toronto raptors", "utah jazz", "washington wizards"
+    };
+    private static final String[] HOCKEY_TEAMS = {
+            "anaheim ducks", "boston bruins", "buffalo sabres", "calgary flames",
+            "carolina hurricanes", "chicago blackhawks", "colorado avalanche", "columbus blue jackets",
+            "dallas stars", "detroit red wings", "edmonton oilers", "florida panthers",
+            "los angeles kings", "minnesota wild", "montreal canadiens", "nashville predators",
+            "new jersey devils", "new york islanders", "new york rangers", "ottawa senators",
+            "philadelphia flyers", "pittsburgh penguins", "san jose sharks", "seattle kraken",
+            "st louis blues", "tampa bay lightning", "toronto maple leafs", "vancouver canucks",
+            "vegas golden knights", "washington capitals", "winnipeg jets"
+    };
+    private static final Map<String, String> TEAM_ALIASES = createTeamAliases();
+    private static Map<String, String> createTeamAliases() {
+        Map<String, String> aliases = new LinkedHashMap<>();
+        aliases.put("atl san luis", "atletico san luis");
+        aliases.put("atletico san luis", "atletico san luis");
+        aliases.put("atl san luis fc", "atletico san luis");
+        aliases.put("atletico de san luis", "atletico san luis");
+        aliases.put("stade rennais", "rennes");
+        aliases.put("los angeles galaxy", "la galaxy");
+        aliases.put("st louis city", "st louis city");
+        aliases.put("atletico mineiro", "atletico mineiro");
+        aliases.put("rennais", "rennes");
+        aliases.put("dep la coruna", "deportivo la coruna");
+        aliases.put("dep la cor", "deportivo la coruna");
+        aliases.put("deportivo de la coruna", "deportivo la coruna");
+        aliases.put("deportivo la coruna", "deportivo la coruna");
+        aliases.put("sc freiburg", "freiburg");
+        aliases.put("freiburg im breisgau", "freiburg");
+        aliases.put("real betis balompie", "real betis");
+        aliases.put("betis balompie", "real betis");
+        aliases.put("u s sassuolo calcio", "sassuolo");
+        aliases.put("sassuolo calcio", "sassuolo");
+        aliases.put("kocaelispor", "kocaelispor");
+        aliases.put("besiktas jk", "besiktas");
+        aliases.put("besiktas", "besiktas");
+        aliases.put("sport club internacional", "internacional");
+        aliases.put("gremio foot ball porto alegrense", "gremio");
+        aliases.put("atletico mineiro mg", "atletico mineiro");
+        aliases.put("santos fc sp", "santos");
+        return Collections.unmodifiableMap(aliases);
+    }
     private static final TimeZone FEED_TIME_ZONE = TimeZone.getTimeZone("Asia/Ho_Chi_Minh");
     private static final long LIVE_MAX_AGE_MS = 180L * 60L * 1000L;
     private static final long PRE_KICKOFF_TOLERANCE_MS = 15L * 60L * 1000L;
@@ -47,6 +105,8 @@ public final class LiveEvent {
     private final int selectedIndex;
     private final long kickoffMillis;
     private final String sport;
+    private final String titleLower;
+    private final String groupLower;
 
     private LiveEvent(String id, String title, String group, List<Channel> sources,
                       List<String> sourceLabels, int selectedIndex, long kickoffMillis, String sport) {
@@ -58,11 +118,15 @@ public final class LiveEvent {
         this.selectedIndex = sources.isEmpty() ? 0 : Math.max(0, Math.min(selectedIndex, sources.size() - 1));
         this.kickoffMillis = kickoffMillis;
         this.sport = sport == null ? "Thể thao" : sport;
+        this.titleLower = this.title.toLowerCase(Locale.ROOT);
+        this.groupLower = this.group.toLowerCase(Locale.ROOT);
     }
 
     public String id() { return id; }
     public String title() { return title; }
     public String group() { return group; }
+    String titleLower() { return titleLower; }
+    String groupLower() { return groupLower; }
     public List<Channel> sources() { return sources; }
     public List<String> sourceLabels() { return sourceLabels; }
     public String sourceLabel(int index) {
@@ -261,28 +325,8 @@ public final class LiveEvent {
         // recognizable team names as a fallback so NBA/NHL fixtures are not
         // mislabeled as football when the feed omitted a sport marker.
         String matchup = " " + homeKey + " vs " + awayKey + " ";
-        String[] basketballTeams = {
-                "atlanta hawks", "boston celtics", "brooklyn nets", "charlotte hornets",
-                "chicago bulls", "cleveland cavaliers", "dallas mavericks", "denver nuggets",
-                "detroit pistons", "golden state warriors", "houston rockets", "indiana pacers",
-                "la clippers", "los angeles clippers", "los angeles lakers", "la lakers",
-                "memphis grizzlies", "miami heat", "milwaukee bucks", "minnesota timberwolves",
-                "new orleans pelicans", "new york knicks", "oklahoma city thunder", "orlando magic",
-                "philadelphia 76ers", "phoenix suns", "portland trail blazers", "sacramento kings",
-                "san antonio spurs", "toronto raptors", "utah jazz", "washington wizards"
-        };
-        for (String team : basketballTeams) if (matchup.contains(team)) return "Bóng rổ";
-        String[] hockeyTeams = {
-                "anaheim ducks", "boston bruins", "buffalo sabres", "calgary flames",
-                "carolina hurricanes", "chicago blackhawks", "colorado avalanche", "columbus blue jackets",
-                "dallas stars", "detroit red wings", "edmonton oilers", "florida panthers",
-                "los angeles kings", "minnesota wild", "montreal canadiens", "nashville predators",
-                "new jersey devils", "new york islanders", "new york rangers", "ottawa senators",
-                "philadelphia flyers", "pittsburgh penguins", "san jose sharks", "seattle kraken",
-                "st louis blues", "tampa bay lightning", "toronto maple leafs", "vancouver canucks",
-                "vegas golden knights", "washington capitals", "winnipeg jets"
-        };
-        for (String team : hockeyTeams) if (matchup.contains(team)) return "Khúc côn cầu";
+        for (String team : BASKETBALL_TEAMS) if (matchup.contains(team)) return "Bóng rổ";
+        for (String team : HOCKEY_TEAMS) if (matchup.contains(team)) return "Khúc côn cầu";
         return "Bóng đá";
     }
 
@@ -343,8 +387,7 @@ public final class LiveEvent {
         if (raw == null || raw.isEmpty()) return false;
         if (raw.contains("🟢") || raw.contains("🟩")) return true;
         String normalized = normalizeText(raw);
-        return Pattern.compile("(?i)(?:\\[\\s*live\\s*\\]|\\blive\\s+now\\b|\\bcurrently live\\b|\\bdang live\\b|\\btruc tiep\\b)")
-                .matcher(normalized).find();
+        return LIVE_MARKER_TEXT.matcher(normalized).find();
     }
 
     private static boolean isEndedMarker(String raw) {
@@ -377,44 +420,14 @@ public final class LiveEvent {
     private static String normalizeTeam(String value) {
         String normalized = normalizeText(value);
         normalized = NON_WORD.matcher(normalized).replaceAll(" ").trim().replaceAll("\\s+", " ");
-        normalized = normalized.replaceAll("(?i)\\b(?:fc|cf|sc|afc|clb|club|ca|rcd|ud|cd|ac|us|ss|jk|f\\.?c\\.?|s\\.?c\\.?)\\b", " ");
-        normalized = normalized.replaceAll("\\s+", " ").trim();
-        normalized = normalized.replaceFirst("^thanh pho\\s+", "");
+        normalized = TEAM_GENERIC_WORDS.matcher(normalized).replaceAll(" ").replaceAll("\s+", " ").trim();
+        normalized = normalized.replaceFirst("^thanh pho\s+", "");
         if (normalized.equals("st louis city")) normalized = "st louis";
         if (normalized.equals("sport internacional")) normalized = "internacional";
         if (normalized.equals("santos sp")) normalized = "santos";
-        Map<String, String> aliases = new LinkedHashMap<>();
-        aliases.put("atl san luis", "atletico san luis");
-        aliases.put("atletico san luis", "atletico san luis");
-        aliases.put("atl san luis fc", "atletico san luis");
-        aliases.put("atletico de san luis", "atletico san luis");
-        aliases.put("stade rennais", "rennes");
-        aliases.put("los angeles galaxy", "la galaxy");
-        aliases.put("st louis city", "st louis city");
-        aliases.put("atletico mineiro", "atletico mineiro");
-        aliases.put("rennais", "rennes");
-        aliases.put("dep la coruna", "deportivo la coruna");
-        aliases.put("dep la cor", "deportivo la coruna");
-        aliases.put("deportivo de la coruna", "deportivo la coruna");
-        aliases.put("deportivo la coruna", "deportivo la coruna");
-        aliases.put("sc freiburg", "freiburg");
-        aliases.put("freiburg im breisgau", "freiburg");
-        aliases.put("real betis balompie", "real betis");
-        aliases.put("betis balompie", "real betis");
-        aliases.put("u s sassuolo calcio", "sassuolo");
-        aliases.put("sassuolo calcio", "sassuolo");
-        aliases.put("kocaelispor", "kocaelispor");
-        aliases.put("besiktas jk", "besiktas");
-        aliases.put("besiktas", "besiktas");
-        aliases.put("sport club internacional", "internacional");
-        aliases.put("gremio foot ball porto alegrense", "gremio");
-        aliases.put("atletico mineiro mg", "atletico mineiro");
-        aliases.put("santos fc sp", "santos");
-        for (Map.Entry<String, String> alias : aliases.entrySet()) {
-            if (normalized.equals(alias.getKey())) return alias.getValue();
-        }
-        // Country/state suffixes sometimes leak from broadcast catalog names.
-        normalized = normalized.replaceAll("_(?:mg|sp|rj)\\b", " ");
+        String mapped = TEAM_ALIASES.get(normalized);
+        if (mapped != null) return mapped;
+        normalized = COUNTRY_STATE_SUFFIX.matcher(normalized).replaceAll(" ");
         return normalized.trim().replaceAll("\\s+", " ");
     }
 
@@ -444,14 +457,14 @@ public final class LiveEvent {
     private static String feedSourceLabel(Channel channel, int index) {
         List<String> extras = new ArrayList<>();
         String raw = channel.name();
-        Matcher parenthetical = Pattern.compile("\\(([^)]{1,50})\\)").matcher(raw);
+        Matcher parenthetical = PARENTHETICAL.matcher(raw);
         while (parenthetical.find()) {
             String value = parenthetical.group(1).trim();
             String lower = normalizeText(value);
             if (!value.isEmpty() && !lower.matches("18\\+|live|truc tiep|hd|fhd|uhd|4k")
                     && !extras.contains(value)) extras.add(value);
         }
-        Matcher transport = Pattern.compile("(?i)\\[(flv|hls(?:\\s*\\d+)?|m3u8|rtmp|dash|mpd)\\]").matcher(raw);
+        Matcher transport = TRANSPORT_TAG.matcher(raw);
         while (transport.find()) {
             String value = transport.group(1).toUpperCase(Locale.ROOT).replaceAll("\\s+", " ");
             if (!extras.contains(value)) extras.add(value);
@@ -506,13 +519,13 @@ public final class LiveEvent {
         value = SERVER_SUFFIX.matcher(value).replaceFirst("");
         value = SERVER_ROLE_SUFFIX.matcher(value).replaceFirst("");
         value = LIVE_TAG.matcher(value).replaceAll("");
-        value = value.replaceAll("(?i)\\s*\\((?:hd|fhd|uhd|4k|1080p|720p)\\)\\s*$", "");
+        value = DISPLAY_RES_SUFFIX.matcher(value).replaceAll("");
         return value.trim().replaceAll("\\s{2,}", " ");
     }
 
     public static String normalizeTitle(String title) {
         String value = normalizeText(displayTitle(title));
-        value = value.replaceAll("\\b(?:hd|fhd|uhd|4k|1080p|720p|server|srv|backup|primary|main)\\b", " ");
+        value = TITLE_NOISE_WORDS.matcher(value).replaceAll(" ");
         return NON_WORD.matcher(value).replaceAll(" ").trim().replaceAll("\\s{2,}", " ");
     }
 

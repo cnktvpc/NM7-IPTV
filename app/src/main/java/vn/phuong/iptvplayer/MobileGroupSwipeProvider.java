@@ -27,10 +27,20 @@ public final class MobileGroupSwipeProvider extends ContentProvider implements A
     private float downY;
     private boolean switchedByFling;
 
+        private static boolean lifecycleRegistered;
+
+    static synchronized void init(Application app) {
+        if (lifecycleRegistered || app == null) return;
+        if (AppPreferences.isPhysicalTv(app)) return;
+        lifecycleRegistered = true;
+        MobileGroupSwipeProvider owner = new MobileGroupSwipeProvider();
+        
+        app.registerActivityLifecycleCallbacks(owner);
+    }
+
     @Override public boolean onCreate() {
         if (getContext() != null) {
-            if (AppPreferences.isPhysicalTv(getContext())) return true;
-            ((Application) getContext().getApplicationContext()).registerActivityLifecycleCallbacks(this);
+            init((Application) getContext().getApplicationContext());
         }
         return true;
     }

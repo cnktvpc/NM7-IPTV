@@ -1,16 +1,17 @@
 package vn.phuong.iptvplayer;
 
+import android.app.UiModeManager;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.app.UiModeManager;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /** Private, device-only UI preferences. Channel identifiers are hashed before storage. */
@@ -22,36 +23,112 @@ final class AppPreferences {
     private static final String BACKGROUND_PLAYBACK = "background_playback";
     private static final String BACKGROUND_PLAYBACK_DEFAULT_MIGRATED = "background_playback_default_migrated_11026";
 
-    private static SharedPreferences prefs(Context context) { return context.getSharedPreferences(FILE, Context.MODE_PRIVATE); }
+    private static SharedPreferences cachedPrefsRef;
+    private static Set<String> cachedFavorites;
+    private static List<String> cachedRecentList;
+    private static Map<String, Integer> cachedRecentRanks;
+
+    private static SharedPreferences prefs(Context context) {
+        SharedPreferences p = context.getSharedPreferences(FILE, Context.MODE_PRIVATE);
+        synchronized (AppPreferences.class) {
+            if (p != cachedPrefsRef) {
+                cachedPrefsRef = p;
+                cachedFavorites = null;
+                cachedRecentList = null;
+                cachedRecentRanks = null;
+            }
+        }
+        return p;
+    }
+
     static String id(Channel channel) {
-        try {
-            byte[] digest = MessageDigest.getInstance("SHA-256").digest(channel.identityKey().getBytes(StandardCharsets.UTF_8));
-            StringBuilder out = new StringBuilder(digest.length * 2);
-            for (byte value : digest) out.append(String.format(java.util.Locale.ROOT, "%02x", value & 0xff));
-            return out.toString();
-        } catch (Exception impossible) { return Integer.toHexString(channel.identityKey().hashCode()); }
+        return channel.sha256Id();
     }
-    static boolean isFavorite(Context context, Channel channel) { return prefs(context).getStringSet(FAVORITES, java.util.Collections.emptySet()).contains(id(channel)); }
-    static boolean toggleFavorite(Context context, Channel channel) {
-        Set<String> values = new LinkedHashSet<>(prefs(context).getStringSet(FAVORITES, java.util.Collections.emptySet()));
-        String id = id(channel); boolean added;
-        if (values.contains(id)) { values.remove(id); added = false; } else { values.add(id); added = true; }
-        prefs(context).edit().putStringSet(FAVORITES, values).apply(); return added;
+
+    private static synchronized Set<String> favoritesSet(Context context) {
+        SharedPreferences p = prefs(context);
+        if (cachedFavorites == null) {
+            cachedFavorites = new LinkedHashSet<>(p.getStringSet(FAVORITES, Collections.emptySet()));
+        }
+        return cachedFavorites;
     }
-    static void recordRecent(Context context, Channel channel) {
-        List<String> values = recentIds(context); String id = id(channel);
-        values.remove(id); values.add(0, id);
+
+    private static synchronized void rebuildRecentRankMap() {
+        Map<String, Integer> ranks = new HashMap<>(cachedRecentList.size() * 2);
+        for (int i = 0; i < cachedRecentList.size(); i++) {
+            ranks.put(cachedRecentList.get(i), i);
+        }
+        cachedRecentRanks = ranks;
+    }
+
+    private static synchronized List<String> recentIds(Context context) {
+        SharedPreferences p = prefs(context);
+        if (cachedRecentList == null) {
+            String value = p.getString(RECENT, "");
+            if (value == null || value.isEmpty()) {
+                cachedRecentList = new ArrayList<>();
+            } else {
+                cachedRecentList = new ArrayList<>(Arrays.asList(value.split(",")));
+            }
+            rebuildRecentRankMap();
+        }
+        return cachedRecentList;
+    }
+
+    private static synchronized Map<String, Integer> recentRanks(Context context) {
+        recentIds(context);
+        return cachedRecentRanks;
+    }
+
+    static synchronized boolean isFavorite(Context context, Channel channel) {
+        return favoritesSet(context).contains(id(channel));
+    }
+
+    static synchronized boolean toggleFavorite(Context context, Channel channel) {
+        SharedPreferences p = prefs(context);
+        Set<String> values = new LinkedHashSet<>(favoritesSet(context));
+        String id = id(channel);
+        boolean added;
+        if (values.contains(id)) {
+            values.remove(id);
+            added = false;
+        } else {
+            values.add(id);
+            added = true;
+        }
+        cachedFavorites = values;
+        p.edit().putStringSet(FAVORITES, new LinkedHashSet<>(values)).apply();
+        return added;
+    }
+
+    static synchronized void recordRecent(Context context, Channel channel) {
+        SharedPreferences p = prefs(context);
+        List<String> values = new ArrayList<>(recentIds(context));
+        String id = id(channel);
+        values.remove(id);
+        values.add(0, id);
         if (values.size() > MAX_RECENT) values = new ArrayList<>(values.subList(0, MAX_RECENT));
-        prefs(context).edit().putString(RECENT, android.text.TextUtils.join(",", values)).apply();
+        cachedRecentList = values;
+        rebuildRecentRankMap();
+        p.edit().putString(RECENT, android.text.TextUtils.join(",", values)).apply();
     }
-    static boolean isRecent(Context context, Channel channel) { return recentIds(context).contains(id(channel)); }
-    static int recentRank(Context context, Channel channel) { int index = recentIds(context).indexOf(id(channel)); return index < 0 ? Integer.MAX_VALUE : index; }
-    static void clearRecent(Context context) { prefs(context).edit().remove(RECENT).apply(); }
-    private static List<String> recentIds(Context context) {
-        String value = prefs(context).getString(RECENT, "");
-        if (value == null || value.isEmpty()) return new ArrayList<>();
-        return new ArrayList<>(Arrays.asList(value.split(",")));
+
+    static synchronized boolean isRecent(Context context, Channel channel) {
+        return recentRanks(context).containsKey(id(channel));
     }
+
+    static synchronized int recentRank(Context context, Channel channel) {
+        Integer index = recentRanks(context).get(id(channel));
+        return index == null ? Integer.MAX_VALUE : index;
+    }
+
+    static synchronized void clearRecent(Context context) {
+        SharedPreferences p = prefs(context);
+        cachedRecentList = new ArrayList<>();
+        cachedRecentRanks = Collections.emptyMap();
+        p.edit().remove(RECENT).apply();
+    }
+
     static boolean showUrls(Context context) { return prefs(context).getBoolean("show_urls", false); }
     static void setShowUrls(Context context, boolean value) { prefs(context).edit().putBoolean("show_urls", value).apply(); }
     static boolean compactRows(Context context) { return prefs(context).getBoolean("compact_rows", false); }
@@ -62,14 +139,10 @@ final class AppPreferences {
     static void setShowClock(Context context, boolean value) { prefs(context).edit().putBoolean("show_clock", value).apply(); }
     static boolean showPlayerSource(Context context) { return prefs(context).getBoolean("show_player_source", false); }
     static void setShowPlayerSource(Context context, boolean value) {
-        // This preference controls the player UI and is expected to survive an
-        // immediate process restart, so persist it synchronously.
         prefs(context).edit().putBoolean("show_player_source", value).commit();
     }
     static boolean backgroundPlayback(Context context) {
         SharedPreferences p = prefs(context);
-        // 1.10.26: enable background playback by default. Existing installations that
-        // previously had it disabled are migrated once; the user can turn it off again.
         if (!p.getBoolean(BACKGROUND_PLAYBACK_DEFAULT_MIGRATED, false)) {
             p.edit().putBoolean(BACKGROUND_PLAYBACK, true)
                     .putBoolean(BACKGROUND_PLAYBACK_DEFAULT_MIGRATED, true).apply();
@@ -92,8 +165,6 @@ final class AppPreferences {
     }
 
     static boolean isTvInterface(Context context) {
-        // Never run the touch/mobile player stack on a real Android TV, even if an
-        // old installation previously persisted "mobile" as its interface mode.
         if (isPhysicalTv(context)) return true;
         String value = interfaceMode(context);
         if ("tv".equals(value)) return true;

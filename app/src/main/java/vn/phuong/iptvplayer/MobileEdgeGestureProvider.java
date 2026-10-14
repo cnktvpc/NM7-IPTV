@@ -27,7 +27,6 @@ import androidx.media3.ui.PlayerView;
 /**
  * Mobile-only edge gestures for the inline player.
  * Left edge vertical swipe controls screen brightness; right edge controls media volume.
- * The center of the player is untouched so Media3 tap/seek/controller gestures keep working.
  */
 @androidx.media3.common.util.UnstableApi
 public final class MobileEdgeGestureProvider extends ContentProvider implements Application.ActivityLifecycleCallbacks {
@@ -36,6 +35,7 @@ public final class MobileEdgeGestureProvider extends ContentProvider implements 
     private static final int EDGE_VOLUME = 2;
     private static final float EDGE_FRACTION = 0.18f;
 
+    private static MobileEdgeGestureProvider instance;
     private final Handler main = new Handler(Looper.getMainLooper());
     private MainActivity activity;
     private PlayerView playerView;
@@ -46,6 +46,7 @@ public final class MobileEdgeGestureProvider extends ContentProvider implements 
     private int startVolume;
     private int maxVolume;
     private AudioManager audioManager;
+    private int watchAttempts;
 
     private final Runnable attachWatch = new Runnable() {
         @Override public void run() {
@@ -56,14 +57,41 @@ public final class MobileEdgeGestureProvider extends ContentProvider implements 
                 return;
             }
             PlayerView found = findPlayerView(current.findViewById(android.R.id.content));
-            if (found != null && found != playerView) attachTo(found);
-            main.postDelayed(this, 500L);
+            if (found != null) {
+                if (found != playerView) attachTo(found);
+                return; // Stop polling once PlayerView is attached.
+            }
+            if (++watchAttempts < 6) {
+                main.postDelayed(this, 300L);
+            }
         }
     };
 
+    static void onPlayerViewCreated(MainActivity mainActivity, PlayerView view) {
+        MobileEdgeGestureProvider owner = instance;
+        if (owner == null || mainActivity == null || view == null || AppPreferences.isTvInterface(mainActivity)) return;
+        owner.activity = mainActivity;
+        if (owner.audioManager == null) {
+            owner.audioManager = (AudioManager) mainActivity.getSystemService(Context.AUDIO_SERVICE);
+        }
+        owner.main.removeCallbacks(owner.attachWatch);
+        owner.attachTo(view);
+    }
+
+        private static boolean lifecycleRegistered;
+
+    static synchronized void init(Application app) {
+        if (lifecycleRegistered || app == null) return;
+        
+        lifecycleRegistered = true;
+        MobileEdgeGestureProvider owner = new MobileEdgeGestureProvider();
+        instance = owner;
+        app.registerActivityLifecycleCallbacks(owner);
+    }
+
     @Override public boolean onCreate() {
         if (getContext() != null) {
-            ((Application) getContext().getApplicationContext()).registerActivityLifecycleCallbacks(this);
+            init((Application) getContext().getApplicationContext());
         }
         return true;
     }
@@ -72,12 +100,14 @@ public final class MobileEdgeGestureProvider extends ContentProvider implements 
         if (!(resumed instanceof MainActivity)) return;
         activity = (MainActivity) resumed;
         audioManager = (AudioManager) resumed.getSystemService(Context.AUDIO_SERVICE);
+        watchAttempts = 0;
         main.removeCallbacks(attachWatch);
         main.post(attachWatch);
     }
 
     @Override public void onActivityPaused(Activity paused) {
         if (paused != activity) return;
+        main.removeCallbacks(attachWatch);
         activeEdge = EDGE_NONE;
     }
 

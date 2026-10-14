@@ -10,8 +10,8 @@ android {
         applicationId = "vn.phuong.iptvplayer"
         minSdk = 23
         targetSdk = 36
-        versionCode = 152
-        versionName = "1.10.136"
+        versionCode = 154
+        versionName = "1.10.138"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         manifestPlaceholders["applicationClass"] = "vn.phuong.iptvplayer.MobileNm7Application"
@@ -30,6 +30,12 @@ android {
             dimension = "device"
             manifestPlaceholders["vlcFallbackEnabled"] = "false"
             manifestPlaceholders["applicationClass"] = "vn.phuong.iptvplayer.MobileNm7Application"
+            if (project.findProperty("mobileAbiSplits") != "true"
+                    && project.findProperty("includeEmulatorAbis") != "true") {
+                ndk {
+                    abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+                }
+            }
         }
     }
 

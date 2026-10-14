@@ -17,6 +17,11 @@ import java.util.regex.Pattern;
 
 public final class M3uParser {
     private static final Pattern ATTRIBUTE = Pattern.compile("([\\w-]+)\\s*=\\s*(?:\"([^\"]*)\"|'([^']*)'|([^\\s,]+))");
+    private static final Pattern EXT_X_LINE = Pattern.compile("(?m)^\\s*#EXT-X-");
+    private static final Pattern LINE_SPLIT = Pattern.compile("\\r\\n|\\n|\\r");
+    private static final Pattern ALT_URL_SPLIT = Pattern.compile("[;|]");
+    private static final Pattern SUPPORTED_SCHEME = Pattern.compile("(?i)https?|rtsp|rtsps|udp|rtmp|rtmps|rtp|srt");
+    private static final Pattern VALID_HEADER_KEY = Pattern.compile("[!#$%&'*+.^_\\x60|~0-9A-Za-z-]+");
 
     public Result parse(String content, String baseUrl) {
         if (content == null) content = "";
@@ -24,7 +29,7 @@ public final class M3uParser {
         if (content.trim().startsWith("<") || content.indexOf('\0') >= 0) {
             throw new IllegalArgumentException("Nội dung không phải playlist M3U (có thể là trang đăng nhập).");
         }
-        if (Pattern.compile("(?m)^\\s*#EXT-X-").matcher(content).find()) {
+        if (EXT_X_LINE.matcher(content).find()) {
             if (baseUrl == null || !(baseUrl.startsWith("http://") || baseUrl.startsWith("https://"))) {
                 throw new IllegalArgumentException("Đây là manifest HLS. Hãy nhập URL gốc của luồng để phát.");
             }
@@ -32,7 +37,7 @@ public final class M3uParser {
             hls.options().add("#KODIPROP:inputstream.adaptive.manifest_type=hls");
             return new Result(Collections.singletonList(hls), 0, 0);
         }
-        String[] lines = content.split("\\r\\n|\\n|\\r");
+        String[] lines = LINE_SPLIT.split(content);
         List<Channel> channels = new ArrayList<>();
         Set<String> seen = new LinkedHashSet<>();
         int duplicates = 0;
@@ -93,7 +98,7 @@ public final class M3uParser {
                     channel.setOriginalExtInf(metadata.original);
                     channel.options().addAll(pendingOptions);
                     for (String alternateValue : metadata.alternateUrls) {
-                        for (String rawCandidate : alternateValue.split("[;|]")) {
+                        for (String rawCandidate : ALT_URL_SPLIT.split(alternateValue)) {
                             String candidate = resolveUrl(rawCandidate.trim(), baseUrl);
                             String alternateOption = "#NM7-ALT-URL:" + candidate;
                             if (isNetworkUrl(candidate) && !candidate.equals(channel.url())
@@ -323,12 +328,12 @@ public final class M3uParser {
             String scheme = uri.getScheme();
             return scheme != null && uri.getRawAuthority() != null
                     && !uri.getRawAuthority().isEmpty()
-                    && scheme.matches("(?i)https?|rtsp|rtsps|udp|rtmp|rtmps|rtp|srt");
+                    && SUPPORTED_SCHEME.matcher(scheme).matches();
         } catch (IllegalArgumentException ignored) { return false; }
     }
 
     private static boolean validHeader(String key, String value) {
-        return key.matches("[!#$%&'*+.^_`|~0-9A-Za-z-]+")
+        return VALID_HEADER_KEY.matcher(key).matches()
                 && value.indexOf('\r') < 0 && value.indexOf('\n') < 0;
     }
 

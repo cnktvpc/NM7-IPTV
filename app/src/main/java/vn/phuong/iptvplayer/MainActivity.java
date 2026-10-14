@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
+import java.util.zip.GZIPInputStream;
 
 @androidx.media3.common.util.UnstableApi
 public final class MainActivity extends Activity {
@@ -65,16 +66,17 @@ public final class MainActivity extends Activity {
     private boolean loading, importExpanded = true, liveOnly;
     private static final String LIVE_GROUP_TAG = "__NM7_LIVE_EVENTS__";
     private int wallpaperGeneration, playlistRequestGeneration;
+    private long lastLiveFeedLoadMs;
+    private final android.os.Handler searchHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final Runnable searchFilterRunnable = this::filter;
     private final android.os.Handler epgHandler=new android.os.Handler(android.os.Looper.getMainLooper());
-    private final Runnable epgTick=new Runnable(){@Override public void run(){if(adapter!=null)adapter.notifyDataSetChanged();if(liveAdapter!=null)liveAdapter.notifyDataSetChanged();epgHandler.postDelayed(this,60_000);}};
+    private final Runnable epgTick=new Runnable(){@Override public void run(){if(adapter!=null&&!liveOnly&&adapter.guide()!=null)adapter.notifyDataSetChanged();if(liveAdapter!=null&&liveOnly)liveAdapter.notifyDataSetChanged();epgHandler.postDelayed(this,60_000);}};
 
     @Override protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setupViews();
         restoreSession();
         loadLiveFeed();
-        liveFeedHandler.postDelayed(liveFeedRefresh, LIVE_FEED_REFRESH_MS);
-        epgHandler.post(epgTick);
         maybeShowSettings(getIntent());
     }
 
@@ -103,11 +105,27 @@ public final class MainActivity extends Activity {
                     overridePendingTransition(0,0);
                 }catch(Exception ignored){}
             },80L);
+            return;
         }
+        epgHandler.removeCallbacks(epgTick);
+        epgHandler.postDelayed(epgTick, 60_000);
+        liveFeedHandler.removeCallbacks(liveFeedRefresh);
+        long elapsed = android.os.SystemClock.elapsedRealtime() - lastLiveFeedLoadMs;
+        if (lastLiveFeedLoadMs > 0L && elapsed >= LIVE_FEED_REFRESH_MS) {
+            loadLiveFeed();
+        }
+        liveFeedHandler.postDelayed(liveFeedRefresh, LIVE_FEED_REFRESH_MS);
+    }
+    @Override protected void onPause(){
+        epgHandler.removeCallbacksAndMessages(null);
+        liveFeedHandler.removeCallbacksAndMessages(null);
+        searchHandler.removeCallbacksAndMessages(null);
+        super.onPause();
     }
     @Override protected void onDestroy(){
         epgHandler.removeCallbacksAndMessages(null);
         liveFeedHandler.removeCallbacksAndMessages(null);
+        searchHandler.removeCallbacksAndMessages(null);
         super.onDestroy();
     }
 
@@ -136,7 +154,7 @@ public final class MainActivity extends Activity {
         findViewById(R.id.btnLoadUrl).setOnClickListener(v->loadFromUrl()); findViewById(R.id.btnReloadUrl).setOnClickListener(v->reloadPlaylistUrl()); findViewById(R.id.btnOpenFile).setOnClickListener(v->openFilePicker());
         findViewById(R.id.btnPlayUrl).setOnClickListener(v->playDirect());
         findViewById(R.id.btnAllChannels).setOnClickListener(v->selectSection(0)); findViewById(R.id.btnFavorites).setOnClickListener(v->selectSection(1)); findViewById(R.id.btnRecent).setOnClickListener(v->selectSection(2)); findViewById(R.id.btnClearFilters).setOnClickListener(v->{inputSearch.setText("");selectedGroup="";updateGroupButtons();filter();});
-        inputSearch.addTextChangedListener(new TextWatcher(){@Override public void beforeTextChanged(CharSequence s,int st,int c,int a){}@Override public void onTextChanged(CharSequence s,int st,int b,int c){filter();}@Override public void afterTextChanged(Editable e){}});
+        inputSearch.addTextChangedListener(new TextWatcher(){@Override public void beforeTextChanged(CharSequence s,int st,int c,int a){}@Override public void onTextChanged(CharSequence s,int st,int b,int c){searchHandler.removeCallbacks(searchFilterRunnable);if(s==null||s.length()==0)filter();else searchHandler.postDelayed(searchFilterRunnable,120L);}@Override public void afterTextChanged(Editable e){}});
         rebuildGroups(); setImportExpanded(allChannels.isEmpty()); updateSectionButtons(); applyInterfaceMode(channelList);
     }
 
@@ -176,6 +194,7 @@ public final class MainActivity extends Activity {
     private void loadLiveFeed(){
         if(liveFeedLoading || isFinishing() || isDestroyed())return;
         liveFeedLoading=true;
+        lastLiveFeedLoadMs=android.os.SystemClock.elapsedRealtime();
         final int request=++liveFeedRequestGeneration;
         io.execute(()->{
             String cached=LiveFeedRepository.readCache(getApplicationContext());
@@ -256,6 +275,7 @@ public final class MainActivity extends Activity {
                     c.setInstanceFollowRedirects(true);
                     c.setRequestProperty("User-Agent",tv?"Nm7-IPTV/1.10.25 Android-TV":"Nm7-IPTV/1.10.25 Android");
                     c.setRequestProperty("Accept","application/vnd.apple.mpegurl,application/x-mpegURL,text/plain,*/*");
+                    c.setRequestProperty("Accept-Encoding","gzip");
                     c.setRequestProperty("Connection","keep-alive");
                     c.setRequestProperty("Cache-Control","no-cache, no-store, max-age=0");
                     c.setRequestProperty("Pragma","no-cache");
@@ -269,7 +289,7 @@ public final class MainActivity extends Activity {
                         return;
                     }
                     String content;
-                    try(InputStream s=new BufferedInputStream(c.getInputStream())){content=readText(s);}
+                    try(InputStream raw=new BufferedInputStream(c.getInputStream());InputStream s=EpgStore.isGzip(effective,c)?new GZIPInputStream(raw):raw){content=readText(s);}
                     M3uParser.Result result=parser.parse(content,effective);
                     ui(()->{if(requestGeneration==playlistRequestGeneration)showPlaylist(result,description,backgroundRefresh);});
                     return;
@@ -370,8 +390,8 @@ public final class MainActivity extends Activity {
                 boolean sectionMatch=activeSection==0
                         ||(activeSection==1&&LiveEventStore.isFavorite(this,event.id()))
                         ||(activeSection==2&&isRecentLiveEvent(event));
-                boolean queryMatch=query.isEmpty()||event.title().toLowerCase(Locale.ROOT).contains(query)
-                        ||event.group().toLowerCase(Locale.ROOT).contains(query)
+                boolean queryMatch=query.isEmpty()||event.titleLower().contains(query)
+                        ||event.groupLower().contains(query)
                         ||liveSourceMatches(event,query);
                 if(sectionMatch&&queryMatch)filtered.add(event);
             }
@@ -387,9 +407,9 @@ public final class MainActivity extends Activity {
             boolean groupMatch=selectedGroup.isEmpty()||channel.group().equals(selectedGroup);
             boolean sectionMatch=activeSection==0||(activeSection==1&&AppPreferences.isFavorite(this,channel))
                     ||(activeSection==2&&AppPreferences.isRecent(this,channel));
-            boolean queryMatch=query.isEmpty()||channel.name().toLowerCase(Locale.ROOT).contains(query)
-                    ||channel.group().toLowerCase(Locale.ROOT).contains(query)
-                    ||channel.url().toLowerCase(Locale.ROOT).contains(query);
+            boolean queryMatch=query.isEmpty()||channel.nameLower().contains(query)
+                    ||channel.groupLower().contains(query)
+                    ||channel.urlLower().contains(query);
             if(groupMatch&&sectionMatch&&queryMatch)filtered.add(channel);
         }
         if(activeSection==2)filtered.sort((a,b)->Integer.compare(AppPreferences.recentRank(this,a),AppPreferences.recentRank(this,b)));
@@ -397,7 +417,7 @@ public final class MainActivity extends Activity {
         updateSummary();
     }
     private boolean liveSourceMatches(LiveEvent event,String query){
-        for(Channel source:event.sources())if(source.url().toLowerCase(Locale.ROOT).contains(query))return true;
+        for(Channel source:event.sources())if(source.urlLower().contains(query))return true;
         return false;
     }
     private boolean isRecentLiveEvent(LiveEvent event){

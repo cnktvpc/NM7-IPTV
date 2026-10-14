@@ -20,7 +20,7 @@ final class SessionStore {
     private static final ExecutorService SAVE_IO = Executors.newSingleThreadExecutor();
 
     static List<Channel> snapshot(List<Channel> channels) {
-        List<Channel> copy = new ArrayList<>();
+        List<Channel> copy = new ArrayList<>(channels.size());
         for (Channel c : channels) {
             Channel n = new Channel(c.name(), c.group(), c.url(), c.tvgLogo(), c.logoUrl(), c.iconUrl(), c.tvgId(), c.headers());
             n.setSelected(c.selected());
@@ -31,10 +31,6 @@ final class SessionStore {
         return copy;
     }
 
-    /**
-     * Queue the potentially expensive playlist export + AtomicFile write away from the UI thread.
-     * MainActivity already passes a detached channel snapshot, so the queued save is race-safe.
-     */
     static void save(Context context, List<Channel> channels, String source, String epgUrl, int duplicates, int missing) {
         Context app = context.getApplicationContext();
         List<Channel> detached = channels == null ? new ArrayList<>() : channels;
@@ -48,8 +44,19 @@ final class SessionStore {
     }
 
     private static void write(Context context, List<Channel> channels, String source, String epgUrl, int duplicates, int missing) throws Exception {
+        String exportedM3u = new M3uParser().exportAll(channels);
+        AtomicFile m3uAtomic = m3uFile(context);
+        FileOutputStream m3uOut = null;
+        try {
+            m3uOut = m3uAtomic.startWrite();
+            m3uOut.write(exportedM3u.getBytes(StandardCharsets.UTF_8));
+            m3uAtomic.finishWrite(m3uOut);
+        } catch (Exception error) {
+            if (m3uOut != null) m3uAtomic.failWrite(m3uOut);
+            throw error;
+        }
+
         JSONObject obj = new JSONObject();
-        obj.put("playlist", new M3uParser().exportAll(channels));
         obj.put("source", source);
         obj.put("epg_url", epgUrl);
         obj.put("duplicates", duplicates);
@@ -75,17 +82,31 @@ final class SessionStore {
         JSONObject obj = new JSONObject(new String(file.readFully(), StandardCharsets.UTF_8));
         String source = obj.optString("source", "");
         String sourceUrl = PlaylistSourceStore.sourceUrl(source);
-        M3uParser.Result result = new M3uParser().parse(obj.getString("playlist"), sourceUrl);
+        String playlistText;
+        AtomicFile m3uAtomic = m3uFile(context);
+        if (m3uAtomic.getBaseFile().exists()) {
+            playlistText = new String(m3uAtomic.readFully(), StandardCharsets.UTF_8);
+        } else {
+            playlistText = obj.optString("playlist", "");
+        }
+        if (playlistText.isEmpty()) return null;
+        M3uParser.Result result = new M3uParser().parse(playlistText, sourceUrl);
         Set<String> unchecked = new HashSet<>();
         JSONArray arr = obj.optJSONArray("unchecked");
         if (arr != null) for (int i = 0; i < arr.length(); i++) unchecked.add(arr.getString(i));
-        for (Channel channel : result.channels) channel.setSelected(!unchecked.contains(channel.identityKey()));
+        if (!unchecked.isEmpty()) {
+            for (Channel channel : result.channels) channel.setSelected(!unchecked.contains(channel.identityKey()));
+        }
         return new State(new M3uParser.Result(result.channels, obj.optInt("duplicates"), obj.optInt("missing"), obj.optString("epg_url", "")),
                 source);
     }
 
     private static AtomicFile file(Context context) {
         return new AtomicFile(new File(context.getFilesDir(), "playlist-session.json"));
+    }
+
+    private static AtomicFile m3uFile(Context context) {
+        return new AtomicFile(new File(context.getFilesDir(), "playlist-session.m3u"));
     }
 
     static final class State {

@@ -1,14 +1,30 @@
 package vn.phuong.iptvplayer;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
+import java.util.regex.Pattern;
 
 public final class Channel {
+    private static final Pattern NON_ALNUM = Pattern.compile("[^a-z0-9]+");
+    private static final Pattern VTV_NAME_1 = Pattern.compile("vtv 1( hd)?");
+    private static final Pattern VTV_NAME_2 = Pattern.compile("vtv 2( hd)?");
+    private static final Pattern VTV_NAME_3 = Pattern.compile("vtv 3( hd)?");
+    private static final Pattern VTV_NAME_4 = Pattern.compile("vtv 4( hd)?");
+    private static final Pattern VTV_NAME_5 = Pattern.compile("vtv 5( hd)?");
+    private static final Pattern VTV_NAME_6 = Pattern.compile("vtv 6( hd)?");
+    private static final Pattern VTV_NAME_7 = Pattern.compile("vtv 7( hd)?");
+    private static final Pattern VTV_NAME_8 = Pattern.compile("vtv 8( hd)?");
+    private static final Pattern VTV_NAME_9 = Pattern.compile("vtv 9( hd)?");
+    private static final Pattern ON_SPORTS_NAME = Pattern.compile("on sports( hd)?");
+
     private final String name;
     private final String group;
     private final String url;
@@ -17,9 +33,18 @@ public final class Channel {
     private final String iconUrl;
     private final String tvgId;
     private final Map<String, String> headers;
+    private final String nameLower;
+    private final String groupLower;
+    private final String urlLower;
     private boolean selected = true;
     private String originalExtInf = "";
     private final List<String> options = new ArrayList<>();
+
+    private String cachedIdentityKey;
+    private String cachedSha256Id;
+    private int cachedOptionsSize = -1;
+    private int cachedOptionsHash;
+    private List<String> cachedLogoCandidates;
 
     public Channel(String name, String group, String url, String logo, String tvgId,
                    Map<String, String> headers) {
@@ -35,7 +60,12 @@ public final class Channel {
         this.logoUrl = clean(logoUrl, "");
         this.iconUrl = clean(iconUrl, "");
         this.tvgId = clean(tvgId, "");
-        this.headers = Collections.unmodifiableMap(new LinkedHashMap<>(headers));
+        this.headers = headers == null || headers.isEmpty()
+                ? Collections.emptyMap()
+                : Collections.unmodifiableMap(new LinkedHashMap<>(headers));
+        this.nameLower = this.name.toLowerCase(Locale.ROOT);
+        this.groupLower = this.group.toLowerCase(Locale.ROOT);
+        this.urlLower = this.url.toLowerCase(Locale.ROOT);
     }
 
     private static String clean(String value, String fallback) {
@@ -46,6 +76,9 @@ public final class Channel {
     public String name() { return name; }
     public String group() { return group; }
     public String url() { return url; }
+    String nameLower() { return nameLower; }
+    String groupLower() { return groupLower; }
+    String urlLower() { return urlLower; }
 
     /** Original tvg-logo attribute from the playlist. */
     public String logo() { return tvgLogo; }
@@ -72,77 +105,68 @@ public final class Channel {
      * changing the channel's metadata.
      */
     public List<String> logoCandidates() {
+        if (cachedLogoCandidates != null) return cachedLogoCandidates;
         LinkedHashMap<String, Boolean> unique = new LinkedHashMap<>();
 
-        // The playlist's explicit logo is the first source. It is the URL
-        // selected by the Worker for this exact channel and should not be
-        // delayed behind generic catalog probes.
         if (!logoUrl.isEmpty()) unique.put(logoUrl, Boolean.TRUE);
         if (!tvgLogo.isEmpty()) unique.put(tvgLogo, Boolean.TRUE);
         if (!iconUrl.isEmpty()) unique.put(iconUrl, Boolean.TRUE);
 
-        // Catalog fallbacks are only used when the exact playlist metadata is
-        // missing or its URL has been marked failed by ChannelAdapter.
         for (String fallback : logoCatalogFallbacks()) {
             if (fallback != null && !fallback.isEmpty()) unique.put(fallback, Boolean.TRUE);
         }
 
-        return new ArrayList<>(unique.keySet());
+        cachedLogoCandidates = Collections.unmodifiableList(new ArrayList<>(unique.keySet()));
+        return cachedLogoCandidates;
     }
 
     private List<String> logoCatalogFallbacks() {
         LinkedHashMap<String, Boolean> urls = new LinkedHashMap<>();
-        String id = tvgId.toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9]+", "");
-        String normalizedName = name.toLowerCase(java.util.Locale.ROOT)
-                .replaceAll("[^a-z0-9]+", " ").trim();
+        String id = NON_ALNUM.matcher(tvgId.toLowerCase(Locale.ROOT)).replaceAll("");
+        String normalizedName = NON_ALNUM.matcher(nameLower).replaceAll(" ").trim();
 
-        // VTV catalog: stable public logo set used by multiple IPTV catalogs.
         String vtv = null;
-        if (id.matches("vtv1hd") || normalizedName.matches("vtv 1( hd)?")) vtv = "1";
-        else if (id.matches("vtv2hd") || normalizedName.matches("vtv 2( hd)?")) vtv = "2";
-        else if (id.matches("vtv3hd") || normalizedName.matches("vtv 3( hd)?")) vtv = "3";
-        else if (id.matches("vtv4hd") || normalizedName.matches("vtv 4( hd)?")) vtv = "4";
-        else if (id.matches("vtv5hd") || normalizedName.matches("vtv 5( hd)?")) vtv = "5";
-        else if (id.matches("vtv6hd") || normalizedName.matches("vtv 6( hd)?")) vtv = "6";
-        else if (id.matches("vtv7hd") || normalizedName.matches("vtv 7( hd)?")) vtv = "7";
-        else if (id.matches("vtv8hd") || normalizedName.matches("vtv 8( hd)?")) vtv = "8";
-        else if (id.matches("vtv9hd") || normalizedName.matches("vtv 9( hd)?")) vtv = "9";
+        if (id.equals("vtv1hd") || VTV_NAME_1.matcher(normalizedName).matches()) vtv = "1";
+        else if (id.equals("vtv2hd") || VTV_NAME_2.matcher(normalizedName).matches()) vtv = "2";
+        else if (id.equals("vtv3hd") || VTV_NAME_3.matcher(normalizedName).matches()) vtv = "3";
+        else if (id.equals("vtv4hd") || VTV_NAME_4.matcher(normalizedName).matches()) vtv = "4";
+        else if (id.equals("vtv5hd") || VTV_NAME_5.matcher(normalizedName).matches()) vtv = "5";
+        else if (id.equals("vtv6hd") || VTV_NAME_6.matcher(normalizedName).matches()) vtv = "6";
+        else if (id.equals("vtv7hd") || VTV_NAME_7.matcher(normalizedName).matches()) vtv = "7";
+        else if (id.equals("vtv8hd") || VTV_NAME_8.matcher(normalizedName).matches()) vtv = "8";
+        else if (id.equals("vtv9hd") || VTV_NAME_9.matcher(normalizedName).matches()) vtv = "9";
         if (vtv != null) urls.put("https://cdn.hqth.me/logo/thumbs/" + vtv + ".png", Boolean.TRUE);
 
-        if (id.equals("vtv5hdtnb") || normalizedName.contains("vtv 5 tây nam bộ")) {
+        if (id.equals("vtv5hdtnb") || nameLower.contains("vtv 5 tây nam bộ") || normalizedName.contains("vtv 5 tay nam bo")) {
             urls.put("https://cdn.hqth.me/logo/thumbs/6.png", Boolean.TRUE);
             urls.put("https://i.imgur.com/mIUWkDx.png", Boolean.TRUE);
         }
-        if (id.equals("vtv5hdtn") || normalizedName.contains("vtv 5 tây nguyên")) {
+        if (id.equals("vtv5hdtn") || nameLower.contains("vtv 5 tây nguyên") || normalizedName.contains("vtv 5 tay nguyen")) {
             urls.put("https://cdn.hqth.me/logo/thumbs/7.png", Boolean.TRUE);
             urls.put("https://i.imgur.com/R8c2swd.png", Boolean.TRUE);
         }
 
-        // VTVCab catalog. The four embedded sports channels currently have
-        // onsports*.VN ids and no tvg-logo, so name/id matching is intentional.
         if (id.equals("onsportsvn") || id.equals("vtvcab3hd")
-                || normalizedName.contains("vtvcab 3") || normalizedName.matches("on sports( hd)?")) {
+                || normalizedName.contains("vtvcab 3") || ON_SPORTS_NAME.matcher(normalizedName).matches()) {
             urls.put("https://img.vnmedia.xyz/logo/on-sports.jpg", Boolean.TRUE);
             urls.put("https://cdn.hqth.me/logo/thumbs/14.png", Boolean.TRUE);
         }
         if (id.equals("onsportsplusvn") || id.equals("vtvcab6hd")
-                || normalizedName.contains("vtvcab 6") || normalizedName.startsWith("on sports+")) {
+                || normalizedName.contains("vtvcab 6") || nameLower.startsWith("on sports+")) {
             urls.put("https://img.vnmedia.xyz/logo/on-sportsplus.jpg", Boolean.TRUE);
             urls.put("https://cdn.hqth.me/logo/thumbs/17.png", Boolean.TRUE);
         }
         if (id.equals("onfootballvn") || id.equals("vtvcab16hd")
-                || normalizedName.contains("vtvcab 16") || normalizedName.matches("on football.*")) {
+                || normalizedName.contains("vtvcab 16") || normalizedName.startsWith("on football")) {
             urls.put("https://img.vnmedia.xyz/logo/on-football.jpg", Boolean.TRUE);
             urls.put("https://cdn.hqth.me/logo/thumbs/24.png", Boolean.TRUE);
         }
         if (id.equals("onsportsnewsvn") || id.equals("vtvcab18hd")
-                || normalizedName.contains("vtvcab 18") || normalizedName.matches("on sports news.*")) {
+                || normalizedName.contains("vtvcab 18") || normalizedName.startsWith("on sports news")) {
             urls.put("https://img.vnmedia.xyz/logo/on-sportsnews.jpg", Boolean.TRUE);
             urls.put("https://cdn.hqth.me/logo/thumbs/26.png", Boolean.TRUE);
         }
 
-        // Remaining numbered VTVCab catalog entries. These are deliberately
-        // secondary fallbacks; explicit playlist logos always remain first.
         String cab = null;
         if (id.equals("vtvcab1hd")) cab = "12";
         else if (id.equals("vtvcab2hd")) cab = "13";
@@ -173,7 +197,7 @@ public final class Channel {
 
     public String mimeHint() {
         for (String option : options) {
-            String lower = option.toLowerCase(java.util.Locale.ROOT);
+            String lower = option.toLowerCase(Locale.ROOT);
             if (lower.endsWith("manifest_type=hls")) return "application/x-mpegURL";
             if (lower.endsWith("manifest_type=mpd")) return "application/dash+xml";
             if (lower.startsWith("#kodiprop:mimetype=")) return option.substring(option.indexOf('=') + 1).trim();
@@ -183,26 +207,53 @@ public final class Channel {
 
     public boolean needsDrm() {
         for (String option : options) {
-            if (option.toLowerCase(java.util.Locale.ROOT).contains("inputstream.adaptive.license")) return true;
+            if (option.toLowerCase(Locale.ROOT).contains("inputstream.adaptive.license")) return true;
         }
         return false;
     }
 
     public String identityKey() {
-        Map<String, String> normalized = new TreeMap<>();
-        for (Map.Entry<String, String> header : headers.entrySet()) {
-            normalized.put(header.getKey().toLowerCase(java.util.Locale.ROOT), header.getValue());
+        int currentOptionsSize = options.size();
+        int currentOptionsHash = options.hashCode();
+        if (cachedIdentityKey != null
+                && cachedOptionsSize == currentOptionsSize
+                && cachedOptionsHash == currentOptionsHash) {
+            return cachedIdentityKey;
         }
-        StringBuilder key = new StringBuilder();
+        Map<String, String> normalized = headers.isEmpty() ? Collections.emptyMap() : new TreeMap<>();
+        if (!headers.isEmpty()) {
+            for (Map.Entry<String, String> header : headers.entrySet()) {
+                normalized.put(header.getKey().toLowerCase(Locale.ROOT), header.getValue());
+            }
+        }
+        StringBuilder key = new StringBuilder(url.length() + 32);
         appendKeyPart(key, url.trim());
         key.append(normalized.size()).append(':');
         for (Map.Entry<String, String> header : normalized.entrySet()) {
             appendKeyPart(key, header.getKey());
             appendKeyPart(key, header.getValue());
         }
-        key.append(options.size()).append(':');
+        key.append(currentOptionsSize).append(':');
         for (String option : options) appendKeyPart(key, option);
-        return key.toString();
+        cachedOptionsSize = currentOptionsSize;
+        cachedOptionsHash = currentOptionsHash;
+        cachedIdentityKey = key.toString();
+        cachedSha256Id = null;
+        return cachedIdentityKey;
+    }
+
+    String sha256Id() {
+        String idKey = identityKey();
+        if (cachedSha256Id != null) return cachedSha256Id;
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256").digest(idKey.getBytes(StandardCharsets.UTF_8));
+            StringBuilder out = new StringBuilder(digest.length * 2);
+            for (byte value : digest) out.append(String.format(Locale.ROOT, "%02x", value & 0xff));
+            cachedSha256Id = out.toString();
+        } catch (Exception impossible) {
+            cachedSha256Id = Integer.toHexString(idKey.hashCode());
+        }
+        return cachedSha256Id;
     }
 
     private static void appendKeyPart(StringBuilder target, String value) {

@@ -25,9 +25,20 @@ public final class MobileNowPlayingHighlightProvider extends ContentProvider imp
     private AdapterView.OnItemClickListener wrappedClick;
     private View.OnLayoutChangeListener layoutListener;
 
+        private static boolean lifecycleRegistered;
+
+    static synchronized void init(Application app) {
+        if (lifecycleRegistered || app == null) return;
+        
+        lifecycleRegistered = true;
+        MobileNowPlayingHighlightProvider owner = new MobileNowPlayingHighlightProvider();
+        
+        app.registerActivityLifecycleCallbacks(owner);
+    }
+
     @Override public boolean onCreate() {
         if (getContext() != null) {
-            ((Application) getContext().getApplicationContext()).registerActivityLifecycleCallbacks(this);
+            init((Application) getContext().getApplicationContext());
         }
         return true;
     }
@@ -70,7 +81,7 @@ public final class MobileNowPlayingHighlightProvider extends ContentProvider imp
 
     private void syncVisibility() {
         if (channelList == null || !(channelList.getAdapter() instanceof ChannelAdapter)) return;
-        if (!containsVisiblePlayer(mainRoot)) {
+        if (!MobileInlinePlayerProviderV2.isPanelVisible() && !containsVisiblePlayer(mainRoot)) {
             ((ChannelAdapter) channelList.getAdapter()).setPlayingChannel(null);
         }
     }

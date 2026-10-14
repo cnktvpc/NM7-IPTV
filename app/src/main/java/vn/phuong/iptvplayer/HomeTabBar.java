@@ -118,8 +118,9 @@ public final class HomeTabBar {
         // covers the case where MainActivity is already alive and only reordered to front.
         // The click originates from SmartTube Browse/Playback, not MainActivity.
         // Resolve the already-running MainActivity inside the IPTV provider.
-        activity.getWindow().getDecorView().postDelayed(
-                () -> MobileInlinePlayerProviderV2.resumeForIptvTab(activity), 180L);
+        MobileInlinePlayerProviderV2.resumeForIptvTab(activity);
+        activity.getWindow().getDecorView().post(
+                () -> MobileInlinePlayerProviderV2.resumeForIptvTab(activity));
     }
 
     private static void openAppSettings(Activity activity) {
@@ -150,6 +151,7 @@ public final class HomeTabBar {
                     "com.liskovsoft.smartyoutubetv2.droid.ui.playback.PlaybackActivity");
             boolean active = (Boolean) playback.getMethod("isNm7SessionActive").invoke(null);
             if (active) {
+                MobileInlinePlayerProviderV2.releaseForYoutube();
                 SmartTubeRuntime.initialize(activity.getApplicationContext());
                 playback.getMethod("restoreNm7Player").invoke(null);
                 return;
