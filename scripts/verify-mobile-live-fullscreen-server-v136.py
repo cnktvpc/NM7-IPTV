@@ -25,11 +25,11 @@ checks = [
     ("the ordinary inline selector is preserved",
      "private android.widget.Button liveServerButton;" in player
      and "liveServerButton.setOnClickListener(v -> showLiveServerPicker())" in player),
-    ("candidate version is 1.10.136 / code 152",
-     'versionName = "1.10.136"' in gradle and "versionCode = 152" in gradle),
+    ("candidate version is 1.10.137 / code 153",
+     'versionName = "1.10.137"' in gradle and "versionCode = 153" in gradle),
     ("dedicated CI runs this check on the candidate branch",
      "python3 scripts/verify-mobile-live-fullscreen-server-v136.py" in workflow
-     and "fix/mobile-1.10.136-live-fullscreen-server" in workflow),
+     and "fix/mobile-1.10.137-live-fullscreen-server" in workflow),
 ]
 for label, passed in checks:
     if not passed:
