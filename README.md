@@ -1,3 +1,9 @@
+# NM7 IPTV Mobile — DEVELOPMENT CANDIDATE 1.10.137 — 2026-10-15
+
+> **Bản đang phát triển:** `1.10.137` / `versionCode 153`, nhánh `feature/mobile-1.10.137-live-events-20261015`, lấy trực tiếp từ stable `stable/mobile-1.10.136`. Workflow `nm7-mobile-live-events-v132.yml` được cấu hình chạy tự động khi có push phù hợp trên nhánh này. Chỉ coi là đạt khi GitHub Actions build APK, toàn bộ unit tests và regression verifiers đều PASS; bản stable chưa bị thay đổi.
+
+---
+
 # NM7 IPTV Mobile — STABLE BASELINE 1.10.136 — 2026-10-14
 
 > **1.10.136 là bản ổn định chính thức hiện tại.** Người dùng đã cài bản thử nghiệm, xác nhận nút đổi server ở player toàn màn hình hoạt động đúng; bản đã qua build và toàn bộ unit tests.
