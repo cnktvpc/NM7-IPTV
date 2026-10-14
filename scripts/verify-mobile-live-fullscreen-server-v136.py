@@ -29,7 +29,7 @@ checks = [
      'versionName = "1.10.137"' in gradle and "versionCode = 153" in gradle),
     ("dedicated CI runs this check on the candidate branch",
      "python3 scripts/verify-mobile-live-fullscreen-server-v136.py" in workflow
-     and "fix/mobile-1.10.137-live-fullscreen-server" in workflow),
+     and "feature/mobile-1.10.137-live-events-20261015" in workflow),
 ]
 for label, passed in checks:
     if not passed:
