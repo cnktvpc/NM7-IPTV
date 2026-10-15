@@ -1,31 +1,23 @@
-# TIẾN ĐỘ PHÁT HÀNH — NM7 IPTV MOBILE 1.10.136 — STABLE — 2026-10-14
+# TIẾN ĐỘ PHÁT HÀNH — NM7 IPTV MOBILE 1.10.136 — STABLE — 2026-10-15
 
 ## Trạng thái
-- **ĐÃ CHỐT STABLE:** người dùng đã cài thử 1.10.136 và xác nhận nút đổi server toàn màn hình hoạt động OK.
-- **Version:** 1.10.136 / `versionCode 152`.
-- **Nhánh stable mới:** `stable/mobile-1.10.136`.
-- Nhánh stable cũ `stable/mobile-1.10.135` được giữ nguyên làm mốc trước đó; `stable/mobile-1.10.128` không bị thay đổi.
-- Nhánh candidate đã kiểm thử: `fix/mobile-1.10.136-live-fullscreen-server`.
+- **ĐÃ PROMOTE STABLE:** người dùng đã test APK được build từ gói mã nguồn thay thế mới và xác nhận OK.
+- **Version:** 1.10.136 / `versionCode 152` (giữ nguyên).
+- **Nhánh stable:** `stable/mobile-1.10.136`.
+- **Nhánh nguồn đã kiểm thử:** `build/mobile-1.10.136-exact-source-20261015`.
+- **Candidate commit build thành công:** `7b544448b9d032865739c4a833b044ae27cebe4e`.
+- **GitHub Actions:** [run 38664679401 — SUCCESS](https://github.com/phuongnm7/iptv-player-android/actions/runs/38664679401).
+- **Artifact:** [NM7-IPTV-Mobile-1.10.136-REPLACEMENT-SOURCE](https://github.com/phuongnm7/iptv-player-android/actions/runs/38664679401/artifacts/11940831346), ID `11940831346`.
+- **APK SHA-256:** `dec9e674067d0087450459cad70a58b0a1d05cd35d9c2ff216b5181e02703278`.
+- Build APK, full Mobile unit tests, source hash checks và upload artifact: **PASS**.
+- Kiểm thử trên thiết bị do người dùng thực hiện: **OK**.
 
-## Thay đổi được phát hành
-1. Thêm nút `Server n/N ▾` ngay trong hàng điều khiển phủ trên video khi xem trận Live ở chế độ toàn màn hình.
-2. Chỉ hiển thị nút khi sự kiện Live có ít nhất hai server; ẩn cho kênh thường hoặc chỉ có một nguồn.
-3. Nút dùng chung hộp chọn server và luồng chuyển nguồn/lưu server hiện có.
-4. Giữ nguyên nút đổi server bên dưới player ở chế độ xem thường.
-5. Giữ nguyên tính năng của 1.10.135: hiển thị số phút đã live và xếp trận mới bắt đầu trước.
-
-## Kiểm thử và artifact
-- GitHub Actions [run 38467292630](https://github.com/phuongnm7/iptv-player-android/actions/runs/38467292630): **SUCCESS**.
-- Build APK và toàn bộ Mobile unit tests: **PASS**.
-- Regression verifier: **26 kiểm tra Live + 7 kiểm tra fullscreen server**, tất cả PASS.
-- Artifact [NM7-IPTV-Mobile-1.10.136-LIVE-FULLSCREEN-SERVER](https://github.com/phuongnm7/iptv-player-android/actions/runs/38467292630/artifacts/11849217586), ID `11849217586`.
-- SHA-256: `8dd23d2d80fbb569b008522ddf1d381d1b46ca71a561c8e0b5490c8c64688230`.
-- User test: OK; đủ điều kiện đưa lên nhánh stable.
-
-## Phạm vi
-- Chỉ NM7 IPTV Mobile được thay đổi.
-- Không sửa NM7 TV Android, NM7 TV Web, playlist IPTV mặc định hoặc Cloudflare Worker.
-- Các bản Mobile tiếp theo lấy `stable/mobile-1.10.136` làm baseline.
+## Phạm vi thay đổi
+1. Đưa mã nguồn thay thế đã kiểm thử thành baseline chính thức cho NM7 IPTV Mobile 1.10.136.
+2. Giữ `versionName = "1.10.136"` và `versionCode = 152`.
+3. Cập nhật README và hồ sơ tiến độ phát hành để phản ánh đúng nguồn APK mới.
+4. Các bản Mobile tiếp theo lấy `stable/mobile-1.10.136` làm baseline.
+5. Giữ nguyên `stable/mobile-1.10.135` và `stable/mobile-1.10.128`; không sửa NM7 TV Android, NM7 TV Web, playlist mặc định hoặc Cloudflare Worker.
 
 ---
 
