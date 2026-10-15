@@ -21,7 +21,7 @@ public final class M3uParser {
     private static final Pattern LINE_SPLIT = Pattern.compile("\\r\\n|\\n|\\r");
     private static final Pattern ALT_URL_SPLIT = Pattern.compile("[;|]");
     private static final Pattern SUPPORTED_SCHEME = Pattern.compile("(?i)https?|rtsp|rtsps|udp|rtmp|rtmps|rtp|srt");
-    private static final Pattern VALID_HEADER_KEY = Pattern.compile("[!#$%&'*+.^_\\x60|~0-9A-Za-z-]+");
+    private static final Pattern VALID_HEADER_KEY = Pattern.compile("[!#$%&'*+.^_`|~0-9A-Za-z-]+");
 
     public Result parse(String content, String baseUrl) {
         if (content == null) content = "";
