@@ -57,7 +57,7 @@ jobs:
           fi
 
       - name: Restore pinned SmartTube phone source
-        if: steps.source_sync.outputs.synced != 'true'
+        if: success()
         run: |
           set -euxo pipefail
           git clone --no-checkout https://github.com/systematiq-one/SmartTube-droid.git third_party/SmartTube-droid
@@ -65,7 +65,7 @@ jobs:
           git -C third_party/SmartTube-droid submodule update --init --recursive
 
       - name: Patch only external SmartTube Gradle compatibility
-        if: steps.source_sync.outputs.synced != 'true'
+        if: success()
         run: |
           set -euxo pipefail
           python3 - <<'PY'
@@ -93,7 +93,7 @@ jobs:
           PY
 
       - name: Apply NM7 Mobile-to-SmartTube integration patches
-        if: steps.source_sync.outputs.synced != 'true'
+        if: success()
         run: |
           set -euxo pipefail
           python3 scripts/patch-mobile-v37.py
@@ -111,7 +111,7 @@ jobs:
           python3 scripts/verify-mobile-live-fullscreen-server-v136.py
 
       - name: Patch legacy SmartTube resource collisions
-        if: steps.source_sync.outputs.synced != 'true'
+        if: success()
         run: |
           set -euxo pipefail
           python3 - <<'PY'
@@ -150,31 +150,31 @@ jobs:
           PY
 
       - name: Configure Java
-        if: steps.source_sync.outputs.synced != 'true'
+        if: success()
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
 
       - name: Configure Gradle
-        if: steps.source_sync.outputs.synced != 'true'
+        if: success()
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: "8.13"
 
       - name: Configure Android SDK
-        if: steps.source_sync.outputs.synced != 'true'
+        if: success()
         uses: android-actions/setup-android@v3
         with:
           cmdline-tools-version: "12266719"
           packages: "platform-tools"
 
       - name: Install Android SDK packages
-        if: steps.source_sync.outputs.synced != 'true'
+        if: success()
         run: sdkmanager "platforms;android-34" "platforms;android-36" "build-tools;36.0.0"
 
       - name: Confirm source version and compile unchanged app
-        if: steps.source_sync.outputs.synced != 'true'
+        if: success()
         run: |
           set -euxo pipefail
           grep -F 'versionName = "1.10.136"' app/build.gradle.kts
@@ -187,7 +187,7 @@ jobs:
             :app:assembleMobileDebug :app:testMobileDebugUnitTest
 
       - name: Package APK and SHA-256
-        if: steps.source_sync.outputs.synced != 'true'
+        if: success()
         run: |
           set -euxo pipefail
           mkdir -p dist/mobile
@@ -195,7 +195,7 @@ jobs:
           cd dist/mobile && sha256sum *.apk > SHA256SUMS.txt
 
       - name: Upload APK artifact
-        if: steps.source_sync.outputs.synced != 'true'
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: NM7-IPTV-Mobile-1.10.136-REPLACEMENT-SOURCE
