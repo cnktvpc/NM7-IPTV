@@ -118,7 +118,14 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
     private boolean requestedResumePlaying = true;
     private View.OnLayoutChangeListener rootLayoutListener;
 
-    private static final OkHttpClient STREAM_HTTP = NetworkClient.STREAM_HTTP;
+    private static final OkHttpClient STREAM_HTTP = new OkHttpClient.Builder()
+            .connectTimeout(20, TimeUnit.SECONDS)
+            .readTimeout(45, TimeUnit.SECONDS)
+            .writeTimeout(20, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(true)
+            .pingInterval(20, TimeUnit.SECONDS)
+            .connectionPool(ChannelAdapter.SHARED_POOL)
+            .build();
 
     private final Runnable statsTick = new Runnable() {
         @Override public void run() {
@@ -156,22 +163,18 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
             return;
         }
         if (currentActivity != main || panel == null || panel.getParent() == null) attach(main);
-        // Returning from YouTube is a handoff, not a fresh navigation. Recreate the
-        // IPTV player after MainActivity is actually resumed so the old decoder cannot
-        // race the Activity transition.
-        if (resumeAfterYoutube && currentChannel != null) {
-            resumeAfterYoutube = false;
-            mainHandler.postDelayed(() -> {
-                if (currentActivity == main
-                        && SharedPlaybackSession.TAB_IPTV.equals(SharedPlaybackSession.tab(main))
-                        && currentChannel != null) {
-                    long position = pendingResumePositionMs;
-                    boolean playing = pendingResumePlaying;
-                    pendingResumePositionMs = 0L;
-                    pendingResumePlaying = false;
-                    playInline(currentChannel, position, playing);
-                }
-            }, 120L);
+        // Fast warm handoff when returning from YouTube: resume the existing ExoPlayer
+        // immediately if it is still valid, avoiding a full manifest/decoder reload.
+        if ((resumeAfterYoutube || pausedForYoutube) && currentChannel != null) {
+            if (!tryResumeWarmPlayer()) {
+                resumeAfterYoutube = false;
+                pausedForYoutube = false;
+                long position = pendingResumePositionMs;
+                boolean playing = pendingResumePlaying;
+                pendingResumePositionMs = 0L;
+                pendingResumePlaying = false;
+                playInline(currentChannel, position, playing);
+            }
         }
         if (!MobileNm7Application.isYoutubeSessionActive()) stopBackgroundService(main);
         backgroundActive = false;
@@ -540,7 +543,7 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
 
     private static DefaultLoadControl stableLoadControl() {
         return new DefaultLoadControl.Builder()
-                .setBufferDurationsMs(30_000, 120_000, 1_200, 5_000)
+                .setBufferDurationsMs(30_000, 120_000, 450, 1_800)
                 .setBackBuffer(20_000, true)
                 .setPrioritizeTimeOverSizeThresholds(true)
                 .build();
@@ -564,6 +567,8 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
                 channel.mimeHint(), savedHeaders, savedOptions, requestedResumePositionMs, requestedResumePlaying);
         int generation = ++playGeneration;
         recoveryAttempts = 0;
+        pausedForYoutube = false;
+        pausedForYoutubeAtMs = 0L;
         resumeAfterLifecyclePause = false;
         userPaused = false;
         bufferingSinceMs = 0;
@@ -1241,6 +1246,8 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
     }
 
     private boolean resumeAfterYoutube;
+    private boolean pausedForYoutube;
+    private long pausedForYoutubeAtMs;
     private long pendingResumePositionMs;
     private boolean pendingResumePlaying;
 
@@ -1274,11 +1281,62 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
         owner.postResumeIptvForNm7(main);
     }
 
+    private boolean tryResumeWarmPlayer() {
+        if (player == null || currentChannel == null || playerView == null || panel == null) return false;
+        int state = player.getPlaybackState();
+        if (state == Player.STATE_IDLE || player.getPlayerError() != null) return false;
+
+        panel.setVisibility(View.VISIBLE);
+        if (playerView.getPlayer() != player) playerView.setPlayer(player);
+        updateLiveServerButton(currentChannel);
+        keepScreenAwake(true);
+
+        boolean shouldPlay = (resumeAfterYoutube || pausedForYoutube || pendingResumePlaying || player.getPlayWhenReady()) && !userPaused;
+        resumeAfterYoutube = false;
+        pausedForYoutube = false;
+        pendingResumePlaying = false;
+        pendingResumePositionMs = 0L;
+        lifecyclePauseInProgress = false;
+
+        if (shouldPlay) {
+            MobileNm7Application.suspendYoutubeForIptv();
+            player.setAudioAttributes(new AudioAttributes.Builder()
+                    .setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(), true);
+            player.setVolume(1f);
+            long pausedDuration = pausedForYoutubeAtMs > 0L
+                    ? android.os.SystemClock.elapsedRealtime() - pausedForYoutubeAtMs : 0L;
+            pausedForYoutubeAtMs = 0L;
+            try {
+                if (player.isCurrentMediaItemLive()) {
+                    long liveOffset = player.getCurrentLiveOffset();
+                    if (state == Player.STATE_ENDED || pausedDuration > 25_000L
+                            || (liveOffset != C.TIME_UNSET && liveOffset > 35_000L)) {
+                        player.seekToDefaultPosition();
+                    }
+                } else if (state == Player.STATE_ENDED) {
+                    player.seekTo(0L);
+                }
+                if (state == Player.STATE_ENDED) player.prepare();
+                if (!player.getPlayWhenReady()) player.play();
+            } catch (RuntimeException error) {
+                return false;
+            }
+        }
+        mainHandler.removeCallbacks(statsTick);
+        mainHandler.post(statsTick);
+        return true;
+    }
+
     private void postResumeIptvForNm7(MainActivity main) {
         if (currentActivity != main || panel == null || playerView == null) {
             attach(main);
         }
-        if (currentActivity != main || SharedPlaybackSession.TAB_IPTV.equals(SharedPlaybackSession.tab(main)) == false) return;
+        if (currentActivity != main || !SharedPlaybackSession.TAB_IPTV.equals(SharedPlaybackSession.tab(main))) return;
+        // Fast path: if the inline ExoPlayer is already alive (either still playing from Browse
+        // or warm-paused during YouTube playback), resume it immediately in 0ms without rebuilding!
+        if (tryResumeWarmPlayer()) {
+            return;
+        }
         long restoredPosition = pendingResumePositionMs;
         boolean restoredPlaying = pendingResumePlaying;
         if (currentChannel == null) {
@@ -1297,20 +1355,11 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
             }
         }
         if (currentChannel != null) {
-            pendingResumePositionMs = restoredPosition;
-            pendingResumePlaying = restoredPlaying;
+            pendingResumePositionMs = 0L;
+            pendingResumePlaying = false;
             resumeAfterYoutube = false;
-            mainHandler.postDelayed(() -> {
-                if (currentActivity == main
-                        && SharedPlaybackSession.TAB_IPTV.equals(SharedPlaybackSession.tab(main))
-                        && currentChannel != null) {
-                    long position = pendingResumePositionMs;
-                    boolean playing = pendingResumePlaying;
-                    pendingResumePositionMs = 0L;
-                    pendingResumePlaying = false;
-                    playInline(currentChannel, position, playing);
-                }
-            }, 80L);
+            pausedForYoutube = false;
+            playInline(currentChannel, restoredPosition, restoredPlaying);
         }
     }
 
@@ -1319,6 +1368,8 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
         if (owner == null) return;
         ++owner.playGeneration;
         owner.resumeAfterYoutube = false;
+        owner.pausedForYoutube = false;
+        owner.pausedForYoutubeAtMs = 0L;
         owner.resumeAfterLifecyclePause = false;
         owner.currentChannel = null;
         owner.backgroundActive = false;
@@ -1329,11 +1380,12 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
     public static void releaseForYoutube() {
         MobileInlinePlayerProviderV2 owner = instance;
         if (owner == null) return;
-        if (owner.player != null) {
-            owner.resumeAfterYoutube = owner.player.getPlayWhenReady() && !owner.userPaused;
+        if (owner.player != null && owner.currentChannel != null) {
+            boolean wasActive = (owner.player.getPlayWhenReady() || owner.pausedForYoutube || owner.resumeAfterYoutube) && !owner.userPaused;
+            owner.resumeAfterYoutube = wasActive;
             owner.pendingResumePositionMs = owner.player.isCurrentMediaItemLive() ? 0L : Math.max(0L, owner.player.getCurrentPosition());
-            owner.pendingResumePlaying = owner.resumeAfterYoutube;
-            if (owner.currentActivity != null && owner.currentChannel != null) {
+            owner.pendingResumePlaying = wasActive;
+            if (owner.currentActivity != null) {
                 android.os.Bundle headers = new android.os.Bundle();
                 for (java.util.Map.Entry<String,String> entry : owner.currentChannel.headers().entrySet()) {
                     if (entry.getValue() != null) headers.putString(entry.getKey(), entry.getValue());
@@ -1343,8 +1395,27 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
                         new java.util.ArrayList<>(owner.currentChannel.options()),
                         owner.pendingResumePositionMs, owner.pendingResumePlaying);
             }
+            if (wasActive && owner.player.getPlaybackState() != Player.STATE_IDLE && owner.player.getPlayerError() == null) {
+                // Warm-pause: keep the ExoPlayer instance, HLS/DASH manifest, and HTTP connection
+                // warm in memory while immediately muting and pausing so YouTube owns playback.
+                owner.pausedForYoutube = true;
+                if (owner.pausedForYoutubeAtMs == 0L) {
+                    owner.pausedForYoutubeAtMs = android.os.SystemClock.elapsedRealtime();
+                }
+                owner.lifecyclePauseInProgress = true;
+                owner.player.setVolume(0f);
+                owner.player.setWakeMode(C.WAKE_MODE_NONE);
+                owner.player.pause();
+                owner.mainHandler.removeCallbacks(owner.statsTick);
+                owner.resumeAfterLifecyclePause = false;
+                owner.backgroundActive = false;
+                if (owner.currentActivity != null) owner.stopBackgroundService(owner.currentActivity);
+                return;
+            }
         }
         ++owner.playGeneration; // Invalidate pending DRM/retry callbacks before release.
+        owner.pausedForYoutube = false;
+        owner.pausedForYoutubeAtMs = 0L;
         owner.resumeAfterLifecyclePause = false;
         owner.backgroundActive = false;
         owner.releasePlayer();

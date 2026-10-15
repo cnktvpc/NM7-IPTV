@@ -33,6 +33,11 @@ public final class MobileNm7Application extends DroidApplication implements andr
     private static final String SMARTTUBE_SIGNIN = SMARTTUBE_PACKAGE + "signin.SignInActivity";
     private static final String SMARTTUBE_DIALOG = SMARTTUBE_PACKAGE + "dialogs.AppDialogActivity";
 
+    private static final Typeface SANS_NORMAL = Typeface.create("sans-serif", Typeface.NORMAL);
+    private static final Typeface SANS_BOLD = Typeface.create("sans-serif", Typeface.BOLD);
+    private static final java.util.Locale VI_LOCALE = java.util.Locale.forLanguageTag("vi-VN");
+    private static Class<?> cachedPlaybackClass;
+    private static final java.util.Map<String, Method> cachedPlaybackMethods = new java.util.concurrent.ConcurrentHashMap<>();
     private static MobileNm7Application instance;
     private WifiManager.WifiLock wifiLock;
     private int startedActivities;
@@ -192,9 +197,20 @@ public final class MobileNm7Application extends DroidApplication implements andr
         }
     }
 
+    private static Method playbackMethod(String name) throws ReflectiveOperationException {
+        Method m = cachedPlaybackMethods.get(name);
+        if (m != null) return m;
+        if (cachedPlaybackClass == null) {
+            cachedPlaybackClass = Class.forName(SMARTTUBE_PLAYBACK);
+        }
+        m = cachedPlaybackClass.getMethod(name);
+        cachedPlaybackMethods.put(name, m);
+        return m;
+    }
+
     private void notifyYoutubeVisibility(String method) {
         try {
-            Class.forName(SMARTTUBE_PLAYBACK).getMethod(method).invoke(null);
+            playbackMethod(method).invoke(null);
         } catch (ReflectiveOperationException error) {
             android.util.Log.w("NM7Playback", "YouTube visibility bridge unavailable");
         }
@@ -297,7 +313,7 @@ public final class MobileNm7Application extends DroidApplication implements andr
      */
     public static void suspendYoutubeForIptv() {
         try {
-            Class.forName(SMARTTUBE_PLAYBACK).getMethod("suspendForNm7Iptv").invoke(null);
+            playbackMethod("suspendForNm7Iptv").invoke(null);
         } catch (ReflectiveOperationException | RuntimeException error) {
             android.util.Log.e("NM7Playback", "Suspend YouTube for IPTV failed", error);
         }
@@ -309,7 +325,7 @@ public final class MobileNm7Application extends DroidApplication implements andr
 
     public static void stopYoutubeForIptv() {
         try {
-            Class.forName(SMARTTUBE_PLAYBACK).getMethod("stopForNm7Iptv").invoke(null);
+            playbackMethod("stopForNm7Iptv").invoke(null);
         } catch (ReflectiveOperationException | RuntimeException error) {
             android.util.Log.e("NM7Playback", "YouTube handoff failed", error);
         }
@@ -317,8 +333,7 @@ public final class MobileNm7Application extends DroidApplication implements andr
 
     public static boolean isYoutubeSessionActive() {
         try {
-            return Boolean.TRUE.equals(Class.forName(SMARTTUBE_PLAYBACK)
-                    .getMethod("isNm7SessionActive").invoke(null));
+            return Boolean.TRUE.equals(playbackMethod("isNm7SessionActive").invoke(null));
         } catch (ReflectiveOperationException | RuntimeException error) { return false; }
     }
 
@@ -426,8 +441,8 @@ public final class MobileNm7Application extends DroidApplication implements andr
             // SmartTube TextView caused a large amount of unnecessary UI work on Browse.
             if (containsVietnameseText(value)) {
                 int style = text.getTypeface() != null ? text.getTypeface().getStyle() : Typeface.NORMAL;
-                text.setTypeface(Typeface.create("sans-serif", style));
-                if (Build.VERSION.SDK_INT >= 24) text.setTextLocale(java.util.Locale.forLanguageTag("vi-VN"));
+                text.setTypeface(style == Typeface.BOLD ? SANS_BOLD : SANS_NORMAL);
+                if (Build.VERSION.SDK_INT >= 24) text.setTextLocale(VI_LOCALE);
                 if (Build.VERSION.SDK_INT >= 23) text.setFallbackLineSpacing(true);
                 if (value.length() > 0 && !hasSansSerifSpan(value)) {
                     SpannableString fixed = new SpannableString(value);

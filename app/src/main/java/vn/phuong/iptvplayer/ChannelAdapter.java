@@ -64,7 +64,25 @@ public final class ChannelAdapter extends BaseAdapter {
      * This gives us connection pooling, HTTP/2 multiplexing and transparent
      * gzip handling instead of opening a new HttpURLConnection for each row.
      */
-    private static final OkHttpClient LOGO_HTTP = NetworkClient.LOGO_HTTP;
+    static final okhttp3.ConnectionPool SHARED_POOL = new okhttp3.ConnectionPool(12, 5, TimeUnit.MINUTES);
+
+    private static okhttp3.Dispatcher createLogoDispatcher() {
+        okhttp3.Dispatcher dispatcher = new okhttp3.Dispatcher();
+        dispatcher.setMaxRequests(32);
+        dispatcher.setMaxRequestsPerHost(8);
+        return dispatcher;
+    }
+
+    private static final OkHttpClient LOGO_HTTP = new OkHttpClient.Builder()
+            .connectTimeout(CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            .readTimeout(READ_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            .callTimeout(READ_TIMEOUT_MS + CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            .followRedirects(true)
+            .followSslRedirects(true)
+            .retryOnConnectionFailure(true)
+            .dispatcher(createLogoDispatcher())
+            .connectionPool(SHARED_POOL)
+            .build();
     private static final java.util.regex.Pattern SAFE_HEADER_KEY = java.util.regex.Pattern.compile("[!#$%&'*+.^_|~0-9A-Za-z-]+");
     private static final long MAX_DISK_CACHE_BYTES = 40L * 1024L * 1024L;
     private static volatile boolean diskCacheTrimScheduled;
