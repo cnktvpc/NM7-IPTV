@@ -1,42 +1,34 @@
-# NM7 IPTV Mobile — STABLE BASELINE 1.10.136 — 2026-10-14
+# NM7 IPTV Mobile — STABLE BASELINE 1.10.136 — 2026-10-15
 
-> **1.10.136 là bản ổn định chính thức hiện tại.** Người dùng đã cài bản thử nghiệm, xác nhận nút đổi server ở player toàn màn hình hoạt động đúng; bản đã qua build và toàn bộ unit tests.
+> **Bản ổn định chính thức:** mã nguồn thay thế mới đã được build thành APK và người dùng đã kiểm thử thực tế, xác nhận OK. Bản này thay cho gói nguồn trước đó; giữ nguyên phiên bản ứng dụng để không làm thay đổi version hiển thị.
 
-## Mốc ổn định đã chốt
+## Mốc ổn định
 
 - **Version:** 1.10.136
 - **versionCode:** 152
 - **Stable branch:** `stable/mobile-1.10.136`
-- **Previous stable:** `stable/mobile-1.10.135` được giữ nguyên làm mốc lịch sử; `stable/mobile-1.10.128` cũng vẫn được giữ nguyên.
-- **Development/candidate branch đã kiểm thử:** `fix/mobile-1.10.136-live-fullscreen-server`
-- **Feature commit:** `a72bece44b89afa1bf4a79782ec6884f26739cc3`
-- **Commit CI xác nhận:** `1d74b8fa1f023c818b13f3f972316c1c3f70afff` (CI run thành công; thay đổi sau feature commit chỉ là chú thích kích hoạt lại workflow).
-- **Promotion:** stable release commit có hai parent, giữ cả lịch sử stable 1.10.135 và candidate đã kiểm thử.
+- **Source candidate đã kiểm thử:** `build/mobile-1.10.136-exact-source-20261015`
+- **Candidate commit đã build:** `7b544448b9d032865739c4a833b044ae27cebe4e`
+- **GitHub Actions:** [Run 38664679401 — SUCCESS](https://github.com/phuongnm7/iptv-player-android/actions/runs/38664679401)
+- **Artifact:** [NM7-IPTV-Mobile-1.10.136-REPLACEMENT-SOURCE](https://github.com/phuongnm7/iptv-player-android/actions/runs/38664679401/artifacts/11940831346)
+- **Artifact ID:** `11940831346`
+- **SHA-256 APK** (the APK delivered for device testing): `dec9e674067d0087450459cad70a58b0a1d05cd35d9c2ff216b5181e02703278`
+- APK build, full Mobile unit tests, source hash checks and artifact upload: **PASS**.
+- **Thiết bị thực tế:** người dùng đã test APK mới và xác nhận OK.
 
-## Thay đổi được phát hành
+## Nội dung phát hành
 
-- Khi xem trận trong mục **Live** ở chế độ toàn màn hình, nút **`Server n/N ▾`** nằm ngay trong hàng điều khiển phủ trên video, cạnh nhóm nút điều khiển player.
-- Nút chỉ xuất hiện khi sự kiện Live có từ hai nguồn phát trở lên; kênh thông thường hoặc chỉ có một nguồn sẽ không hiện.
-- Nút mở lại hộp chọn server hiện có, tiếp tục dùng luồng lưu server và chuyển nguồn playback sẵn có; không tạo cơ chế đổi server thứ hai.
-- Nút đổi server bên dưới player ở chế độ xem thông thường vẫn được giữ nguyên.
-- Giữ các tính năng của 1.10.135: hiển thị số phút đã live, cập nhật thời lượng mỗi 60 giây và sắp xếp trận mới bắt đầu gần nhất lên trước.
+- Dùng gói mã nguồn thay thế mới do người dùng gửi làm nguồn chính thức cho bản 1.10.136.
+- Giữ `versionName = "1.10.136"` và `versionCode = 152`; không tự ý nâng version.
+- Các bước tương thích cần cho runner nằm trong quy trình CI và thư viện SmartTube ngoài ứng dụng; không được xem đó là sửa đổi mã nguồn ứng dụng của gói nguồn.
+- Các bản phát triển Mobile tiếp theo phải lấy `stable/mobile-1.10.136` làm baseline.
 
-## CI / APK đã xác minh
+## Quy tắc giữ ổn định
 
-- **GitHub Actions:** [Run 38467292630 — SUCCESS](https://github.com/phuongnm7/iptv-player-android/actions/runs/38467292630)
-- **Artifact:** [NM7-IPTV-Mobile-1.10.136-LIVE-FULLSCREEN-SERVER](https://github.com/phuongnm7/iptv-player-android/actions/runs/38467292630/artifacts/11849217586)
-- **Artifact ID:** `11849217586`
-- **SHA-256:** `8dd23d2d80fbb569b008522ddf1d381d1b46ca71a561c8e0b5490c8c64688230`
-- APK build và toàn bộ Mobile unit tests đều PASS.
-- Regression guard: **26 kiểm tra Live** và **7 kiểm tra riêng cho nút server fullscreen** đều PASS.
-- Người dùng đã cài thử candidate và xác nhận OK.
-
-## Quy tắc phát triển tiếp theo
-
-1. Lấy `stable/mobile-1.10.136` làm baseline chính thức cho các thay đổi Mobile tiếp theo.
-2. Giữ nguyên `stable/mobile-1.10.135` và `stable/mobile-1.10.128`; không ghi đè các mốc cũ.
-3. Chỉ thay đổi NM7 IPTV Mobile theo phạm vi yêu cầu; không sửa NM7 TV Android, NM7 TV Web, playlist mặc định hoặc Cloudflare Worker.
-4. Chạy build, unit tests và regression checks trước khi phát hành bản tiếp theo.
+1. Giữ nguyên các nhánh lịch sử `stable/mobile-1.10.135` và `stable/mobile-1.10.128`.
+2. Không thay đổi NM7 TV Android, NM7 TV Web, playlist mặc định hoặc Cloudflare Worker.
+3. Không thay đổi version 1.10.136 / code 152 nếu chưa có yêu cầu phát hành phiên bản mới.
+4. Mọi bản tiếp theo phải build, chạy unit tests và kiểm thử trên thiết bị trước khi promote sang stable.
 
 ---
 
