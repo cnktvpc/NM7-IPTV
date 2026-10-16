@@ -3,7 +3,7 @@ name: Sync BYVN 6ZQ5 playlist
 on:
   workflow_dispatch:
   schedule:
-    - cron: '*/15 * * * *'
+    - cron: '0-59/15 * * * *'
 
 permissions:
   contents: write
