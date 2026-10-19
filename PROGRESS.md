@@ -1,7 +1,49 @@
-# TIẾN ĐỘ PHÁT HÀNH — NM7 IPTV MOBILE 1.10.136 — STABLE — 2026-10-14
+# TIẾN ĐỘ MỚI NHẤT — NM7 IPTV MOBILE 1.10.139 — DEFAULT EPG — 2026-10-19
 
-## Trạng thái
-- **ĐÃ CHỐT STABLE:** người dùng đã cài thử 1.10.136 và xác nhận nút đổi server toàn màn hình hoạt động OK.
+## Trạng thái phát triển
+- **CI: PASS** — build APK và toàn bộ Mobile unit-test suite thành công.
+- **Trạng thái phát hành:** candidate; chưa đánh dấu stable vì chưa có xác nhận kiểm thử runtime từ người dùng trên thiết bị thật.
+- **Version:** 1.10.139 / `versionCode 155`.
+- **Branch:** `work/mobile-1.10.139-default-epg-20261019`.
+- **Baseline:** `build/mobile-1.10.138-optimized-20261015`, commit `584aed3ae20f1af7b32ca17e7319ba3dbd7a17cc`.
+- **Build commit:** `a14188fdd64476a57ac131be6f3457f2b50ce2be`.
+- **Workflow run:** [39192034290 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39192034290).
+- **Artifact:** [NM7-IPTV-Mobile-1.10.139-OPTIMIZED](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39192034290/artifacts/12160098395), ID `12160098395`.
+- **APK SHA-256:** `7fca08e2a1d6571a0a5972f5f84f5d38b1b6dc8cbc58f3d887e4a2e515628f74`.
+
+## Phạm vi thay đổi
+Chỉ đổi URL EPG mặc định thành:
+
+```
+https://epg.io.vn/epg.xml
+```
+
+- Khởi tạo ứng dụng dùng URL EPG mặc định trên.
+- Khi đổi sang nguồn playlist mới không có `url-tvg`/EPG riêng, tiếp tục dùng URL mặc định thay vì xóa EPG.
+- Nếu playlist khai báo EPG riêng, vẫn ưu tiên URL đó như hành vi hiện có.
+- Giữ nguyên tùy chọn nhập URL EPG thủ công và xóa EPG.
+- Không thay đổi các tính năng IPTV, Live, YouTube, UI, playback hoặc xử lý playlist khác của 1.10.138.
+
+## Kết quả kiểm tra
+- Kiểm tra cấu hình versionName/versionCode: **PASS**.
+- Kiểm tra hồi quy Live feed: **PASS**.
+- Kiểm tra nút đổi server trong fullscreen: **PASS**.
+- Build `:app:assembleMobileDebug`: **PASS**.
+- Toàn bộ `:app:testMobileDebugUnitTest`: **PASS**.
+- APK được upload thành artifact; checksum SHA-256 đối chiếu khớp với CI.
+- Chưa có kiểm thử runtime trên thiết bị thật; không suy diễn CI PASS thành xác nhận mọi kênh phát thành công.
+
+## Bảo vệ bản gốc
+- Không sửa nhánh `build/mobile-1.10.138-optimized-20261015`.
+- Không merge candidate vào baseline/stable.
+- Chỉ promote thành stable sau khi người dùng tự kiểm thử và xác nhận.
+
+---
+
+# LỊCH SỬ TIẾN ĐỘ PHÁT HÀNH — NM7 IPTV MOBILE 1.10.136 — STABLE — 2026-10-14
+
+## Trạng thái tại thời điểm phát hành 1.10.136
+- **ĐÃ CHỐT STABLE tại thời điểm 2026-10-14:** người dùng đã cài thử 1.10.136 và xác nhận nút đổi server toàn màn hình hoạt động OK.
 - **Version:** 1.10.136 / `versionCode 152`.
 - **Nhánh stable mới:** `stable/mobile-1.10.136`.
 - Nhánh stable cũ `stable/mobile-1.10.135` được giữ nguyên làm mốc trước đó; `stable/mobile-1.10.128` không bị thay đổi.
