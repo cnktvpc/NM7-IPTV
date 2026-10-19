@@ -1,6 +1,48 @@
-# NM7 IPTV Mobile — STABLE BASELINE 1.10.136 — 2026-10-14
+# NM7 IPTV Mobile — Candidate 1.10.139 — Default EPG — 2026-10-19
 
-> **1.10.136 là bản ổn định chính thức hiện tại.** Người dùng đã cài bản thử nghiệm, xác nhận nút đổi server ở player toàn màn hình hoạt động đúng; bản đã qua build và toàn bộ unit tests.
+> **Trạng thái: CI PASS, đang là candidate để kiểm thử trên thiết bị; chưa đánh dấu STABLE.** Bản này được build từ đúng baseline `build/mobile-1.10.138-optimized-20261015`. Chỉ thay đổi mặc định lịch phát sóng EPG; không merge/ghi đè nhánh gốc.
+
+## Thông tin bản build
+
+- **Version:** 1.10.139
+- **versionCode:** 155
+- **Branch:** `work/mobile-1.10.139-default-epg-20261019`
+- **Baseline branch:** `build/mobile-1.10.138-optimized-20261015`
+- **Baseline commit:** `584aed3ae20f1af7b32ca17e7319ba3dbd7a17cc`
+- **Build commit:** `a14188fdd64476a57ac131be6f3457f2b50ce2be`
+- **GitHub Actions:** [Run 39192034290 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39192034290)
+- **Artifact:** [NM7-IPTV-Mobile-1.10.139-OPTIMIZED](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39192034290/artifacts/12160098395)
+- **Artifact ID:** `12160098395`
+- **APK SHA-256:** `7fca08e2a1d6571a0a5972f5f84f5d38b1b6dc8cbc58f3d887e4a2e515628f74`
+
+## Thay đổi duy nhất trong ứng dụng
+
+- EPG mặc định: `https://epg.io.vn/epg.xml`.
+- Khi mở ứng dụng hoặc chuyển sang nguồn playlist mới không khai báo EPG riêng, dùng URL mặc định trên.
+- Nếu playlist có `url-tvg`/`x-tvg-url`, vẫn ưu tiên URL EPG được khai báo trong playlist như trước.
+- Người dùng vẫn có thể nhập URL EPG thủ công hoặc xóa EPG trong giao diện hiện có.
+- Không thay đổi tính năng IPTV, Live, YouTube, giao diện, playback hay các chức năng khác của baseline 1.10.138.
+
+## Xác minh CI
+
+- Build `:app:assembleMobileDebug`: **PASS**.
+- Toàn bộ `:app:testMobileDebugUnitTest`: **PASS**.
+- Regression checks cho Live feed và bộ chọn server toàn màn hình: **PASS**.
+- Kiểm tra cấu hình phiên bản và EPG mặc định: **PASS**.
+- SHA-256 APK khớp với checksum do workflow công bố.
+- **Chưa xác nhận runtime trên thiết bị thật.** CI PASS không thay thế việc cài đặt và kiểm thử phát kênh thực tế.
+
+## Quy tắc giữ baseline
+
+- Giữ nguyên nhánh gốc `build/mobile-1.10.138-optimized-20261015` tại commit `584aed3ae20f1af7b32ca17e7319ba3dbd7a17cc`.
+- Không merge candidate vào nhánh gốc và không thay đổi stable branch khi chưa được yêu cầu.
+- Chỉ đánh dấu 1.10.139 là ổn định sau khi người dùng kiểm thử thực tế và xác nhận.
+
+---
+
+# LỊCH SỬ — STABLE BASELINE 1.10.136 — 2026-10-14
+
+> **Tại thời điểm 2026-10-14, 1.10.136 là bản ổn định chính thức.** Người dùng đã cài bản thử nghiệm, xác nhận nút đổi server ở player toàn màn hình hoạt động đúng; bản đã qua build và toàn bộ unit tests.
 
 ## Mốc ổn định đã chốt
 
