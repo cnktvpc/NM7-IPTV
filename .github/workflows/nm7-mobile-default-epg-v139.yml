@@ -10,6 +10,7 @@ name: NM7 IPTV Mobile 1.10.139 Default EPG — Build
     paths:
       - "app/**"
       - "scripts/verify-mobile-live-feed-v134.py"
+      - "scripts/verify-mobile-live-feed-v138.py"
       - "scripts/verify-mobile-live-fullscreen-server-v138.py"
       - "scripts/diagnose-mobile-live-feed.py"
       - ".github/workflows/nm7-mobile-default-epg-v139.yml"
