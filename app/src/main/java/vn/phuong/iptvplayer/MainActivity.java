@@ -36,6 +36,7 @@ public final class MainActivity extends Activity {
     private static final int PICK_WALLPAPER = 103;
     private static final int MAX_PLAYLIST_BYTES = 8 * 1024 * 1024;
     private static final String DEFAULT_PLAYLIST = PlaylistSourceStore.DEFAULT_URL;
+    private static final String DEFAULT_EPG_URL = "https://epg.io.vn/epg.xml";
     static final String EXTRA_OPEN_APP_SETTINGS = "open_app_settings";
 
     private final ExecutorService io = SessionStore.IO;
@@ -62,7 +63,7 @@ public final class MainActivity extends Activity {
     private TextView txtEmpty;
     private ProgressBar progress;
     private int duplicateCount, missingUrlCount, activeSection;
-    private String currentSource = "", selectedGroup = "", epgUrl = "";
+    private String currentSource = "", selectedGroup = "", epgUrl = DEFAULT_EPG_URL;
     private boolean loading, importExpanded = true, liveOnly;
     private static final String LIVE_GROUP_TAG = "__NM7_LIVE_EVENTS__";
     private int wallpaperGeneration, playlistRequestGeneration;
@@ -182,7 +183,7 @@ public final class MainActivity extends Activity {
     private void loadDefaultPlaylist(){inputUrl.setText(DEFAULT_PLAYLIST);loadFromUrl();}
 
     private void resetToDefaultPlaylist(){
-        currentSource=DEFAULT_PLAYLIST;epgUrl="";duplicateCount=0;missingUrlCount=0;
+        currentSource=DEFAULT_PLAYLIST;epgUrl=DEFAULT_EPG_URL;duplicateCount=0;missingUrlCount=0;
         allChannels.clear();inputSearch.setText("");selectedGroup="";activeSection=0;
         rebuildGroups();updateSectionButtons();filter();adapter.submitGuide(null);
         inputUrl.setText(DEFAULT_PLAYLIST);setImportExpanded(false);saveSession();loadFromUrl();
@@ -324,7 +325,7 @@ public final class MainActivity extends Activity {
             new AlertDialog.Builder(this).setTitle("Không có kênh hợp lệ").setMessage("Không thay thế playlist đang mở.").setPositiveButton("Đóng",null).show();return;
         }
         String previous=currentSource.isEmpty()?"":PlaylistSourceStore.sourceUrl(currentSource),next=PlaylistSourceStore.sourceUrl(source);
-        if(!r.epgUrl.isEmpty())epgUrl=r.epgUrl;else if(!previous.equals(next))epgUrl="";
+        if(!r.epgUrl.isEmpty())epgUrl=r.epgUrl;else if(!previous.equals(next))epgUrl=DEFAULT_EPG_URL;
         allChannels.clear();allChannels.addAll(r.channels);duplicateCount=r.duplicateCount;missingUrlCount=r.missingUrlCount;currentSource=source;
         if(!preserveNavigation){inputSearch.setText("");selectedGroup="";}
         rebuildGroups();filter();setLoading(false);setImportExpanded(false);saveSession();
