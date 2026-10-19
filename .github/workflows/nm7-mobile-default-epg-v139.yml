@@ -1,5 +1,5 @@
 name: NM7 IPTV Mobile 1.10.139 Default EPG — Build
-# Builds an isolated 1.10.139 candidate with the default XMLTV EPG URL.
+## Builds an isolated 1.10.139 candidate with the default XMLTV EPG URL.
 # Preserve all 1.10.138 Live features while changing only the default EPG URL.
 # Build is gated on Live feature checks, baseline pull-to-refresh checks, and the full unit-test suite.
 
@@ -20,7 +20,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: nm7-mobile-live-feed-v138
+  group: nm7-mobile-default-epg-v139
   cancel-in-progress: true
 
 jobs:
@@ -121,7 +121,7 @@ jobs:
         run: |
           set -euxo pipefail
           test "$(grep -c 'versionName = "1.10.139"' app/build.gradle.kts)" -eq 1
-          test "$(grep -c 'versionCode = 154' app/build.gradle.kts)" -eq 1
+          test "$(grep -c 'versionCode = 155' app/build.gradle.kts)" -eq 1
 
       - name: Verify NM7 dedicated Live feed implementation
         run: |
