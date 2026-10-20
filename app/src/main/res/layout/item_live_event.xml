@@ -4,11 +4,13 @@
     android:layout_height="wrap_content"
     android:layout_marginBottom="1dp"
     android:background="@drawable/live_event_card"
+    android:clickable="true"
+    android:focusable="true"
     android:gravity="center_vertical"
-    android:minHeight="66dp"
+    android:minHeight="74dp"
     android:orientation="horizontal"
     android:paddingHorizontal="6dp"
-    android:paddingVertical="2dp">
+    android:paddingVertical="3dp">
 
     <FrameLayout
         android:layout_width="58dp"
@@ -87,29 +89,31 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="1dp"
+            android:layout_marginTop="2dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/btnLiveServers"
-            android:layout_width="wrap_content"
-            android:layout_height="24dp"
-            android:background="@drawable/button_secondary"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center"
-            android:paddingHorizontal="7dp"
-            android:text="1 Server"
-            android:textColor="@color/live_accent"
-            android:textSize="10sp"
-            android:textStyle="bold" />
+            <TextView
+                android:id="@+id/btnLiveServers"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:background="@drawable/button_secondary"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:minWidth="100dp"
+                android:paddingHorizontal="10dp"
+                android:text="Chọn server · 2 ▾"
+                android:textColor="@color/live_accent"
+                android:textSize="11sp"
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/txtLiveDuration"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
                 android:ellipsize="end"
                 android:gravity="center_vertical"
                 android:maxLines="1"
@@ -123,7 +127,7 @@
     <TextView
         android:id="@+id/btnLiveFavorite"
         android:layout_width="36dp"
-        android:layout_height="42dp"
+        android:layout_height="44dp"
         android:contentDescription="Thêm hoặc bỏ sự kiện yêu thích"
         android:focusable="false"
         android:gravity="center"
