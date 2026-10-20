@@ -109,8 +109,9 @@ public final class HomeTabBar {
         // temporarily suspends YouTube. If IPTV has no active player, YouTube remains
         // available in the background for instant return to the previous session.
         PlayerActivity.cancelYoutubeHandoff();
-        SharedPlaybackSession.setTab(activity, SharedPlaybackSession.TAB_IPTV);
-        MobileNm7Application.markTabSwitch();
+        long handoffId = SharedPlaybackSession.beginTabSwitch(activity,
+                SharedPlaybackSession.TAB_IPTV, "youtube_to_iptv_tab");
+        MobileNm7Application.markTabSwitch(handoffId);
         Intent intent = new Intent(activity, MainActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
         startWithoutAnimation(activity, intent);
@@ -130,8 +131,9 @@ public final class HomeTabBar {
         }
         // Settings are hosted by the existing MainActivity. Return to that host with
         // the same no-animation handoff used by the existing IPTV navigation.
-        SharedPlaybackSession.setTab(activity, SharedPlaybackSession.TAB_IPTV);
-        MobileNm7Application.markTabSwitch();
+        long handoffId = SharedPlaybackSession.beginTabSwitch(activity,
+                SharedPlaybackSession.TAB_IPTV, "youtube_to_app_settings");
+        MobileNm7Application.markTabSwitch(handoffId);
         Intent intent = new Intent(activity, MainActivity.class);
         intent.putExtra(MainActivity.EXTRA_OPEN_APP_SETTINGS, true);
         intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
@@ -139,8 +141,9 @@ public final class HomeTabBar {
     }
 
     private static void openBrowse(Activity activity) {
-        SharedPlaybackSession.setTab(activity, SharedPlaybackSession.TAB_YOUTUBE);
-        MobileNm7Application.markTabSwitch();
+        long handoffId = SharedPlaybackSession.beginTabSwitch(activity,
+                SharedPlaybackSession.TAB_YOUTUBE, "iptv_to_youtube_tab");
+        MobileNm7Application.markTabSwitch(handoffId);
         // If a YouTube playback session already exists, return directly to its real
         // PlaybackActivity. This keeps the actual video surface visible; do not send the
         // user to Browse while the decoder is still playing invisibly in the background.
@@ -153,8 +156,14 @@ public final class HomeTabBar {
             if (active) {
                 MobileInlinePlayerProviderV2.releaseForYoutube();
                 SmartTubeRuntime.initialize(activity.getApplicationContext());
-                playback.getMethod("restoreNm7Player").invoke(null);
-                return;
+                boolean isMini = false;
+                try {
+                    isMini = Boolean.TRUE.equals(playback.getMethod("isNm7MiniPlayerActive").invoke(null));
+                } catch (ReflectiveOperationException ignored) {}
+                if (!isMini) {
+                    playback.getMethod("restoreNm7Player").invoke(null);
+                    return;
+                }
             }
         } catch (ReflectiveOperationException | RuntimeException error) {
             android.util.Log.w("NM7Navigation", "Existing YouTube session restore failed", error);

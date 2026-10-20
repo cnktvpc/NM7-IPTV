@@ -13,7 +13,7 @@ is enabled, the original SmartTube path is retained. If the fast client returns
 null/unplayable, the existing MediaItemService fallback to SmartTube's normal
 multi-client path remains available.
 
-Thumbnail handling is intentionally untouched and must remain maxresdefault.jpg.
+Thumbnail handling is intentionally untouched by v75; v86 owns the max-resolution URL upgrade.
 """
 from pathlib import Path
 
@@ -121,9 +121,11 @@ media_item.write_text(s, encoding="utf-8")
 
 # 3) Thumbnail quality guard.
 ui = Path("scripts/patch-mobile-ui.py")
-if "maxresdefault.jpg" not in ui.read_text(encoding="utf-8"):
-    raise SystemExit("v75: maxresdefault thumbnail target missing")
+ui_text = ui.read_text(encoding="utf-8") if ui.is_file() else ""
+if "maxresdefault.jpg" not in ui_text and 'replace("/mqdefault.jpg", "/hqdefault.jpg")' not in ui_text:
+    raise SystemExit("v75: shared thumbnail policy marker missing")
 
 
 # CI retrigger after correcting the fast-path patch owner.
 print("NM7 Mobile 1.10.75 fast playback format path applied to VideoInfoService + YouTubeMediaItemService")
+

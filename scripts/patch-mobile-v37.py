@@ -54,9 +54,9 @@ t = method(t, 'protected void onResume()', '''        super.onResume();
         mNm7LeavingForMini = false;
         completeNm7RestoreOnResume();
         mPlaybackPresenter.onViewResumed();
-        if (mNm7TargetRestoreWaiting && mPlayer != null) mPlayer.setPlayWhenReady(false);
         showHideWidgets(true);''')
-t = method(t, 'protected void onPause()', '''        cancelNm7TargetRestore(true);
+t = method(t, 'protected void onPause()', '''        if (mNm7TargetRestoreWaiting && mNm7ResumeAfterTarget) sNm7ResumeAfterIptv = true;
+        cancelNm7TargetRestore(false);
         // When Back enters NM7 mini, playback remains foreground in BrowseActivity.
         // Do not block the decoder/renderers or notify presenter of a full playback pause.
         if (sNm7Mini && !mNm7Stopped && !isFinishing() && mPlayer != null) {
@@ -80,7 +80,8 @@ t = method(t, 'public void onBackPressed()', '''        if (onDetailsBack()) ret
         if (mPlayer == null || mNm7Stopped) { super.onBackPressed(); return; }
         if (mNm7LeavingForMini) return;
         mNm7LeavingForMini = true;
-        cancelNm7TargetRestore(true);
+        if (mNm7TargetRestoreWaiting && mNm7ResumeAfterTarget) sNm7ResumeAfterIptv = true;
+        cancelNm7TargetRestore(false);
         mIsBackPressed = true;
         sNm7RestorePending = false;
         sNm7Mini = true;
@@ -103,12 +104,11 @@ t = replace(t, '    protected void onDestroy() {\n        super.onDestroy();', '
         super.onDestroy();''')
 t = replace(t, '            public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {', '''            public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
                 if (playWhenReady && playbackState == Player.STATE_READY && !mNm7Stopped && !sNm7SuspendedForIptv && !mNm7OwnsPlayback) {
-                    try {
-                        Class.forName("vn.phuong.iptvplayer.MobileNm7Application")
-                                .getMethod("pauseIptvForYoutube").invoke(null);
-                        mNm7OwnsPlayback = true;
-                    } catch (ReflectiveOperationException | RuntimeException error) {
-                        android.util.Log.e("NM7Playback", "IPTV ownership handoff failed", error);
+                    if (mNm7TargetRestoreWaiting) {
+                        mPlayer.setVolume(0f);
+                    } else if (!nm7ClaimYoutubeAudio("player_ready")) {
+                        mPlayer.setVolume(0f);
+                        mPlayer.setPlayWhenReady(false);
                     }
                 }
                 if (mNm7OwnsPlayback && (!playWhenReady || playbackState == Player.STATE_ENDED)) {

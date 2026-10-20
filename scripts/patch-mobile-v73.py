@@ -44,13 +44,13 @@ if "PLAYER_DATA_SOURCE_OKHTTP" in t:
     raise SystemExit("OkHttp transport override remains after v73 patch")
 p.write_text(t, encoding="utf-8")
 
-# 2) Keep the exact YouTube thumbnail quality/resolution used by 1.10.72.
+# 2) Keep the existing high-resolution card-image fallback unchanged.
 # The shared UI patch is the actual owner of the card URL. Verify that it still
-# uses the same max-resolution endpoint before allowing the v73 optimization.
+# accepts either the legacy hqdefault fallback or the current maxresdefault policy.
 ui_patch = Path("scripts/patch-mobile-ui.py")
-if not ui_patch.is_file() or "maxresdefault.jpg" not in ui_patch.read_text(encoding="utf-8"):
-    raise SystemExit("YouTube thumbnail target must remain maxresdefault.jpg")
-# Do not modify the thumbnail URL or substitute a lower-resolution target.
+ui_text = ui_patch.read_text(encoding="utf-8") if ui_patch.is_file() else ""
+if "maxresdefault.jpg" not in ui_text and 'replace("/mqdefault.jpg", "/hqdefault.jpg")' not in ui_text:
+    raise SystemExit("v73: shared thumbnail policy marker missing")
 
 
 # 3) Keep the selected-video format request on the background I/O scheduler.
@@ -70,3 +70,4 @@ if 'android.util.Log.i("NM7Playback", "selected_video_start");' not in s:
 p.write_text(s, encoding="utf-8")
 
 print("NM7 1.10.73 network/list loading optimization applied")
+

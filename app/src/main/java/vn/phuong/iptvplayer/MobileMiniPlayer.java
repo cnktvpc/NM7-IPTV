@@ -1,23 +1,44 @@
 package vn.phuong.iptvplayer;
 
 import android.app.Activity;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
 
-/** One bounded touch surface shared across native Browse and the IPTV list. */
+/**
+ * Official YouTube-style floating 16:9 PiP miniplayer window in the bottom-right corner.
+ * Supports free dragging with edge-snap, tap-to-expand, circular top-left play/pause,
+ * circular top-right close button, and seamless tab-switch resume.
+ */
 public final class MobileMiniPlayer {
     private static FrameLayout host;
     private static View surface;
     private static final String PLAYER = "com.liskovsoft.smartyoutubetv2.droid.ui.playback.PlaybackActivity";
-    private static final String EXO_PLAYER_VIEW = "com.google.android.exoplayer2.ui.PlayerView";
 
     private MobileMiniPlayer() { }
 
+    private static long currentYoutubeTabSwitchId() {
+        try {
+            Object value = Class.forName("vn.phuong.iptvplayer.SharedPlaybackSession")
+                    .getMethod("currentTabSwitchGeneration").invoke(null);
+            return value instanceof Number ? ((Number) value).longValue() : -1L;
+        } catch (ReflectiveOperationException | RuntimeException error) {
+            return -1L;
+        }
+    }
+
     public static void attach(Activity activity) {
-        if (activity.isFinishing() || activity.isDestroyed()) return;
+        if (activity == null || activity.isFinishing() || activity.isDestroyed()) return;
         try {
             Class<?> bridge = Class.forName(PLAYER);
             if (!Boolean.TRUE.equals(bridge.getMethod("isNm7MiniPlayerActive").invoke(null))) {
@@ -27,25 +48,50 @@ public final class MobileMiniPlayer {
 
             ViewGroup root = activity.findViewById(android.R.id.content);
             if (!(root instanceof FrameLayout)) return;
-            if (host != null && host.getParent() == root) return;
+
+            // If already attached to this root (e.g., returning from IPTV tab to BrowseActivity),
+            // still invoke attachNm7MiniPlayer to clear sNm7SuspendedForIptv and resume playback!
+            if (host != null && host.getParent() == root && surface != null) {
+                host.bringToFront();
+                long tabSwitchId = currentYoutubeTabSwitchId();
+                try {
+                    bridge.getMethod("attachNm7MiniPlayer", View.class, View.class, long.class)
+                            .invoke(null, surface, surface, tabSwitchId);
+                } catch (ReflectiveOperationException | RuntimeException error) {
+                    android.util.Log.e("NM7Playback", "Rebind existing mini PlayerView", error);
+                }
+                return;
+            }
 
             float d = activity.getResources().getDisplayMetrics().density;
-            FrameLayout next = new FrameLayout(activity);
-            next.setBackgroundColor(0xff111318);
-            next.setElevation(4 * d);
+            int screenWidth = activity.getResources().getDisplayMetrics().widthPixels;
 
-            int width = Math.min((int)(220 * d),
-                    activity.getResources().getDisplayMetrics().widthPixels - (int)(24 * d));
+            final FrameLayout next = new FrameLayout(activity);
+            GradientDrawable cardBg = new GradientDrawable();
+            cardBg.setColor(0xFF0F0F0F);
+            cardBg.setCornerRadius(12 * d);
+            next.setBackground(cardBg);
+            next.setElevation(10 * d);
+            next.setClipToOutline(true);
+
+            int width = Math.min(Math.round(204 * d), Math.round(screenWidth * 0.48f));
+            int height = Math.round(width * 9f / 16f);
+            int margin = Math.round(12 * d);
+            int bottomMargin = Math.round(72 * d); // Cleanly above the 64dp bottom navigation bar
+
             FrameLayout.LayoutParams box = new FrameLayout.LayoutParams(
-                    width, width * 9 / 16, Gravity.BOTTOM | Gravity.END);
-            box.bottomMargin = (int)(80 * d);
-            box.rightMargin = (int)(12 * d);
+                    width, height, Gravity.BOTTOM | Gravity.END);
+            box.bottomMargin = bottomMargin;
+            box.rightMargin = margin;
 
+            // 1. 16:9 Video Surface (TextureView-backed PlayerView)
             View video = createPlayerView(activity);
             video.setClickable(false);
             video.setFocusable(false);
-            next.addView(video, new FrameLayout.LayoutParams(-1, -1));
+            next.addView(video, new FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
+            // 2. Tap & Drag Shield (placed below the corner buttons so buttons get direct clicks)
             View tapShield = new View(activity);
             tapShield.setClickable(true);
             tapShield.setFocusable(true);
@@ -56,82 +102,154 @@ public final class MobileMiniPlayer {
                     android.util.Log.e("NM7Playback", "Restore mini", error);
                 }
             });
-            next.addView(tapShield, new FrameLayout.LayoutParams(-1, -1));
             tapShield.setOnTouchListener(new View.OnTouchListener() {
-                float downX, downY, startX, startY;
+                float downRawX, downRawY, startTransX, startTransY;
                 boolean dragging;
-                @Override public boolean onTouch(View view, android.view.MotionEvent event) {
+                final int slop = ViewConfiguration.get(activity).getScaledTouchSlop();
+
+                @Override public boolean onTouch(View view, MotionEvent event) {
                     switch (event.getActionMasked()) {
-                        case android.view.MotionEvent.ACTION_DOWN:
-                            downX = event.getRawX(); downY = event.getRawY();
-                            startX = next.getTranslationX(); startY = next.getTranslationY();
+                        case MotionEvent.ACTION_DOWN:
+                            next.animate().cancel();
+                            downRawX = event.getRawX();
+                            downRawY = event.getRawY();
+                            startTransX = next.getTranslationX();
+                            startTransY = next.getTranslationY();
                             dragging = false;
                             return true;
-                        case android.view.MotionEvent.ACTION_MOVE:
-                            float dx = event.getRawX() - downX, dy = event.getRawY() - downY;
-                            if (Math.abs(dx) + Math.abs(dy) > android.view.ViewConfiguration.get(activity).getScaledTouchSlop()) dragging = true;
+
+                        case MotionEvent.ACTION_MOVE:
+                            float dx = event.getRawX() - downRawX;
+                            float dy = event.getRawY() - downRawY;
+                            if (!dragging && Math.hypot(dx, dy) > slop) {
+                                dragging = true;
+                            }
                             if (dragging) {
-                                float x = Math.max(0, Math.min(root.getWidth() - next.getWidth(), next.getLeft() + startX + dx));
-                                float y = Math.max(0, Math.min(root.getHeight() - next.getHeight() - 80 * d, next.getTop() + startY + dy));
-                                next.setTranslationX(x - next.getLeft());
-                                next.setTranslationY(y - next.getTop());
+                                float minX = margin - next.getLeft();
+                                float maxX = root.getWidth() - next.getWidth() - margin - next.getLeft();
+                                float minY = margin - next.getTop();
+                                float maxY = root.getHeight() - next.getHeight() - bottomMargin - next.getTop();
+                                float targetX = Math.max(minX, Math.min(maxX, startTransX + dx));
+                                float targetY = Math.max(minY, Math.min(maxY, startTransY + dy));
+                                next.setTranslationX(targetX);
+                                next.setTranslationY(targetY);
                             }
                             return true;
-                        case android.view.MotionEvent.ACTION_UP:
-                            if (!dragging) view.performClick();
+
+                        case MotionEvent.ACTION_UP:
+                            if (!dragging) {
+                                view.performClick();
+                            } else {
+                                snapToNearestEdge(root, next, margin);
+                            }
                             return true;
-                        case android.view.MotionEvent.ACTION_CANCEL:
+
+                        case MotionEvent.ACTION_CANCEL:
+                            if (dragging) {
+                                snapToNearestEdge(root, next, margin);
+                            }
                             return true;
-                        default: return true;
+
+                        default:
+                            return true;
                     }
                 }
             });
-            next.setClickable(true);
+            next.addView(tapShield, new FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-            ImageButton close = new ImageButton(activity);
-            close.setImageResource(android.R.drawable.ic_menu_close_clear_cancel);
-            close.setContentDescription("Đóng video YouTube");
-            next.addView(close, new FrameLayout.LayoutParams(
-                    (int)(40 * d), (int)(40 * d), Gravity.TOP | Gravity.END));
-            close.setOnClickListener(v -> MobileNm7Application.stopYoutubeForIptv());
+            // 3. Subtle center buffering spinner
+            ProgressBar buffering = new ProgressBar(activity);
+            buffering.setIndeterminate(true);
+            buffering.setClickable(false);
+            buffering.setVisibility(View.GONE);
+            next.addView(buffering, new FrameLayout.LayoutParams(
+                    Math.round(24 * d), Math.round(24 * d), Gravity.CENTER));
+
+            // 4. Top-Left Circular Play/Pause Button (matches official YouTube floating PiP)
+            int btnSize = Math.round(32 * d);
+            int btnMargin = Math.round(6 * d);
+            int btnPad = Math.round(6 * d);
 
             ImageButton playPause = new ImageButton(activity);
-            playPause.setBackgroundColor(0x66000000);
-            playPause.setColorFilter(android.graphics.Color.WHITE);
-            next.addView(playPause, new FrameLayout.LayoutParams(
-                    (int)(48 * d), (int)(48 * d), Gravity.TOP | Gravity.START));
-            android.widget.ProgressBar buffering = new android.widget.ProgressBar(activity);
-            buffering.setClickable(false);
-            next.addView(buffering, new FrameLayout.LayoutParams((int)(32 * d), (int)(32 * d), Gravity.CENTER));
-            android.widget.TextView status = new android.widget.TextView(activity);
-            status.setTextColor(android.graphics.Color.WHITE);
-            status.setBackgroundColor(0xaa000000);
-            status.setTextSize(12);
-            status.setGravity(Gravity.CENTER);
-            status.setText("Lỗi phát • bấm ▶ để thử lại");
-            next.addView(status, new FrameLayout.LayoutParams(-1, (int)(32 * d), Gravity.BOTTOM));
+            GradientDrawable playBg = new GradientDrawable();
+            playBg.setShape(GradientDrawable.OVAL);
+            playBg.setColor(0x99000000);
+            playPause.setBackground(playBg);
+            playPause.setColorFilter(Color.WHITE);
+            playPause.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            playPause.setPadding(btnPad, btnPad, btnPad, btnPad);
+            playPause.setImageResource(android.R.drawable.ic_media_pause);
+            playPause.setContentDescription("Tạm dừng / Phát");
+            FrameLayout.LayoutParams playLp = new FrameLayout.LayoutParams(
+                    btnSize, btnSize, Gravity.TOP | Gravity.START);
+            playLp.leftMargin = btnMargin;
+            playLp.topMargin = btnMargin;
+            next.addView(playPause, playLp);
+
+            // 5. Top-Right Circular Close (X) Button (matches official YouTube floating PiP)
+            ImageButton close = new ImageButton(activity);
+            GradientDrawable closeBg = new GradientDrawable();
+            closeBg.setShape(GradientDrawable.OVAL);
+            closeBg.setColor(0x99000000);
+            close.setBackground(closeBg);
+            close.setColorFilter(Color.WHITE);
+            close.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            close.setPadding(btnPad, btnPad, btnPad, btnPad);
+            close.setImageResource(android.R.drawable.ic_menu_close_clear_cancel);
+            close.setContentDescription("Đóng video YouTube");
+            FrameLayout.LayoutParams closeLp = new FrameLayout.LayoutParams(
+                    btnSize, btnSize, Gravity.TOP | Gravity.END);
+            closeLp.rightMargin = btnMargin;
+            closeLp.topMargin = btnMargin;
+            next.addView(close, closeLp);
+
+            // 6. Thin YouTube Red Progress Bar along the bottom edge
+            ProgressBar progress = new ProgressBar(activity, null, android.R.attr.progressBarStyleHorizontal);
+            progress.setIndeterminate(false);
+            progress.setMax(1000);
+            progress.setProgress(0);
+            progress.setProgressTintList(ColorStateList.valueOf(0xFFFF0033));
+            progress.setProgressBackgroundTintList(ColorStateList.valueOf(0x44FFFFFF));
+            FrameLayout.LayoutParams progressLp = new FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, Math.max(2, Math.round(2.5f * d)), Gravity.BOTTOM);
+            next.addView(progress, progressLp);
+
+            // Button click handlers
+            playPause.setOnClickListener(v -> {
+                try {
+                    bridge.getMethod("toggleNm7Playback").invoke(null);
+                    boolean playing = Boolean.TRUE.equals(bridge.getMethod("isNm7Playing").invoke(null));
+                    playPause.setImageResource(playing ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play);
+                } catch (ReflectiveOperationException error) {
+                    android.util.Log.e("NM7Playback", "Toggle mini playback", error);
+                }
+            });
+
+            close.setOnClickListener(v -> {
+                remove();
+                MobileNm7Application.stopYoutubeForIptv();
+            });
+
             Runnable refreshControl = new Runnable() {
                 @Override public void run() {
                     if (host != next || !next.isAttachedToWindow()) return;
                     try {
                         int state = ((Number) bridge.getMethod("getNm7PlaybackState").invoke(null)).intValue();
                         buffering.setVisibility(state == 2 ? View.VISIBLE : View.GONE);
-                        status.setVisibility(state == -1 || state == 4 ? View.VISIBLE : View.GONE);
-                        if (state == 4) status.setText("Đã phát hết • ▶ phát lại");
-                        if (state == -1) status.setText(String.valueOf(bridge.getMethod("getNm7ErrorLabel").invoke(null)) + " • ▶ thử lại");
                         boolean playing = state != -1 && Boolean.TRUE.equals(bridge.getMethod("isNm7Playing").invoke(null));
                         playPause.setImageResource(playing ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play);
                         playPause.setContentDescription(playing ? "Tạm dừng YouTube" : "Phát YouTube");
-                    } catch (ReflectiveOperationException ignored) { }
-                    next.postDelayed(this, 500);
+
+                        long pos = ((Number) bridge.getMethod("getNm7VideoPosition").invoke(null)).longValue();
+                        long dur = ((Number) bridge.getMethod("getNm7VideoDuration").invoke(null)).longValue();
+                        if (dur > 0 && pos >= 0) {
+                            progress.setProgress((int) Math.min(1000L, (pos * 1000L) / dur));
+                        }
+                    } catch (Throwable ignored) { }
+                    next.postDelayed(this, 600L);
                 }
             };
-            playPause.setOnClickListener(v -> {
-                try { bridge.getMethod("toggleNm7Playback").invoke(null); }
-                catch (ReflectiveOperationException error) {
-                    android.util.Log.e("NM7Playback", "Toggle mini playback", error);
-                }
-            });
 
             root.addView(next, box);
 
@@ -139,19 +257,30 @@ public final class MobileMiniPlayer {
             final View previousSurface = surface;
             host = next;
             surface = video;
+            final long tabSwitchId = currentYoutubeTabSwitchId();
+
+            // Bind immediately on frame 0 so there is no black flash on transition
+            try {
+                bridge.getMethod("attachNm7MiniPlayer", View.class, View.class, long.class)
+                        .invoke(null, previousSurface, video, tabSwitchId);
+                if (previousHost != null && previousHost != next && previousHost.getParent() instanceof ViewGroup) {
+                    ((ViewGroup) previousHost.getParent()).removeView(previousHost);
+                }
+            } catch (ReflectiveOperationException | RuntimeException error) {
+                android.util.Log.e("NM7Playback", "Immediate mini PlayerView bind", error);
+            }
+
             next.post(refreshControl);
 
+            // Secondary post check after layout completion
             video.post(() -> {
                 if (host != next || surface != video
                         || activity.isFinishing() || activity.isDestroyed()) return;
                 try {
-                    bridge.getMethod("attachNm7MiniPlayer", View.class, View.class)
-                            .invoke(null, previousSurface, video);
-                    if (previousHost != null && previousHost.getParent() instanceof ViewGroup) {
-                        ((ViewGroup) previousHost.getParent()).removeView(previousHost);
-                    }
+                    bridge.getMethod("attachNm7MiniPlayer", View.class, View.class, long.class)
+                            .invoke(null, video, video, tabSwitchId);
                 } catch (ReflectiveOperationException | RuntimeException error) {
-                    android.util.Log.e("NM7Playback", "Switch mini PlayerView", error);
+                    android.util.Log.e("NM7Playback", "Post mini PlayerView bind", error);
                 }
             });
         } catch (ReflectiveOperationException | RuntimeException error) {
@@ -159,9 +288,22 @@ public final class MobileMiniPlayer {
         }
     }
 
+    private static void snapToNearestEdge(ViewGroup root, View view, int margin) {
+        if (root == null || view == null) return;
+        float currentX = view.getLeft() + view.getTranslationX();
+        float centerX = currentX + view.getWidth() * 0.5f;
+        float targetLeft = (centerX < root.getWidth() * 0.5f)
+                ? margin
+                : (root.getWidth() - view.getWidth() - margin);
+        float targetTransX = targetLeft - view.getLeft();
+        view.animate()
+                .translationX(targetTransX)
+                .setDuration(160L)
+                .setInterpolator(new DecelerateInterpolator())
+                .start();
+    }
+
     private static View createPlayerView(Activity activity) throws ReflectiveOperationException {
-        // SurfaceView-backed PlayerView keeps decoder-to-surface rendering stable across
-        // mini/fullscreen handoff.
         return android.view.LayoutInflater.from(activity).inflate(R.layout.nm7_mini_player, null, false);
     }
 
@@ -183,5 +325,3 @@ public final class MobileMiniPlayer {
         surface = null;
     }
 }
-
-
