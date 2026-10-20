@@ -1,19 +1,19 @@
-name: NM7 IPTV Mobile 1.10.139 Default EPG — Build
-## Builds an isolated 1.10.139 candidate with the default XMLTV EPG URL.
+name: NM7 IPTV Mobile 1.10.140 Live Card Background — Build
+## Builds an isolated 1.10.140 candidate from 1.10.140 with only Live event-card styling changes.
 # Preserve all 1.10.138 Live features while changing only the default EPG URL.
 # Build is gated on Live feature checks, baseline pull-to-refresh checks, and the full unit-test suite.
 
 "on":
   push:
     branches:
-      - "work/mobile-1.10.139-default-epg-20261019"
+      - "work/mobile-1.10.140-live-card-background-20261020"
     paths:
       - "app/**"
       - "scripts/verify-mobile-live-feed-v134.py"
       - "scripts/verify-mobile-live-feed-v138.py"
       - "scripts/verify-mobile-live-fullscreen-server-v138.py"
       - "scripts/diagnose-mobile-live-feed.py"
-      - ".github/workflows/nm7-mobile-default-epg-v139.yml"
+      - ".github/workflows/nm7-mobile-live-card-background-v140.yml"
   workflow_dispatch:
 
 permissions:
@@ -21,7 +21,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: nm7-mobile-default-epg-v139
+  group: nm7-mobile-live-card-background-v140
   cancel-in-progress: true
 
 jobs:
@@ -53,7 +53,7 @@ jobs:
           report_dir="$(mktemp -d)"
           git clone --quiet --depth 1 --branch "$branch" "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git" "$report_dir"
           cd "$report_dir"
-          printf '# NM7 IPTV Mobile 1.10.139 — CI result\n\n- Status: **RUNNING**\n- Branch: `%s`\n- Source commit: `%s`\n- Workflow run: https://github.com/%s/actions/runs/%s\n\nBuild and full unit tests are in progress.\n' "$branch" "$GITHUB_SHA" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > LIVE_FEED_CI_RESULT.md
+          printf '# NM7 IPTV Mobile 1.10.140 — CI result\n\n- Status: **RUNNING**\n- Branch: `%s`\n- Source commit: `%s`\n- Workflow run: https://github.com/%s/actions/runs/%s\n\nBuild and full unit tests are in progress.\n' "$branch" "$GITHUB_SHA" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > LIVE_FEED_CI_RESULT.md
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add LIVE_FEED_CI_RESULT.md
@@ -118,11 +118,11 @@ jobs:
           set -euxo pipefail
           python3 scripts/verify-mobile-pull-refresh.py
 
-      - name: Verify 1.10.139 build configuration
+      - name: Verify 1.10.140 build configuration
         run: |
           set -euxo pipefail
-          test "$(grep -c 'versionName = "1.10.139"' app/build.gradle.kts)" -eq 1
-          test "$(grep -c 'versionCode = 155' app/build.gradle.kts)" -eq 1
+          test "$(grep -c 'versionName = "1.10.140"' app/build.gradle.kts)" -eq 1
+          test "$(grep -c 'versionCode = 156' app/build.gradle.kts)" -eq 1
 
       - name: Verify NM7 dedicated Live feed implementation
         run: |
@@ -257,7 +257,7 @@ jobs:
               p.write_text(''.join(lines))
           PY
 
-      - name: Build Mobile 1.10.139 (fullscreen Live server selector + elapsed duration)
+      - name: Build Mobile 1.10.140 (Live card background fix)
         run: |
           set -o pipefail
           gradle --no-daemon --console=plain \
@@ -291,7 +291,7 @@ jobs:
       - name: Upload Mobile APK
         uses: actions/upload-artifact@v4
         with:
-          name: NM7-IPTV-Mobile-1.10.139-OPTIMIZED
+          name: NM7-IPTV-Mobile-1.10.140-LIVE-CARD-BG
           path: dist/mobile/
           retention-days: 30
           if-no-files-found: error
@@ -304,7 +304,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          artifact_id="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts" --jq '.artifacts[] | select(.name == "NM7-IPTV-Mobile-1.10.139-OPTIMIZED") | .id' | head -n1)"
+          artifact_id="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts" --jq '.artifacts[] | select(.name == "NM7-IPTV-Mobile-1.10.140-LIVE-CARD-BG") | .id' | head -n1)"
           test -n "$artifact_id"
           branch="$GITHUB_REF_NAME"
           short_sha="${GITHUB_SHA:0:12}"
@@ -312,13 +312,13 @@ jobs:
           git clone --quiet --depth 1 --branch "$branch" "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git" "$report_dir"
           cd "$report_dir"
           {
-            echo "# NM7 IPTV Mobile 1.10.139 — CI result"
+            echo "# NM7 IPTV Mobile 1.10.140 — CI result"
             echo
             echo "- Result: **PASS** (APK build and full Mobile unit-test suite completed successfully)"
             echo "- Branch: $branch"
             echo "- Source commit: $GITHUB_SHA"
             echo "- Workflow run: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-            echo "- Artifact: [Download NM7-IPTV-Mobile-1.10.139-OPTIMIZED](https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts/$artifact_id)"
+            echo "- Artifact: [Download NM7-IPTV-Mobile-1.10.140-LIVE-CARD-BG](https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts/$artifact_id)"
             echo "- Artifact ID: $artifact_id"
             echo
             echo "## SHA-256"
@@ -347,7 +347,7 @@ jobs:
           report_dir="$(mktemp -d)"
           git clone --quiet --depth 1 --branch "$branch" "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git" "$report_dir"
           cd "$report_dir"
-          printf '# NM7 IPTV Mobile 1.10.139 — CI result\n\n- Status: **FAILED**\n- Branch: `%s`\n- Source commit: `%s`\n- Workflow run: https://github.com/%s/actions/runs/%s\n\nCheck this run for the failing build or unit-test step.\n' "$branch" "$GITHUB_SHA" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > LIVE_FEED_CI_RESULT.md
+          printf '# NM7 IPTV Mobile 1.10.140 — CI result\n\n- Status: **FAILED**\n- Branch: `%s`\n- Source commit: `%s`\n- Workflow run: https://github.com/%s/actions/runs/%s\n\nCheck this run for the failing build or unit-test step.\n' "$branch" "$GITHUB_SHA" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > LIVE_FEED_CI_RESULT.md
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add LIVE_FEED_CI_RESULT.md
