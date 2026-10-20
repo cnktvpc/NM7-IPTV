@@ -23,9 +23,11 @@
 - Không chỉnh parser/feed, nhóm/gộp trận, chu kỳ refresh, bộ nhớ cache, EPG, logic mở player, đổi server, yêu thích hoặc thời lượng live.
 - Không sửa nhánh stable hoặc baseline 1.10.138.
 
-## Kiểm thử cần xác nhận
-- CI build APK và toàn bộ Mobile unit tests.
-- Trên thiết bị: thẻ Live thấp tương đương thẻ kênh, tiêu đề dài được ellipsis, chọn server/yêu thích/playback và đổi server toàn màn hình vẫn hoạt động.
+## Kết quả CI và xác minh còn chờ
+- **CI: PASS** — [Run 39351043416](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39351043416); build APK, toàn bộ Mobile unit tests và upload artifact thành công.
+- **Artifact:** [NM7-IPTV-Mobile-1.10.141-COMPACT-LIVE](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39351043416/artifacts/12233590958), ID `12233590958`.
+- **APK SHA-256:** `f2e66e0d5eaec49ba6991b3c50a25b5826e93fcd3e76ff081263d33919d11d6e`.
+- **Chưa có xác nhận runtime trên thiết bị thật.** Cần kiểm thử trên thiết bị: thẻ Live thấp tương đương thẻ kênh, tiêu đề dài được ellipsis, chọn server/yêu thích/playback và đổi server toàn màn hình vẫn hoạt động.
 - Candidate chưa stable cho tới khi được người dùng xác nhận.
 
 ---
