@@ -86,6 +86,14 @@ require(generated, 'nm7ClaimYoutubeAudio("player_ready")', "generated READY audi
 require(generated, "if (mNm7TargetRestoreWaiting)", "generated silent frame restore")
 require(generated, "mNm7DesiredVolume = mPlayer.getVolume();", "generated initial mute")
 require(generated, "onRenderedFirstFrame()", "generated first-frame gate")
+restore_gate = include[frame_gate_start:frame_gate_end]
+require(restore_gate, "elapsed < 9_000L", "bounded first-frame recovery window")
+require(restore_gate, "mNm7TargetRestoreRecoveryAttempts < 3", "bounded target surface rebinds")
+require(restore_gate, "nowMs - mNm7TargetRestoreLastRecoveryMs >= 3_000L", "spaced surface recovery attempts")
+iptv_player = read("app/src/main/java/vn/phuong/iptvplayer/PlayerActivity.java")
+require(iptv_player, 'scheduleRecovery("Không có khung hình mới", false)', "READY video frame-stall recovery")
+fps_meter = read("app/src/main/java/vn/phuong/iptvplayer/FpsMeter.java")
+require(fps_meter, "FRAME_STALL_TIMEOUT_MS = 6_000L", "six-second IPTV frame-stall threshold")
 if 'getMethod("attachNm7MiniPlayer", View.class, View.class)' in generated:
     raise SystemExit("Generated SmartTube still uses the stale two-argument mini attach")
 
