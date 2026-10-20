@@ -18,9 +18,9 @@
 3. Tăng `versionName` từ `1.10.139` lên `1.10.140` và `versionCode` từ `155` lên `156`.
 4. Không sửa `LiveEventAdapter.java`, dữ liệu feed, lịch EPG, xử lý player, chọn server hoặc chức năng Live khác.
 
-## Xác minh còn chờ
-- Build APK và toàn bộ Mobile unit tests của GitHub Actions.
-- Kiểm thử trên điện thoại thật: so sánh nền các thẻ Live với thẻ kênh ở VTV/VTVcab; mở trận, chuyển server, thêm/bỏ yêu thích.
+## Kết quả CI và xác minh còn chờ
+- Build `:app:assembleMobileDebug`, unit tests, upload artifact: **PASS**.
+- **Chưa có xác nhận runtime trên thiết bị thật.** Cần kiểm thử trên điện thoại thật: so sánh nền các thẻ Live với thẻ kênh ở VTV/VTVcab; mở trận, chuyển server, thêm/bỏ yêu thích.
 - Chỉ xác nhận ổn định sau khi người dùng thử bản APK.
 
 ---
