@@ -119,11 +119,31 @@ public final class PlayerActivity extends Activity {
     };
     private final Runnable fpsUpdate = new Runnable() {
         @Override public void run() {
+            long nowMs = android.os.SystemClock.elapsedRealtime();
             if (player != null && videoCounters != null) {
-                double fps = fpsMeter.sample(android.os.SystemClock.elapsedRealtime(),
-                        videoCounters.renderedOutputBufferCount, player.isPlaying());
+                videoCounters.ensureUpdated();
+                long renderedFrames = videoCounters.renderedOutputBufferCount;
+                double fps = fpsMeter.sample(nowMs, renderedFrames, player.isPlaying());
                 fpsView.setText(Double.isNaN(fps) ? "FPS: đang đo…" : String.format(Locale.ROOT, "FPS thực tế: %.1f", fps));
-            } else fpsView.setText("FPS: chưa có hình");
+                androidx.media3.common.VideoSize videoSize = player.getVideoSize();
+                boolean visible = playerView != null && playerView.isShown()
+                        && playerView.getWindowVisibility() == View.VISIBLE;
+                boolean frameExpected = playbackContextActive()
+                        && player.getPlaybackState() == Player.STATE_READY
+                        && player.getPlayWhenReady()
+                        && player.getPlaybackSuppressionReason() == Player.PLAYBACK_SUPPRESSION_REASON_NONE
+                        && videoSize.width > 0 && videoSize.height > 0 && visible;
+                if (fpsMeter.shouldRecoverFromFrameStall(nowMs, renderedFrames, frameExpected)) {
+                    android.util.Log.w("NM7Playback", "iptv_frame_stall timeout_ms="
+                            + FpsMeter.FRAME_STALL_TIMEOUT_MS + " state=" + player.getPlaybackState()
+                            + " video_size=" + videoSize.width + "x" + videoSize.height
+                            + " rendered_buffers=" + renderedFrames);
+                    scheduleRecovery("Không có khung hình mới", false);
+                }
+            } else {
+                fpsView.setText("FPS: chưa có hình");
+                fpsMeter.shouldRecoverFromFrameStall(nowMs, 0L, false);
+            }
             fpsHandler.postDelayed(this, 2000);
         }
     };
@@ -258,6 +278,7 @@ public final class PlayerActivity extends Activity {
     }
     private void scheduleRecovery(String reason,boolean fromEnd){
         if(!playbackContextActive()||isFinishing()||isDestroyed())return;
+        fpsMeter.resetFrameStall();
         recoveryHandler.removeCallbacks(resetRecoveryAttempts);
         if(recoveryAttempts>=MAX_RECOVERY_ATTEMPTS){showError(reason+". Đã thử nối lại "+MAX_RECOVERY_ATTEMPTS+" lần.\nBấm thử lại để tiếp tục.");return;}
         int attempt=++recoveryAttempts;
