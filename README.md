@@ -1,3 +1,47 @@
+# NM7 IPTV Mobile — Stable 1.10.142 — YouTube Floating MiniPlayer / SurfaceView — 2026-10-20
+
+> **Trạng thái:** CI build và unit tests đã hoàn tất thành công. APK được tạo từ mã nguồn mới nhất trên nhánh `build/youtube-miniplayer-20261020`, sau đó checksum được đối chiếu với `SHA256SUMS.txt` trong artifact. Cần tiếp tục kiểm thử trên thiết bị thật để xác nhận chuyển đổi SurfaceView và đồng bộ hình/tiếng; CI không thay thế runtime test.
+
+## Thông tin phát hành
+
+- **Ứng dụng:** NM7 IPTV Mobile
+- **Version:** 1.10.142
+- **versionCode:** 158
+- **Nhánh phát hành:** `stable/mobile-1.10.142`
+- **Nhánh nguồn đã build:** `build/youtube-miniplayer-20261020`
+- **Commit nguồn đã build:** [4fc8b187db7e48591e1bcb11969436a56d27d06a](https://github.com/cnktvpc/NM7-IPTV/commit/4fc8b187db7e48591e1bcb11969436a56d27d06a)
+- **GitHub Actions:** [Run 39416454050 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39416454050)
+- **Artifact:** `NM7-IPTV-Mobile-1.10.142-YOUTUBE-MINIPLAYER`
+- **APK SHA-256:** `65c40c36132585c896e1d388cc931fb2e17a245f1c40044b4a5f6e97ccfd820e`
+
+## Nội dung trong bản
+
+- Cửa sổ YouTube mini-player nổi tỷ lệ 16:9.
+- Player dùng `SurfaceView` thay cho `TextureView` để thống nhất loại surface giữa màn hình phát toàn màn hình và mini-player.
+- Khi mini-player đã được gắn vào root hiện tại, thao tác bind lại được đưa vào hàng đợi UI sau khi view sẵn sàng.
+- Khi tạo mini-player mới, chuyển target phát sau khi view đã attach/layout; tránh bind quá sớm vào SurfaceHolder chưa sẵn sàng.
+- Ẩn startup poster khi thao tác Back chuyển từ YouTube playback về mini-player.
+- Điều chỉnh chuyển tab IPTV: nếu phiên YouTube đang hoạt động thì suspend phiên đó trước khi mở IPTV; yêu cầu resume player được post sau chuyển Activity.
+- Giữ phiên bản ứng dụng 1.10.142 / versionCode 158.
+
+## Kiểm tra build và artifact
+
+- GitHub Actions build job: **SUCCESS**.
+- Unit tests trong pipeline: **hoàn thành thành công**.
+- Artifact ZIP: **đọc được, không lỗi cấu trúc**.
+- APK: **đọc được như ZIP Android package và có `AndroidManifest.xml`**.
+- SHA-256 APK khớp với checksum trong artifact: **PASS**.
+- Ghi chú: kết quả CI không tự xác nhận chất lượng phát video trên thiết bị. Cần kiểm tra thực tế: mở video, thu nhỏ về mini-player, kéo thả, phóng to lại, chuyển qua tab IPTV rồi quay lại YouTube, và xác nhận hình/tiếng đồng bộ.
+
+## Quy tắc nhánh
+
+- Bản phát hành này được promote từ nhánh build riêng vào stable qua pull request.
+- Không ghi đè các nhánh stable cũ.
+- Các chỉnh sửa CI chỉ dùng để tạo và xác minh artifact; không xem chúng là thay đổi chức năng ứng dụng.
+- Mọi sửa đổi tiếp theo cần đi qua nhánh candidate/build riêng, chạy build, unit tests và regression checks trước khi promote.
+
+---
+
 # NM7 IPTV Mobile — Stable 1.10.142 — Live card tap-to-play — 2026-10-20
 
 > **Trạng thái: ĐÃ XÁC NHẬN TRÊN THIẾT BỊ — ổn định theo phản hồi người dùng.** Bản 1.10.142 được người dùng cài đặt và xác nhận hoạt động OK. CI build và toàn bộ unit tests đều PASS.
