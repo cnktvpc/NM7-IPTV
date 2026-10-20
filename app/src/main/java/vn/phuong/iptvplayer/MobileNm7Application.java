@@ -222,8 +222,7 @@ public final class MobileNm7Application extends DroidApplication implements andr
         if (activity instanceof PlayerActivity) {
             clearTabSwitch();
         } else if (SMARTTUBE_BROWSE.equals(name)) {
-            // Normal YouTube Browse screen. The 1.10.68 YouTube UI remains untouched;
-            // only the separate mini-player surface is disabled.
+            MobileMiniPlayer.attach(activity);
         }
     }
 
