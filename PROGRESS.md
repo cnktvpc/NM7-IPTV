@@ -1,3 +1,35 @@
+# TIẾN ĐỘ MỚI NHẤT — NM7 IPTV MOBILE 1.10.141 — COMPACT LIVE EVENT CARDS — 2026-10-20
+
+## Trạng thái
+- Candidate 1.10.141 được tạo từ bản giao diện 1.10.140 đã sửa màu nền Live.
+- **Version:** 1.10.141 / `versionCode 157`.
+- **Branch:** `work/mobile-1.10.141-live-card-compact-20261020`.
+- **Phạm vi duy nhất:** giảm chiều cao/padding thẻ Live để đồng bộ với các hàng kênh thông thường.
+- Nền trong suốt của thẻ Live, EPG mặc định và logic phát sóng giữ nguyên.
+
+## Phân tích nguyên nhân
+- Hàng kênh dùng logo 58×36dp, `minHeight=66dp`, tiêu đề một dòng và padding dọc 2dp.
+- Hàng Live trước đó dùng logo 56×56dp, tiêu đề hai dòng, nút chọn server 32dp, padding 9dp và margin đáy 4dp.
+- Chiều cao nội dung cộng các khoảng đệm làm hàng Live cao hơn khoảng rõ rệt như ảnh người dùng gửi.
+
+## Thay đổi đã thực hiện
+1. Thu gọn `item_live_event.xml`: minHeight 66dp, logo 58×36dp, padding ngang 6dp/dọc 2dp, margin đáy 1dp.
+2. Thu tiêu đề về một dòng; tên quá dài hiển thị dấu ba chấm thay vì mở rộng thẻ.
+3. Thu nút LIVE về 22dp và nút server về 24dp; giảm khoảng cách và cỡ chữ cho hàng phụ.
+4. Đồng bộ padding/minHeight trong `LiveEventAdapter` theo chế độ compact của hàng kênh, giữ riêng mức TV hiện tại.
+5. Thêm regression check cho kích thước thẻ Live; cập nhật guard version lên 1.10.141 / code 157.
+
+## Bảo toàn chức năng
+- Không chỉnh parser/feed, nhóm/gộp trận, chu kỳ refresh, bộ nhớ cache, EPG, logic mở player, đổi server, yêu thích hoặc thời lượng live.
+- Không sửa nhánh stable hoặc baseline 1.10.138.
+
+## Kiểm thử cần xác nhận
+- CI build APK và toàn bộ Mobile unit tests.
+- Trên thiết bị: thẻ Live thấp tương đương thẻ kênh, tiêu đề dài được ellipsis, chọn server/yêu thích/playback và đổi server toàn màn hình vẫn hoạt động.
+- Candidate chưa stable cho tới khi được người dùng xác nhận.
+
+---
+
 # TIẾN ĐỘ MỚI NHẤT — NM7 IPTV MOBILE 1.10.140 — LIVE CARD BACKGROUND — 2026-10-20
 
 ## Trạng thái
