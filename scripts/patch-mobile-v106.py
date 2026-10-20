@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-NM7 IPTV - YouTube Performance & Seamless Mobile Transition Patch v1.10.106 (Optimized)
+NM7 IPTV - YouTube Performance, Floating Miniplayer & Seamless Mobile Transition Patch v1.10.106
 - Xóa bỏ triệt để màn hình đen & khôi phục poster tức thì từ card vừa chạm (0ms gap).
 - Tăng tốc mở video YouTube: hạ buffer khởi động từ 2500ms xuống 250ms (giữ RAM đệm 128MB cho 4K).
 - Chuyển cảnh mượt từ poster sang video đang chạy bằng hiệu ứng crossfade 80ms ngay khi có frame mới.
-- Khởi động sớm yêu cầu lấy luồng (format pre-warm) ngay ở sự kiện chạm tay (ACTION_DOWN).
-- Giữ ấm surface YouTube khi chuyển sang tab IPTV, loại bỏ độ trễ 750ms khi quay lại tab YouTube.
+- Không gọi warmup trên ACTION_DOWN khi cuộn danh sách (tránh nghẽn luồng J2V8 single-thread).
+- Đồng bộ hoàn hảo surface handoff giữa Fullscreen <-> Floating Miniplayer <-> Tab IPTV.
 """
 
 from pathlib import Path
@@ -27,6 +27,11 @@ def patch_file(path: Path, transform_fn):
         log(f"Patched: {path.name}")
         return True
     return False
+
+def replace_method(text: str, signature: str, new_method: str) -> str:
+    pattern = re.compile(r"(?ms)^    " + re.escape(signature) + r" \\{.*?^    \\}")
+    updated, count = pattern.subn(lambda _: new_method.rstrip(), text, count=1)
+    return updated if count == 1 else text
 
 # =========================================================================
 # 1. FIX LỖI BUILD GRADLE & DEPENDENCY NULL
@@ -70,25 +75,6 @@ def opt_item(t):
             b = t.find("{", idx)
             t = t[:b+1] + "\n    public static final long NM7_FORMAT_REUSE_MS = 60_000L;\n" + t[b+1:]
 
-    if "nm7WarmupFormatAsync" not in t and "getFastPlaybackFormatInfo" in t:
-        warmup_helper = """    private final java.util.Set<String> mNm7WarmupInFlight =
-            java.util.Collections.newSetFromMap(new java.util.concurrent.ConcurrentHashMap<>());
-
-    public void nm7WarmupFormatAsync(final String videoId) {
-        if (videoId == null || videoId.isEmpty()) return;
-        if (nm7ReuseGet(videoId) != null || !mNm7WarmupInFlight.add(videoId)) return;
-        io.reactivex.Completable.fromAction(() -> {
-            try {
-                getFastPlaybackFormatInfo(videoId, null);
-            } catch (Throwable ignored) {
-            } finally {
-                mNm7WarmupInFlight.remove(videoId);
-            }
-        }).subscribeOn(io.reactivex.schedulers.Schedulers.io()).subscribe(() -> {}, error -> mNm7WarmupInFlight.remove(videoId));
-    }
-
-"""
-        t = t.replace("    private MediaItemFormatInfo getFastPlaybackFormatInfo(", warmup_helper + "    private MediaItemFormatInfo getFastPlaybackFormatInfo(", 1)
     return t
 patch_file(p_item, opt_item)
 
@@ -117,26 +103,6 @@ p_card = SMARTTUBE_ROOT / "smarttubedroid/src/main/java/com/liskovsoft/smartyout
 def opt_card(t):
     t = re.sub(r'\.delaySubscription\(650[^)]*\)', '', t)
     t = re.sub(r'private(\s+static\s+(volatile\s+)?(android\.graphics\.)?Bitmap\s+sNm7TransitionPoster)', r'public\1', t)
-    old_click = """            itemView.setOnClickListener(v -> {
-                nm7CaptureTransitionPoster(video);
-                listener.onVideoClicked(video);
-            });"""
-    new_click = """            itemView.setOnTouchListener((v, event) -> {
-                if (event != null && event.getActionMasked() == android.view.MotionEvent.ACTION_DOWN && video != null) {
-                    nm7CaptureTransitionPoster(video);
-                    try {
-                        Object svc = com.liskovsoft.youtubeapi.service.YouTubeServiceManager.instance().getMediaItemService();
-                        svc.getClass().getMethod("nm7WarmupFormatAsync", String.class).invoke(svc, video.videoId);
-                    } catch (Throwable ignored) { }
-                }
-                return false;
-            });
-            itemView.setOnClickListener(v -> {
-                nm7CaptureTransitionPoster(video);
-                listener.onVideoClicked(video);
-            });"""
-    if old_click in t and "nm7WarmupFormatAsync" not in t:
-        t = t.replace(old_click, new_click, 1)
     return t
 patch_file(p_card, opt_card)
 
@@ -160,6 +126,7 @@ def opt_play(t):
         t = t.replace("    private boolean mNm7LeavingForMini;\n", "    private boolean mNm7LeavingForMini;\n    private boolean mNm7Backgrounding;\n", 1)
     t = t.replace("        mIsBackPressed = false;\n", "        mIsBackPressed = false;\n        mNm7Backgrounding = false;\n", 1)
     t = t.replace("        if (!sNm7Mini) mPlaybackPresenter.onViewPaused();", "        mNm7Backgrounding = !isFinishing() && !mNm7Stopped;\n        if (!sNm7Mini && !mNm7Backgrounding) mPlaybackPresenter.onViewPaused();", 1)
+    t = t.replace("        showHideWidgets(false);", "        if (isInPIPMode()) showHideWidgets(false);", 1)
 
     # 3b) Re-enable synchronous clicked-card poster handoff disabled by v95 so frame 0 has the exact card thumbnail
     old_disabled_poster = """        // NM7 1.10.95: do not use the synchronous clicked-card poster.
@@ -280,6 +247,8 @@ for p_java in SMARTTUBE_ROOT.rglob("*.java"):
 # =========================================================================
 p_browse = SMARTTUBE_ROOT / "smarttubedroid/src/main/java/com/liskovsoft/smartyoutubetv2/droid/ui/browse/BrowseActivity.java"
 def opt_browse(t):
+    t = t.replace("list.setItemViewCacheSize(0);", "list.setItemViewCacheSize(10);")
+    t = t.replace("list.getRecycledViewPool().setMaxRecycledViews(0, 2);", "list.getRecycledViewPool().setMaxRecycledViews(0, 12);")
     if "setItemAnimator(null)" not in t:
         idx = t.find("public class BrowseActivity")
         if idx != -1:
@@ -298,4 +267,4 @@ def opt_view(t):
     return t
 patch_file(p_view, opt_view)
 
-log("Hoàn tất tối ưu YouTube: Khởi động nhanh 250ms, pre-warm khi chạm, crossfade poster 80ms và chuyển tab 0ms.")
+log("Hoàn tất tối ưu YouTube: Floating 16:9 Miniplayer, khởi động nhanh 250ms, crossfade 80ms và chuyển tab mượt mà.")
