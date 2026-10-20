@@ -175,11 +175,6 @@ public final class MobileNm7Application extends DroidApplication implements andr
             // called onBackPressed() from onBackInvoked(), which could bypass the patched
             // parent-view/PIP path and close PlaybackActivity immediately.
             activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR);
-            activity.getWindow().getDecorView().post(() -> {
-                installSmartTubeFontFix(activity);
-                View root = activity.findViewById(android.R.id.content);
-                if (root != null) forceSingleColumn(root);
-            });
         } else if (name.startsWith(SMARTTUBE_PACKAGE) && !SMARTTUBE_PLAYBACK.equals(name)) {
             if (!SMARTTUBE_WEB.equals(name)) {
                 activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
@@ -221,8 +216,6 @@ public final class MobileNm7Application extends DroidApplication implements andr
         String name = activity.getClass().getName();
         if (activity instanceof PlayerActivity) {
             clearTabSwitch();
-        } else if (SMARTTUBE_BROWSE.equals(name)) {
-            MobileMiniPlayer.attach(activity);
         }
     }
 
