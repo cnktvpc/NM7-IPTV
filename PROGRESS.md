@@ -2,7 +2,9 @@
 
 ## Trạng thái
 - **Mã nguồn đã chỉnh trên nhánh riêng** `work/mobile-1.10.140-live-card-background-20261020`, tách từ candidate 1.10.139.
-- **CI:** chưa có kết quả sau thay đổi; workflow sẽ được kích hoạt sau khi cập nhật cấu hình build cho nhánh/version mới.
+- **CI: PASS** — [Run 39349112739](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39349112739); build APK, toàn bộ Mobile unit tests và upload artifact thành công.
+- **Artifact:** [NM7-IPTV-Mobile-1.10.140-LIVE-CARD-BG](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39349112739/artifacts/12231959910), ID `12231959910`.
+- **APK SHA-256:** `e1138bfb64eb9b459691f9fa78939633f32d6c5a4d8d81b07ef6c968771556ab`.
 - **Version:** 1.10.140 / `versionCode 156`.
 - **Phạm vi duy nhất:** làm nền thẻ sự kiện Live đồng nhất với nền mặc định của thẻ kênh thường; không chỉnh logic.
 - **Baseline được giữ nguyên:** candidate 1.10.139, feature commit `a14188fdd64476a57ac131be6f3457f2b50ce2be`; nhánh `build/mobile-1.10.138-optimized-20261015` không bị sửa.
