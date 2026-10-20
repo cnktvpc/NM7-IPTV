@@ -1,3 +1,35 @@
+# NM7 IPTV Mobile — Candidate 1.10.140 — Live card background — 2026-10-20
+
+> **Trạng thái: đang chờ CI sau khi sửa giao diện.** Bắt đầu từ candidate 1.10.139; không sửa nhánh baseline/stable. Phạm vi chỉ đồng bộ màu nền và viền thẻ Live với các thẻ kênh thông thường.
+
+## Thông tin bản sửa
+
+- **Version:** 1.10.140
+- **versionCode:** 156
+- **Branch:** `work/mobile-1.10.140-live-card-background-20261020`
+- **Base:** candidate 1.10.139 trên `work/mobile-1.10.139-default-epg-20261019`
+- **Baseline feature commit:** `a14188fdd64476a57ac131be6f3457f2b50ce2be`
+- **Phạm vi:** chỉ màu nền, viền và bán kính góc của thẻ sự kiện Live; giữ nguyên EPG mặc định và mọi hành vi khác.
+
+## Chẩn đoán và thay đổi
+
+Video cho thấy thẻ Live dùng nền gần đen không trong suốt (`#131419`), khác với nền mặc định của thẻ kênh (`#D914263C`). Viền Live (`#2C2D35`) cũng khác với viền thẻ kênh (`#304B6887`).
+
+- Đổi `live_surface` thành `#D914263C`, cùng màu/alpha với nền mặc định `channel_card`.
+- Đồng bộ viền thẻ Live thành `#304B6887` và góc bo thành `14dp`, như thẻ kênh.
+- Không thay đổi `LiveEventAdapter`, bộ lọc feed, gộp sự kiện, chọn server, yêu thích, thời lượng live, player hoặc nguồn EPG.
+- Đã tăng version lên 1.10.140 / versionCode 156 để phân biệt APK kiểm thử với 1.10.139.
+
+## Kiểm thử
+
+- CI build và unit tests: đang chờ workflow của nhánh này.
+- Sau CI, cần cài APK và xác nhận nền Live cùng màu/độ trong suốt với tab nhóm kênh; đồng thời thử mở sự kiện, đổi server và yêu thích để loại trừ hồi quy giao diện/chức năng.
+- Chưa đánh dấu stable cho tới khi kiểm thử thực tế được xác nhận.
+
+---
+
+## Lịch sử candidate trước đó
+
 # NM7 IPTV Mobile — Candidate 1.10.139 — Default EPG — 2026-10-19
 
 > **Trạng thái: CI PASS, đang là candidate để kiểm thử trên thiết bị; chưa đánh dấu STABLE.** Bản này được build từ đúng baseline `build/mobile-1.10.138-optimized-20261015`. Chỉ thay đổi mặc định lịch phát sóng EPG; không merge/ghi đè nhánh gốc.
