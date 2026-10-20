@@ -261,7 +261,7 @@ if "private SwipeRefreshLayout mPullToRefresh;" not in java:
                 == com.liskovsoft.mediaserviceinterfaces.data.MediaGroup.TYPE_HOME) {
             return true;
         }
-        return mCurrentSection.getType() != BrowseSection.TYPE_SETTINGS;
+        return false;
     }
 
     private boolean isCurrentFeedAtTop() {
