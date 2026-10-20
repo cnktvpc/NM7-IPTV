@@ -81,8 +81,12 @@ public final class LiveEventAdapter extends BaseAdapter {
         if (logoBinder != null) logoBinder.bindLogo(convertView, event.primary());
         convertView.setBackgroundResource(event.id().equals(playingEventId)
                 ? R.drawable.channel_card_playing : R.drawable.live_event_card);
-        convertView.setMinimumHeight(Math.round((AppPreferences.isTvInterface(context) ? 92 : 86)
-                * context.getResources().getDisplayMetrics().density));
+        boolean tv = AppPreferences.isTvInterface(context);
+        boolean compact = AppPreferences.compactRows(context);
+        float density = context.getResources().getDisplayMetrics().density;
+        convertView.setMinimumHeight(Math.round((tv ? 82 : (compact ? 58 : 64)) * density));
+        convertView.setPadding(0, Math.round((tv ? 4 : 2) * density), 0,
+                Math.round((tv ? 4 : 2) * density));
         return convertView;
     }
 
