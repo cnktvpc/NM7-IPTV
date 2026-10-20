@@ -17,8 +17,8 @@ import android.widget.ProgressBar;
 
 /**
  * Official YouTube-style floating 16:9 PiP miniplayer window in the bottom-right corner.
- * Supports free dragging with edge-snap, tap-to-expand, circular top-left play/pause,
- * circular top-right close button, and seamless tab-switch resume.
+ * Uses SurfaceView-backed PlayerView (matching PlaybackActivity) for zero-stutter,
+ * zero-desync hardware MediaCodec surface handoff.
  */
 public final class MobileMiniPlayer {
     private static FrameLayout host;
@@ -40,15 +40,19 @@ public final class MobileMiniPlayer {
             if (!(root instanceof FrameLayout)) return;
 
             // If already attached to this root (e.g., returning from IPTV tab to BrowseActivity),
-            // still invoke attachNm7MiniPlayer to clear sNm7SuspendedForIptv and resume playback!
+            // rebind once on the UI queue to clear sNm7SuspendedForIptv and resume smoothly.
             if (host != null && host.getParent() == root && surface != null) {
                 host.bringToFront();
-                try {
-                    bridge.getMethod("attachNm7MiniPlayer", View.class, View.class)
-                            .invoke(null, surface, surface);
-                } catch (ReflectiveOperationException | RuntimeException error) {
-                    android.util.Log.e("NM7Playback", "Rebind existing mini PlayerView", error);
-                }
+                final View existingSurface = surface;
+                existingSurface.post(() -> {
+                    if (surface != existingSurface || activity.isFinishing() || activity.isDestroyed()) return;
+                    try {
+                        bridge.getMethod("attachNm7MiniPlayer", View.class, View.class)
+                                .invoke(null, existingSurface, existingSurface);
+                    } catch (ReflectiveOperationException | RuntimeException error) {
+                        android.util.Log.e("NM7Playback", "Rebind existing mini PlayerView", error);
+                    }
+                });
                 return;
             }
 
@@ -56,12 +60,8 @@ public final class MobileMiniPlayer {
             int screenWidth = activity.getResources().getDisplayMetrics().widthPixels;
 
             final FrameLayout next = new FrameLayout(activity);
-            GradientDrawable cardBg = new GradientDrawable();
-            cardBg.setColor(0xFF0F0F0F);
-            cardBg.setCornerRadius(12 * d);
-            next.setBackground(cardBg);
-            next.setElevation(10 * d);
-            next.setClipToOutline(true);
+            next.setBackgroundColor(0xFF0F0F0F);
+            next.setElevation(6 * d);
 
             int width = Math.min(Math.round(204 * d), Math.round(screenWidth * 0.48f));
             int height = Math.round(width * 9f / 16f);
@@ -73,7 +73,7 @@ public final class MobileMiniPlayer {
             box.bottomMargin = bottomMargin;
             box.rightMargin = margin;
 
-            // 1. 16:9 Video Surface (TextureView-backed PlayerView)
+            // 1. 16:9 Video Surface (SurfaceView-backed PlayerView matching PlaybackActivity)
             View video = createPlayerView(activity);
             video.setClickable(false);
             video.setFocusable(false);
@@ -247,28 +247,21 @@ public final class MobileMiniPlayer {
             host = next;
             surface = video;
 
-            // Bind immediately on frame 0 so there is no black flash on transition
-            try {
-                bridge.getMethod("attachNm7MiniPlayer", View.class, View.class)
-                        .invoke(null, previousSurface, video);
-                if (previousHost != null && previousHost != next && previousHost.getParent() instanceof ViewGroup) {
-                    ((ViewGroup) previousHost.getParent()).removeView(previousHost);
-                }
-            } catch (ReflectiveOperationException | RuntimeException error) {
-                android.util.Log.e("NM7Playback", "Immediate mini PlayerView bind", error);
-            }
-
             next.post(refreshControl);
 
-            // Secondary post check after layout completion
+            // Switch target ONCE after the SurfaceView is laid out and attached to the window.
+            // Never switch before layout, otherwise ExoPlayer binds to a null SurfaceHolder.
             video.post(() -> {
                 if (host != next || surface != video
                         || activity.isFinishing() || activity.isDestroyed()) return;
                 try {
                     bridge.getMethod("attachNm7MiniPlayer", View.class, View.class)
-                            .invoke(null, video, video);
+                            .invoke(null, previousSurface, video);
+                    if (previousHost != null && previousHost != next && previousHost.getParent() instanceof ViewGroup) {
+                        ((ViewGroup) previousHost.getParent()).removeView(previousHost);
+                    }
                 } catch (ReflectiveOperationException | RuntimeException error) {
-                    android.util.Log.e("NM7Playback", "Post mini PlayerView bind", error);
+                    android.util.Log.e("NM7Playback", "Switch mini PlayerView", error);
                 }
             });
         } catch (ReflectiveOperationException | RuntimeException error) {
@@ -292,6 +285,8 @@ public final class MobileMiniPlayer {
     }
 
     private static View createPlayerView(Activity activity) throws ReflectiveOperationException {
+        // SurfaceView-backed PlayerView keeps decoder-to-surface rendering stable across
+        // mini/fullscreen handoff.
         return android.view.LayoutInflater.from(activity).inflate(R.layout.nm7_mini_player, null, false);
     }
 
