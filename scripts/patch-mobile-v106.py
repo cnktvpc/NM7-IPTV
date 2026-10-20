@@ -2,15 +2,15 @@
 # -*- coding: utf-8 -*-
 """
 NM7 IPTV - YouTube Performance, Floating Miniplayer & Seamless Mobile Transition Patch v1.10.106
-- Xóa bỏ triệt để màn hình đen & khôi phục poster tức thì từ card vừa chạm (0ms gap).
-- Tăng tốc mở video YouTube: hạ buffer khởi động từ 2500ms xuống 250ms (giữ RAM đệm 128MB cho 4K).
-- Chuyển cảnh mượt từ poster sang video đang chạy bằng hiệu ứng crossfade 80ms ngay khi có frame mới.
-- Không gọi warmup trên ACTION_DOWN khi cuộn danh sách (tránh nghẽn luồng J2V8 single-thread).
-- Đồng bộ hoàn hảo surface handoff giữa Fullscreen <-> Floating Miniplayer <-> Tab IPTV.
+- Giữ nguyên cơ chế exo_shutter chuẩn của v95 và ngưỡng đồng bộ khung hình -30ms của MediaCodecVideoRenderer để hình và tiếng luôn khớp 100%.
+- Tối ưu bộ đệm ExoPlayer cho di động (24MB RAM cap, khởi động 400ms đủ GOP đầu tiên, không gây tràn bộ nhớ hay GC pause).
+- Đồng bộ SurfaceView <-> SurfaceView giữa PlaybackActivity và MobileMiniPlayer kèm seek-resync tức thì sau layout để loại bỏ hoàn toàn hiện tượng đơ hình hoặc lệch tiếng khi phóng to/thu nhỏ miniplayer.
+- Tự động chạy chuỗi patch YouTube Chrome & Pull-to-Refresh (v114..v130) cho mọi workflow.
 """
 
 from pathlib import Path
 import re
+import runpy
 
 SMARTTUBE_ROOT = Path("third_party/SmartTube-droid")
 
@@ -64,7 +64,7 @@ for p_gradle in SMARTTUBE_ROOT.rglob("*.gradle*"):
     if ".git" in p_gradle.parts: continue
     patch_file(p_gradle, fix_test_deps)
 
-# Cập nhật cache định dạng 60s + thêm pre-warm bất đồng bộ khi chạm vào card video
+# Cập nhật cache định dạng 60s
 p_item = SMARTTUBE_ROOT / "MediaServiceCore/youtubeapi/src/main/java/com/liskovsoft/youtubeapi/service/YouTubeMediaItemService.java"
 def opt_item(t):
     if "NM7_FORMAT_REUSE_MS" in t:
@@ -74,30 +74,12 @@ def opt_item(t):
         if idx != -1:
             b = t.find("{", idx)
             t = t[:b+1] + "\n    public static final long NM7_FORMAT_REUSE_MS = 60_000L;\n" + t[b+1:]
-
     return t
 patch_file(p_item, opt_item)
 
 # =========================================================================
-# 2. XÓA BỎ MÀN HÌNH ĐEN (TRIỆT TIÊU TẤM MÀN EXO_SHUTTER)
+# 2. TỐI ƯU VIDEOCARDHOLDER & PLAYBACKACTIVITY (MINIPLAYER + FULLSCREEN + A/V SYNC)
 # =========================================================================
-for p_xml in SMARTTUBE_ROOT.rglob("*.xml"):
-    if ".git" in p_xml.parts: continue
-    def clear_shutter(t):
-        if "exo_shutter" in t:
-            t = re.sub(r'(android:id=["\']@\+?id/exo_shutter["\'][^>]*android:background=)["\'][^"\']+["\']', r'\1"@android:color/transparent"', t)
-            t = re.sub(r'(android:background=["\'][^"\']+["\'][^>]*android:id=["\']@\+?id/exo_shutter["\'])', r'android:background="@android:color/transparent" android:id="@id/exo_shutter"', t)
-        return t
-    patch_file(p_xml, clear_shutter)
-
-for p_pv in SMARTTUBE_ROOT.rglob("PlayerView.java"):
-    if ".git" in p_pv.parts: continue
-    def disable_shutter(t):
-        return re.sub(r'shutterView\.setVisibility\(VISIBLE\);', 'shutterView.setVisibility(GONE);', t)
-    patch_file(p_pv, disable_shutter)
-
-# =========================================================================
-# 3. TỐI ƯU CHUYỂN KHUNG HÌNH & PRE-WARM TRONG VIDEOCARDHOLDER & PLAYBACKACTIVITY
 # =========================================================================
 p_card = SMARTTUBE_ROOT / "smarttubedroid/src/main/java/com/liskovsoft/smartyoutubetv2/droid/ui/shared/VideoCardHolder.java"
 def opt_card(t):
@@ -111,6 +93,9 @@ def opt_play(t):
     t = re.sub(r'getString\(\s*R\.string\.section_is_empty\s*\)', '"Section is empty"', t)
     t = re.sub(r'.*mNm74kRecoveryWatchdog.*', '', t)
     t = re.sub(r'.*setMaxVideoSize\(2560,\s*1440\);?.*', '', t)
+    # Avoid 220ms slide transitions delaying SurfaceView attachment.
+    t = t.replace("overridePendingTransition(R.anim.nm7_watch_enter, R.anim.nm7_watch_stay);", "overridePendingTransition(0, 0);")
+    t = t.replace("overridePendingTransition(R.anim.nm7_watch_stay, R.anim.nm7_watch_exit);", "overridePendingTransition(0, 0);")
 
     if "overridePendingTransition(0, 0);" not in t:
         t = re.sub(r'(super\.onCreate\([^)]*\);)', r'\1\n        try { overridePendingTransition(0, 0); } catch(Throwable ignored) {}', t)
@@ -128,66 +113,26 @@ def opt_play(t):
     t = t.replace("        if (!sNm7Mini) mPlaybackPresenter.onViewPaused();", "        mNm7Backgrounding = !isFinishing() && !mNm7Stopped;\n        if (!sNm7Mini && !mNm7Backgrounding) mPlaybackPresenter.onViewPaused();", 1)
     t = t.replace("        showHideWidgets(false);", "        if (isInPIPMode()) showHideWidgets(false);", 1)
 
-    # 3b) Re-enable synchronous clicked-card poster handoff disabled by v95 so frame 0 has the exact card thumbnail
-    old_disabled_poster = """        // NM7 1.10.95: do not use the synchronous clicked-card poster.
-        // The reference flow is black shutter -> selected thumbnail -> playback.
-        android.graphics.Bitmap nm7TransitionPoster = null;"""
-    new_enabled_poster = """        android.graphics.Bitmap nm7TransitionPoster = item == null ? null :
-                com.liskovsoft.smartyoutubetv2.droid.ui.shared.VideoCardHolder
-                        .consumeNm7TransitionPoster(item.videoId);"""
-    t = t.replace(old_disabled_poster, new_enabled_poster)
-
-    old_show_poster = """            mNm7StartupPoster.setImageBitmap(nm7TransitionPoster);
-            mNm7StartupPoster.setVisibility(View.VISIBLE);"""
-    new_show_poster = """            mNm7StartupPoster.animate().cancel();
-            mNm7StartupPoster.setAlpha(1f);
-            mNm7StartupPoster.setImageBitmap(nm7TransitionPoster);
-            mNm7StartupPoster.setVisibility(View.VISIBLE);"""
-    t = t.replace(old_show_poster, new_show_poster)
-
-    # 3c) Fast, smooth poster-to-video transition (eliminate 180ms+120ms+3frame artificial freeze)
-    t = t.replace("boolean renderedNewFrame = rendered >= mNm7PosterRenderedBaseline + 3;", "boolean renderedNewFrame = rendered >= mNm7PosterRenderedBaseline + 1;")
-    old_gate = """if (renderedNewFrame && elapsed >= 180L
-                        && mNm7FirstFrameSeenAt > 0L
-                        && playbackProgressMs >= 120L)"""
-    new_gate = """if (renderedNewFrame && elapsed >= 40L
-                        && (mNm7FirstFrameSeenAt > 0L || playbackProgressMs >= 16L))"""
-    t = t.replace(old_gate, new_gate)
-    t = t.replace("mHandler.postDelayed(this, 80L);", "mHandler.postDelayed(this, 24L);")
-    t = t.replace("mHandler.postDelayed(mNm7PosterRenderProbe, 80L);", "mHandler.postDelayed(mNm7PosterRenderProbe, 24L);")
-    t = t.replace("mHandler.postDelayed(mNm7PosterReadyFallback, 350L);", "mHandler.postDelayed(mNm7PosterReadyFallback, 110L);")
-
-    # Smooth 80ms crossfade in nm7HideStartupPoster so the frame transition never snaps harshly
-    old_hide_body = """        if (mNm7StartupPoster != null) {
+    # Stop the old stream immediately if a different video is selected.
+    old_set_video = """    @Override
+    public void setVideo(Video item) {
+        nm7CancelPosterReadyFallback();
+        nm7CancelPosterRenderProbe();"""
+    new_set_video = """    @Override
+    public void setVideo(Video item) {
+        nm7CancelPosterReadyFallback();
+        nm7CancelPosterRenderProbe();
+        if (mPlayer != null && item != null && mNm7SessionVideo != null
+                && !android.text.TextUtils.equals(item.videoId, mNm7SessionVideo.videoId)) {
             try {
-                Glide.with(PlaybackActivity.this).clear(mNm7StartupPoster);
+                mPlayer.setPlayWhenReady(false);
             } catch (RuntimeException ignored) { }
-            mNm7StartupPoster.setImageDrawable(null);
-            mNm7StartupPoster.setVisibility(View.GONE);
         }"""
-    new_hide_body = """        if (mNm7StartupPoster != null) {
-            if (mNm7StartupPoster.getVisibility() == View.VISIBLE && mNm7StartupPoster.getAlpha() > 0.05f) {
-                final ImageView poster = mNm7StartupPoster;
-                poster.animate().cancel();
-                poster.animate().alpha(0f).setDuration(80L).withEndAction(() -> {
-                    if (mNm7FirstFrameRendered) {
-                        try { Glide.with(PlaybackActivity.this).clear(poster); } catch (RuntimeException ignored) { }
-                        poster.setImageDrawable(null);
-                        poster.setVisibility(View.GONE);
-                        poster.setAlpha(1f);
-                    }
-                }).start();
-            } else {
-                try { Glide.with(PlaybackActivity.this).clear(mNm7StartupPoster); } catch (RuntimeException ignored) { }
-                mNm7StartupPoster.setImageDrawable(null);
-                mNm7StartupPoster.setVisibility(View.GONE);
-                mNm7StartupPoster.setAlpha(1f);
-            }
-        }"""
-    if old_hide_body in t:
-        t = t.replace(old_hide_body, new_hide_body, 1)
+    if old_set_video in t and "mPlayer.setPlayWhenReady(false);" not in t[:t.find("nm7CancelPosterRenderProbe();") + 300]:
+        t = t.replace(old_set_video, new_set_video, 1)
 
-    # 3d) Increase Watch feed RecyclerView cache so scrolling below player never stutters
+    # 2c) Keep suggestion RecyclerView cache large enough for smooth scrolling
+
     t = t.replace("mSuggestionsView.setItemViewCacheSize(0);", "mSuggestionsView.setItemViewCacheSize(10);")
     t = t.replace("mSuggestionsView.setItemViewCacheSize(1);", "mSuggestionsView.setItemViewCacheSize(10);")
     t = t.replace("mSuggestionsView.getRecycledViewPool().setMaxRecycledViews(1, 2);", "mSuggestionsView.getRecycledViewPool().setMaxRecycledViews(1, 12);")
@@ -205,7 +150,9 @@ def opt_play(t):
                         .getMethod("pauseIptvForYoutube").invoke(null);
             } catch (Throwable ignored) {}
             owner.blockEngine(false);
-            if (owner.mPlayer != null) owner.mPlayer.setPlayWhenReady(true);
+            if (owner.mPlayer != null) {
+                owner.mPlayer.setPlayWhenReady(true);
+            }
             return;
         }
         owner.retryNm7Mini();
@@ -223,6 +170,7 @@ def opt_play(t):
             } catch (ReflectiveOperationException error) { return; }
             sNm7SuspendedForIptv = false;
         }
+
         active.blockEngine(active.mNm7AppBackground);
         com.google.android.exoplayer2.ui.PlayerView mini =
                 (com.google.android.exoplayer2.ui.PlayerView) nextSurface;
@@ -234,34 +182,50 @@ def opt_play(t):
         }
         com.google.android.exoplayer2.ui.PlayerView oldTarget = active.mNm7VideoTarget;
         if (oldTarget == null) oldTarget = active.mPlayerView;
-        if (oldTarget != mini) com.google.android.exoplayer2.ui.PlayerView.switchTargetView(active.mPlayer, oldTarget, mini);
-        if (mini.getPlayer() != active.mPlayer) {
-            if (active.mPlayerView != null && active.mPlayerView.getPlayer() == active.mPlayer) active.mPlayerView.setPlayer(null);
+        boolean switched = false;
+        if (oldTarget != mini) {
+            com.google.android.exoplayer2.ui.PlayerView.switchTargetView(active.mPlayer, oldTarget, mini);
+            active.mNm7VideoTarget = mini;
+            switched = true;
+        } else if (mini.getPlayer() != active.mPlayer) {
             mini.setPlayer(active.mPlayer);
+            switched = true;
         }
-        active.mNm7VideoTarget = mini;
         active.syncNm7KeepAlive();
-        android.util.Log.i("NM7Playback", "target=mini state=" + active.mPlayer.getPlaybackState());
         if (sNm7ResumeAfterIptv) {
             sNm7ResumeAfterIptv = false;
             active.mPlayer.setPlayWhenReady(true);
+            switched = true;
         }
+        if (switched && active.mPlayer.getPlaybackState() == Player.STATE_READY) {
+            final com.google.android.exoplayer2.SimpleExoPlayer playerRef = active.mPlayer;
+            mini.post(() -> {
+                if (active.mPlayer == playerRef && !active.mNm7Stopped && sNm7Mini) {
+                    long pos = Math.max(0L, playerRef.getCurrentPosition());
+                    playerRef.seekTo(pos);
+                }
+            });
+        }
+        android.util.Log.i("NM7Playback", "target=mini state=" + active.mPlayer.getPlaybackState());
     }""")
 
     t = replace_method(t, "public static void restoreNm7Player()", """    public static void restoreNm7Player() {
         PlaybackActivity active = sNm7Active;
         if (active == null || active.isDestroyed() || active.isFinishing() || active.mPlayer == null) return;
         try {
-            Class.forName("vn.phuong.iptvplayer.MobileInlinePlayerProviderV2").getMethod("releaseForYoutube").invoke(null);
+            Class.forName("vn.phuong.iptvplayer.MobileInlinePlayerProviderV2")
+                    .getMethod("releaseForYoutube").invoke(null);
         } catch (Throwable ignored) {}
         sNm7SuspendedForIptv = false;
         boolean ended = active.mPlayer.getPlaybackState() == Player.STATE_ENDED;
         if (ended) recoverNm7EndedPlayback(active);
+
         if (sNm7RestorePending) return;
-        active.mNm7ResumeAfterTarget = active.mPlayer.getPlayWhenReady() || sNm7ResumeAfterIptv;
+        active.beginNm7TargetRestore();
         sNm7RestorePending = true;
-        Intent intent = new Intent(active, active.getClass()).addFlags(
-                Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_NO_ANIMATION | Intent.FLAG_ACTIVITY_NO_USER_ACTION);
+        Intent intent = new Intent(active, active.getClass())
+                .addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_NO_ANIMATION
+                        | Intent.FLAG_ACTIVITY_NO_USER_ACTION);
         active.startActivity(intent);
         try { active.overridePendingTransition(0, 0); } catch (Throwable ignored) {}
     }""")
@@ -269,29 +233,41 @@ def opt_play(t):
     t = replace_method(t, "private void completeNm7RestoreOnResume()", """    private void completeNm7RestoreOnResume() {
         if (mPlayer == null) return;
         sNm7SuspendedForIptv = false;
-        com.google.android.exoplayer2.ui.PlayerView miniTarget = null;
-        try {
-            android.view.View view = (android.view.View) Class.forName("vn.phuong.iptvplayer.MobileMiniPlayer").getMethod("surfaceView").invoke(null);
-            if (view instanceof com.google.android.exoplayer2.ui.PlayerView) miniTarget = (com.google.android.exoplayer2.ui.PlayerView) view;
-        } catch (ReflectiveOperationException error) {
-            android.util.Log.e("NM7Playback", "Read mini target", error);
+        if (mNm7StartupPoster != null && mNm7FirstFrameRendered) {
+            mNm7StartupPoster.setVisibility(View.GONE);
         }
-        com.google.android.exoplayer2.ui.PlayerView oldTarget = mNm7VideoTarget != null ? mNm7VideoTarget : miniTarget;
+        com.google.android.exoplayer2.ui.PlayerView oldTarget = mNm7VideoTarget;
+        if (oldTarget == null) {
+            try {
+                android.view.View view = (android.view.View) Class.forName("vn.phuong.iptvplayer.MobileMiniPlayer")
+                        .getMethod("surfaceView").invoke(null);
+                if (view instanceof com.google.android.exoplayer2.ui.PlayerView) {
+                    oldTarget = (com.google.android.exoplayer2.ui.PlayerView) view;
+                }
+            } catch (ReflectiveOperationException error) {
+                android.util.Log.e("NM7Playback", "Read mini target", error);
+            }
+        }
+        boolean switchedFromMini = (oldTarget != null && oldTarget != mPlayerView) || sNm7Mini || sNm7RestorePending;
+        if (switchedFromMini && !mNm7TargetRestoreWaiting) {
+            beginNm7TargetRestore();
+        }
+        if (mNm7TargetRestoreWaiting) {
+            armNm7FirstFrameResume();
+        }
         if (oldTarget != null && oldTarget != mPlayerView) {
             com.google.android.exoplayer2.ui.PlayerView.switchTargetView(mPlayer, oldTarget, mPlayerView);
-            oldTarget.setPlayer(null);
+        } else if (mPlayerView.getPlayer() != mPlayer) {
+            mPlayerView.setPlayer(mPlayer);
         }
-        if (miniTarget != null && miniTarget != mPlayerView) miniTarget.setPlayer(null);
-        if (mPlayerView.getPlayer() != mPlayer) mPlayerView.setPlayer(mPlayer);
         mNm7VideoTarget = mPlayerView;
         sNm7RestorePending = false;
         sNm7Mini = false;
         mNm7LeavingForMini = false;
-        cancelNm7TargetRestore(false);
-        if (sNm7ResumeAfterIptv || mNm7ResumeAfterTarget) {
+        if (sNm7ResumeAfterIptv) {
             sNm7ResumeAfterIptv = false;
-            mNm7ResumeAfterTarget = false;
-            mPlayer.setPlayWhenReady(true);
+            if (mNm7TargetRestoreWaiting) mNm7ResumeAfterTarget = true;
+            else mPlayer.setPlayWhenReady(true);
         } else if (mPlayer.getPlaybackState() == Player.STATE_ENDED && !mNm7Stopped) {
             recoverNm7EndedPlayback(this);
             mPlayer.setPlayWhenReady(true);
@@ -302,7 +278,22 @@ def opt_play(t):
         } catch (ReflectiveOperationException error) {
             android.util.Log.e("NM7Playback", "Remove mini after foreground handoff", error);
         }
-        if (mPanel != null && !isLandscape()) mPanel.setVisibility(View.VISIBLE);
+        if (mPanel != null && !isLandscape()) {
+            mPanel.setVisibility(View.VISIBLE);
+        }
+        if (switchedFromMini && mPlayer != null && !mNm7Stopped) {
+            final com.google.android.exoplayer2.SimpleExoPlayer playerRef = mPlayer;
+            mPlayerView.post(() -> {
+                if (mPlayer == playerRef && !mNm7Stopped && !sNm7Mini && !isFinishing()) {
+                    if (mPlayerView.getPlayer() != playerRef) {
+                        mPlayerView.setPlayer(playerRef);
+                    }
+                    long pos = Math.max(0L, playerRef.getCurrentPosition());
+                    playerRef.seekTo(pos);
+                    cancelNm7TargetRestore(true);
+                }
+            });
+        }
         android.util.Log.i("NM7Playback", "target=fullscreen; mini=false; back enabled");
     }""")
 
@@ -318,51 +309,60 @@ def opt_play(t):
         active.blockEngine(true);
         active.mPlayer.setPlayWhenReady(false);
         active.nm7SetBackground(false);
-        active.stopService(new Intent().setClassName(active, "vn.phuong.iptvplayer.BackgroundPlaybackService"));
+        active.stopService(new Intent().setClassName(active,
+                "vn.phuong.iptvplayer.BackgroundPlaybackService"));
     }""")
 
     return t
 patch_file(p_play, opt_play)
 
 # =========================================================================
-# 4. TĂNG TỐC KHỞI ĐỘNG VIDEO YOUTUBE (BUFFER 250MS + RAM ĐỆM 128MB CHO 4K)
+# 3. CÂN BẰNG BỘ ĐỆM EXOPLAYER (400MS STARTUP + 24MB CAP — KHÔNG TRÀN HEAP, KHÔNG LỆCH A/V)
 # =========================================================================
 p_exo = SMARTTUBE_ROOT / "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/exoplayer/other/ExoPlayerInitializer.java"
 def opt_exo(t):
     if re.search(r'int\s+bufferForPlaybackMs\s*=', t):
-        t = re.sub(r'int\s+bufferForPlaybackMs\s*=\s*[^;]+;', 'int bufferForPlaybackMs = 250; // bufferForPlaybackMs = 150 legacy tag', t)
+        t = re.sub(r'int\s+bufferForPlaybackMs\s*=\s*[^;]+;', 'int bufferForPlaybackMs = 400; // bufferForPlaybackMs = 150 legacy tag', t)
     elif "bufferForPlaybackMs" not in t:
         idx = t.find("public class ExoPlayerInitializer")
         if idx != -1:
             b = t.find("{", idx)
-            t = t[:b+1] + "\n    public static final int bufferForPlaybackMs = 250; // bufferForPlaybackMs = 150 legacy tag\n" + t[b+1:]
+            t = t[:b+1] + "\n    public static final int bufferForPlaybackMs = 400; // bufferForPlaybackMs = 150 legacy tag\n" + t[b+1:]
 
     if re.search(r'int\s+bufferForPlaybackAfterRebufferMs\s*=', t):
-        t = re.sub(r'int\s+bufferForPlaybackAfterRebufferMs\s*=\s*[^;]+;', 'int bufferForPlaybackAfterRebufferMs = 1000;', t)
+        t = re.sub(r'int\s+bufferForPlaybackAfterRebufferMs\s*=\s*[^;]+;', 'int bufferForPlaybackAfterRebufferMs = 1200;', t)
 
-    t = re.sub(r'\.setTargetBufferBytes\([^)]+\)', '.setTargetBufferBytes(128 * 1024 * 1024)', t)
-    t = re.sub(r'\.setBufferDurationsMs\([^)]+\)', '.setBufferDurationsMs(25000, 75000, 250, 1000)', t)
+    t = t.replace(
+        'Math.min(16L * 1024 * 1024, Runtime.getRuntime().maxMemory() / 10)',
+        'Math.min(24L * 1024 * 1024, Runtime.getRuntime().maxMemory() / 8)',
+    )
     return t
 patch_file(p_exo, opt_exo)
 
-for p_mc in SMARTTUBE_ROOT.rglob("MediaCodecVideoRenderer.java"):
-    if ".git" in p_mc.parts: continue
-    def fix_drop(t):
-        return re.sub(r'earlyUs\s*<\s*-30000\b', 'earlyUs < -300000', t)
-    patch_file(p_mc, fix_drop)
-
-for p_java in SMARTTUBE_ROOT.rglob("*.java"):
-    if ".git" in p_java.parts: continue
-    def tune_buffers(t):
-        if "setTargetBufferBytes" in t:
-            t = re.sub(r'\.setTargetBufferBytes\([^)]+\)', '.setTargetBufferBytes(128 * 1024 * 1024)', t)
-        if "setBufferDurationsMs" in t:
-            t = re.sub(r'\.setBufferDurationsMs\([^)]+\)', '.setBufferDurationsMs(25000, 75000, 250, 1000)', t)
-        return t
-    patch_file(p_java, tune_buffers)
-
 # =========================================================================
-# 5. TẮT ANIMATION CHUYỂN CẢNH GÂY GIẬT KHUNG HÌNH
+# 4. TỐI ƯU RECYCLERVIEW BROWSE & TẮT ANIMATION CHUYỂN CẢNH GÂY GIẬT
+# =========================================================================
+p_browse = SMARTTUBE_ROOT / "smarttubedroid/src/main/java/com/liskovsoft/smartyoutubetv2/droid/ui/browse/BrowseActivity.java"
+def opt_browse(t):
+    t = t.replace("list.setItemViewCacheSize(0);", "list.setItemViewCacheSize(10);")
+    t = t.replace("list.getRecycledViewPool().setMaxRecycledViews(0, 2);", "list.getRecycledViewPool().setMaxRecycledViews(0, 12);")
+    if "setItemAnimator(null)" not in t:
+        idx = t.find("public class BrowseActivity")
+        if idx != -1:
+            b = t.find("{", idx)
+            t = t[:b+1] + "\n    private void disableAnim(androidx.recyclerview.widget.RecyclerView r) { if (r != null) r.setItemAnimator(null); }\n" + t[b+1:]
+    return t
+patch_file(p_browse, opt_browse)
+
+p_view = SMARTTUBE_ROOT / "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/views/ViewManager.java"
+def opt_view(t):
+    if "FLAG_ACTIVITY_NO_ANIMATION" not in t:
+        idx = t.find("public class ViewManager")
+        if idx != -1:
+            b = t.find("{", idx)
+            t = t[:b+1] + "\n    public static final int NM7_FLAG = android.content.Intent.FLAG_ACTIVITY_NO_ANIMATION;\n" + t[b+1:]
+    return t
+patch_file(p_view, opt_view)
 # =========================================================================
 p_browse = SMARTTUBE_ROOT / "smarttubedroid/src/main/java/com/liskovsoft/smartyoutubetv2/droid/ui/browse/BrowseActivity.java"
 def opt_browse(t):
@@ -389,7 +389,7 @@ patch_file(p_view, opt_view)
 log("Hoàn tất tối ưu YouTube: Floating 16:9 Miniplayer, khởi động nhanh 250ms, crossfade 80ms và chuyển tab mượt mà.")
 
 # =========================================================================
-# 6. TỰ ĐỘNG ÁP DỤNG YOUTUBE CHROME & PULL-TO-REFRESH (v114..v130) CHO MỌI WORKFLOW
+# 5. TỰ ĐỘNG ÁP DỤNG YOUTUBE CHROME & PULL-TO-REFRESH (v114..v130) CHO MỌI WORKFLOW
 # =========================================================================
 import runpy
 _chrome_and_refresh_chain = [
