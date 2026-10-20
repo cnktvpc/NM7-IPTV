@@ -1,3 +1,30 @@
+# TIẾN ĐỘ MỚI NHẤT — NM7 IPTV MOBILE 1.10.140 — LIVE CARD BACKGROUND — 2026-10-20
+
+## Trạng thái
+- **Mã nguồn đã chỉnh trên nhánh riêng** `work/mobile-1.10.140-live-card-background-20261020`, tách từ candidate 1.10.139.
+- **CI:** chưa có kết quả sau thay đổi; workflow sẽ được kích hoạt sau khi cập nhật cấu hình build cho nhánh/version mới.
+- **Version:** 1.10.140 / `versionCode 156`.
+- **Phạm vi duy nhất:** làm nền thẻ sự kiện Live đồng nhất với nền mặc định của thẻ kênh thường; không chỉnh logic.
+- **Baseline được giữ nguyên:** candidate 1.10.139, feature commit `a14188fdd64476a57ac131be6f3457f2b50ce2be`; nhánh `build/mobile-1.10.138-optimized-20261015` không bị sửa.
+
+## Nguyên nhân xác định từ video và mã nguồn
+- `app/src/main/res/values/colors.xml` đặt `live_surface` là `#131419` (màu gần đen, alpha đặc).
+- `channel_card.xml` dùng nền mặc định `#D914263C` cùng viền `#304B6887`.
+- `live_event_card.xml` dùng viền khác `#2C2D35` và góc bo `13dp`, khiến thẻ Live cũng lệch kiểu so với danh sách kênh.
+
+## Thay đổi đã thực hiện
+1. Đổi `live_surface` thành `#D914263C`, khớp chính xác nền mặc định của thẻ kênh.
+2. Đổi viền thẻ Live thành `#304B6887` và góc bo thành `14dp`.
+3. Tăng `versionName` từ `1.10.139` lên `1.10.140` và `versionCode` từ `155` lên `156`.
+4. Không sửa `LiveEventAdapter.java`, dữ liệu feed, lịch EPG, xử lý player, chọn server hoặc chức năng Live khác.
+
+## Xác minh còn chờ
+- Build APK và toàn bộ Mobile unit tests của GitHub Actions.
+- Kiểm thử trên điện thoại thật: so sánh nền các thẻ Live với thẻ kênh ở VTV/VTVcab; mở trận, chuyển server, thêm/bỏ yêu thích.
+- Chỉ xác nhận ổn định sau khi người dùng thử bản APK.
+
+---
+
 # TIẾN ĐỘ MỚI NHẤT — NM7 IPTV MOBILE 1.10.139 — DEFAULT EPG — 2026-10-19
 
 ## Trạng thái phát triển
