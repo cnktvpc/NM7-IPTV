@@ -21,6 +21,9 @@ t = method(t, "public void onBackPressed()", """        if (onDetailsBack()) ret
         }
         mNm7LeavingForMini = true;
         cancelNm7TargetRestore(true);
+        if (mNm7StartupPoster != null) {
+            mNm7StartupPoster.setVisibility(View.GONE);
+        }
         mIsBackPressed = true;
         sNm7RestorePending = false;
         sNm7Mini = true;
