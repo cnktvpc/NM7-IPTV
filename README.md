@@ -1,32 +1,33 @@
-# NM7 IPTV Mobile — Candidate 1.10.142 — Live card tap-to-play — 2026-10-20
+# NM7 IPTV Mobile — Stable 1.10.142 — Live card tap-to-play — 2026-10-20
 
-> **Trạng thái: CI PASS; candidate chờ kiểm thử trên thiết bị thật.** Bắt đầu từ candidate 1.10.141. Giữ nguyên nền/chiều cao compact và cải thiện riêng bố cục nút server cùng hành vi chạm thẻ.
+> **Trạng thái: ĐÃ XÁC NHẬN TRÊN THIẾT BỊ — ổn định theo phản hồi người dùng.** Bản 1.10.142 được người dùng cài đặt và xác nhận hoạt động OK. CI build và toàn bộ unit tests đều PASS.
 
-## Thông tin bản build
+## Thông tin bản phát hành
 
 - **Version:** 1.10.142
 - **versionCode:** 158
-- **Branch:** `work/mobile-1.10.142-live-card-tap-to-play-20261020`
-- **Base candidate:** 1.10.141 — `work/mobile-1.10.141-live-card-compact-20261020`
+- **Stable branch:** `stable/mobile-1.10.142`
+- **Source branch:** `work/mobile-1.10.142-live-card-tap-to-play-20261020`
+- **Baseline:** candidate 1.10.141 — `work/mobile-1.10.141-live-card-compact-20261020`
 - **GitHub Actions:** [Run 39353928422 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39353928422)
-- **Artifact:** [NM7-IPTV-Mobile-1.10.142-LIVE-TAP-PLAY](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39353928422/artifacts/12234623983), ID `12234623983`
+- **APK artifact:** [NM7-IPTV-Mobile-1.10.142-LIVE-TAP-PLAY](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39353928422/artifacts/12234623983), ID `12234623983`
 - **APK SHA-256:** `2a1f4be3960ae378e646527d77c989f64d95c2c4132738e9dbd6bd3400668517`
 
-## Thay đổi
+## Thay đổi đã được xác nhận
 
-- Thẻ sự kiện có thao tác chạm riêng, gọi phát ngay sự kiện bằng server đã chọn/lưu (hoặc server mặc định). Không mở hộp thoại chọn server trước khi phát.
-- Nút server là điều khiển độc lập, cao 36dp, rộng tối thiểu 100dp, để dễ chạm hơn. Khi sự kiện đang phát, nhãn đổi thành **Đổi server**; nếu chưa phát, nhãn là **Chọn server**.
-- Nút server vẫn mở hộp chọn nguồn. Khi chọn server khác, ứng dụng lưu lựa chọn và bắt đầu phát nguồn đó.
-- Dòng thời lượng “Đã live … phút” đặt cùng hàng với nút server, canh giữa dọc; không chồng/cắt sát mép thẻ.
-- Giữ nền Live `#D914263C`, viền `#304B6887`, góc bo 14dp và bố cục compact của 1.10.141. Chiều cao tối thiểu mobile tăng nhẹ lên 74dp để có chỗ cho nút server dễ thao tác.
-- Không thay đổi nguồn/chu kỳ refresh Live, quy tắc gộp trận, EPG, xử lý playback, lựa chọn server đang lưu, hoặc tính năng yêu thích. Chạm dài thẻ vẫn mở menu thao tác.
+- Chạm trực tiếp vào thẻ sự kiện Live để phát ngay bằng server đã lưu hoặc server mặc định; không cần mở hộp chọn server trước.
+- Nút server độc lập, cao 36dp và rộng tối thiểu 100dp; nhãn là **Chọn server** hoặc **Đổi server** tùy trạng thái phát.
+- Bấm nút server mở danh sách nguồn; chọn nguồn khác sẽ lưu lựa chọn và phát nguồn đó.
+- Dòng “Đã live … phút” nằm cùng hàng với nút server, căn giữa dọc; bố cục gọn, không chồng lấn.
+- Giữ màu nền Live `#D914263C`, viền `#304B6887`, góc bo 14dp và bố cục compact. Chiều cao tối thiểu mobile 74dp, TV 82dp.
+- Giữ nguyên nguồn và chu kỳ refresh Live, gộp trận, EPG, xử lý playback, lựa chọn server đã lưu, yêu thích và menu thao tác chạm dài.
 
-## Kiểm thử
+## Kiểm thử và xác nhận
 
 - Build `:app:assembleMobileDebug`: **PASS**.
 - Toàn bộ `:app:testMobileDebugUnitTest`: **PASS**.
-- Regression guard về feed Live, fullscreen server picker, màu/nền thẻ, nút server tách biệt và chạm thẻ phát ngay: **PASS**.
-- Vẫn cần cài APK lên thiết bị để xác nhận cảm giác bấm và hành vi phát thực tế; chưa đánh dấu stable.
+- Regression guards về Live feed, fullscreen server picker, giao diện thẻ và thao tác chạm: **PASS**.
+- Kiểm thử thực tế: **người dùng đã xác nhận bản APK hoạt động OK**.
 
 ---
 
