@@ -14,6 +14,8 @@ import java.util.List;
 /** LauTV-style event cards: one card per logical event and a separate server picker. */
 public final class LiveEventAdapter extends BaseAdapter {
     public interface Listener {
+        void onEventRequested(LiveEvent event);
+        void onEventLongPressed(LiveEvent event);
         void onServersRequested(LiveEvent event);
         void onFavoriteChanged(LiveEvent event, boolean favorite);
     }
@@ -62,10 +64,18 @@ public final class LiveEventAdapter extends BaseAdapter {
         holder.title.setText(event.title());
         holder.group.setText(event.group().isEmpty() ? "LIVE" : "LIVE  •  " + event.group());
         int servers = event.sources().size();
-        holder.servers.setText(servers + " Server" + "  ▸");
+        boolean playing = event.id().equals(playingEventId);
+        holder.servers.setText((playing ? "Đổi server" : "Chọn server") + " · " + servers + " ▾");
         holder.duration.setText("Đã live " + event.elapsedLiveMinutes(System.currentTimeMillis()) + " phút");
-        holder.servers.setContentDescription("Chọn máy chủ phát sóng, " + servers + " nguồn");
+        holder.servers.setContentDescription((playing ? "Đổi máy chủ phát sóng, " : "Chọn máy chủ phát sóng, ") + servers + " nguồn");
         holder.servers.setOnClickListener(v -> listener.onServersRequested(event));
+        // Handle taps explicitly on the card itself; child server/favorite buttons
+        // keep their own actions and never open the server picker as a prerequisite.
+        convertView.setOnClickListener(v -> listener.onEventRequested(event));
+        convertView.setOnLongClickListener(v -> {
+            listener.onEventLongPressed(event);
+            return true;
+        });
 
         boolean favorite = LiveEventStore.isFavorite(context, event.id());
         holder.favorite.setText(favorite ? "♥" : "♡");
@@ -82,11 +92,10 @@ public final class LiveEventAdapter extends BaseAdapter {
         convertView.setBackgroundResource(event.id().equals(playingEventId)
                 ? R.drawable.channel_card_playing : R.drawable.live_event_card);
         boolean tv = AppPreferences.isTvInterface(context);
-        boolean compact = AppPreferences.compactRows(context);
         float density = context.getResources().getDisplayMetrics().density;
-        convertView.setMinimumHeight(Math.round((tv ? 82 : (compact ? 58 : 64)) * density));
-        convertView.setPadding(0, Math.round((tv ? 4 : 2) * density), 0,
-                Math.round((tv ? 4 : 2) * density));
+        convertView.setMinimumHeight(Math.round((tv ? 82 : 74) * density));
+        convertView.setPadding(0, Math.round((tv ? 4 : 3) * density), 0,
+                Math.round((tv ? 4 : 3) * density));
         return convertView;
     }
 
