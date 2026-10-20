@@ -1,4 +1,4 @@
-"""NM7 Mobile: YouTube mini-player navigation (Back 1x: mini-player, Back 2x: close mini-player)."""
+"""NM7 Mobile: YouTube floating mini-player navigation (Back 1x: mini-player, Back 2x: close mini-player)."""
 from pathlib import Path
 import re
 
@@ -15,18 +15,26 @@ p = phone / "playback/PlaybackActivity.java"
 t = p.read_text(encoding="utf-8")
 t = method(t, "public void onBackPressed()", """        if (onDetailsBack()) return;
         if (mPlayer == null || mNm7Stopped) { super.onBackPressed(); return; }
-        if (mNm7LeavingForMini) return;
+        if (mNm7LeavingForMini) {
+            consumeNm7BrowseBack();
+            return;
+        }
         mNm7LeavingForMini = true;
         cancelNm7TargetRestore(true);
         mIsBackPressed = true;
         sNm7RestorePending = false;
         sNm7Mini = true;
+        syncNm7KeepAlive();
         blockEngine(false);
+        if (mPanel != null && !isLandscape()) {
+            mPanel.setVisibility(View.VISIBLE);
+        }
         Intent intent = new Intent(this,
                 com.liskovsoft.smartyoutubetv2.droid.ui.browse.BrowseActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_NO_ANIMATION
                 | Intent.FLAG_ACTIVITY_NO_USER_ACTION);
-        startActivity(intent);""")
+        startActivity(intent);
+        try { overridePendingTransition(0, 0); } catch (Throwable ignored) {}""")
 p.write_text(t, encoding="utf-8")
 
 p = phone / "browse/BrowseActivity.java"
@@ -74,4 +82,4 @@ if "consumeNm7BrowseBack()" not in t:
         t = t.replace("private void initAppBar() {", search_back + "private void initAppBar() {", 1)
 p.write_text(t, encoding="utf-8")
 
-print("NM7 Mobile: YouTube mini-player navigation active (Back 1x: mini-player, Back 2x: close mini-player)")
+print("NM7 Mobile: YouTube floating mini-player navigation active (Back 1x: mini, Back 2x: close)")
