@@ -104,21 +104,15 @@ public final class HomeTabBar {
     }
 
     private static void openIptv(Activity activity) {
-        // Switching tabs does not end YouTube. It remains paused/backgrounded until
-        // an IPTV player actually reaches READY; the existing handoff logic then
-        // temporarily suspends YouTube. If IPTV has no active player, YouTube remains
-        // available in the background for instant return to the previous session.
         PlayerActivity.cancelYoutubeHandoff();
         SharedPlaybackSession.setTab(activity, SharedPlaybackSession.TAB_IPTV);
         MobileNm7Application.markTabSwitch();
+        if (MobileNm7Application.isYoutubeSessionActive()) {
+            MobileNm7Application.suspendYoutubeForIptv();
+        }
         Intent intent = new Intent(activity, MainActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
         startWithoutAnimation(activity, intent);
-        // Explicitly request IPTV restoration after the Activity transition. This also
-        // covers the case where MainActivity is already alive and only reordered to front.
-        // The click originates from SmartTube Browse/Playback, not MainActivity.
-        // Resolve the already-running MainActivity inside the IPTV provider.
-        MobileInlinePlayerProviderV2.resumeForIptvTab(activity);
         activity.getWindow().getDecorView().post(
                 () -> MobileInlinePlayerProviderV2.resumeForIptvTab(activity));
     }
