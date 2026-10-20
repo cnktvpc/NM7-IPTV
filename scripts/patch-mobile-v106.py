@@ -29,7 +29,7 @@ def patch_file(path: Path, transform_fn):
     return False
 
 def replace_method(text: str, signature: str, new_method: str) -> str:
-    pattern = re.compile(r"(?ms)^    " + re.escape(signature) + r" \\{.*?^    \\}")
+    pattern = re.compile(r"(?ms)^    " + re.escape(signature) + r" \{.*?^    \}")
     updated, count = pattern.subn(lambda _: new_method.rstrip(), text, count=1)
     return updated if count == 1 else text
 
@@ -187,21 +187,140 @@ def opt_play(t):
     if old_hide_body in t:
         t = t.replace(old_hide_body, new_hide_body, 1)
 
-    # 3d) Keep mPlayer attached to mPlayerView during IPTV suspension & eliminate the 750ms restore stall
-    old_suspend_detach = """        if (active.mNm7VideoTarget != null) active.mNm7VideoTarget.setPlayer(null);
-        active.mNm7VideoTarget = null;
-        active.mPlayerView.setPlayer(null);"""
-    t = t.replace(old_suspend_detach, "        active.mNm7VideoTarget = active.mPlayerView;")
+    # 3d) Increase Watch feed RecyclerView cache so scrolling below player never stutters
+    t = t.replace("mSuggestionsView.setItemViewCacheSize(0);", "mSuggestionsView.setItemViewCacheSize(10);")
+    t = t.replace("mSuggestionsView.setItemViewCacheSize(1);", "mSuggestionsView.setItemViewCacheSize(10);")
+    t = t.replace("mSuggestionsView.getRecycledViewPool().setMaxRecycledViews(1, 2);", "mSuggestionsView.getRecycledViewPool().setMaxRecycledViews(1, 12);")
+    t = t.replace("mSuggestionsView.getRecycledViewPool().setMaxRecycledViews(1, 4);", "mSuggestionsView.getRecycledViewPool().setMaxRecycledViews(1, 12);")
 
-    old_restore = """        if (sNm7RestorePending) return;
-        active.beginNm7TargetRestore();
-        sNm7RestorePending = true;"""
-    new_restore = """        if (sNm7RestorePending) return;
-        if (active.mNm7VideoTarget != active.mPlayerView) active.beginNm7TargetRestore();
-        else active.mNm7ResumeAfterTarget = active.mPlayer.getPlayWhenReady() || sNm7ResumeAfterIptv;
-        sNm7RestorePending = true;"""
-    t = t.replace(old_restore, new_restore)
-    t = t.replace("mHandler.postDelayed(mNm7TargetRestoreTimeout, 750);", "mHandler.postDelayed(mNm7TargetRestoreTimeout, 90);")
+    # 3e) Seamless Mini <-> Fullscreen <-> IPTV target handoff
+    t = replace_method(t, "public static void toggleNm7Playback()", """    public static void toggleNm7Playback() {
+        PlaybackActivity owner = sNm7Active;
+        if (owner == null || owner.mNm7Stopped || owner.isFinishing() || owner.isDestroyed()) return;
+        if (sNm7SuspendedForIptv) {
+            sNm7SuspendedForIptv = false;
+            sNm7ResumeAfterIptv = false;
+            try {
+                Class.forName("vn.phuong.iptvplayer.MobileNm7Application")
+                        .getMethod("pauseIptvForYoutube").invoke(null);
+            } catch (Throwable ignored) {}
+            owner.blockEngine(false);
+            if (owner.mPlayer != null) owner.mPlayer.setPlayWhenReady(true);
+            return;
+        }
+        owner.retryNm7Mini();
+    }""")
+
+    t = replace_method(t, "public static void attachNm7MiniPlayer(android.view.View previousSurface, android.view.View nextSurface)", """    public static void attachNm7MiniPlayer(android.view.View previousSurface, android.view.View nextSurface) {
+        PlaybackActivity active = sNm7Active;
+        if (!isNm7MiniPlayerActive()) return;
+        if (!(nextSurface instanceof com.google.android.exoplayer2.ui.PlayerView)) return;
+        if (sNm7SuspendedForIptv) {
+            try {
+                Object tab = Class.forName("vn.phuong.iptvplayer.SharedPlaybackSession")
+                        .getMethod("tab", android.content.Context.class).invoke(null, active);
+                if (!"youtube".equals(tab)) return;
+            } catch (ReflectiveOperationException error) { return; }
+            sNm7SuspendedForIptv = false;
+        }
+        active.blockEngine(active.mNm7AppBackground);
+        com.google.android.exoplayer2.ui.PlayerView mini =
+                (com.google.android.exoplayer2.ui.PlayerView) nextSurface;
+        mini.setUseController(false);
+        if (active.mPlayer == null) {
+            active.mNm7VideoTarget = mini;
+            active.syncNm7KeepAlive();
+            return;
+        }
+        com.google.android.exoplayer2.ui.PlayerView oldTarget = active.mNm7VideoTarget;
+        if (oldTarget == null) oldTarget = active.mPlayerView;
+        if (oldTarget != mini) com.google.android.exoplayer2.ui.PlayerView.switchTargetView(active.mPlayer, oldTarget, mini);
+        if (mini.getPlayer() != active.mPlayer) {
+            if (active.mPlayerView != null && active.mPlayerView.getPlayer() == active.mPlayer) active.mPlayerView.setPlayer(null);
+            mini.setPlayer(active.mPlayer);
+        }
+        active.mNm7VideoTarget = mini;
+        active.syncNm7KeepAlive();
+        android.util.Log.i("NM7Playback", "target=mini state=" + active.mPlayer.getPlaybackState());
+        if (sNm7ResumeAfterIptv) {
+            sNm7ResumeAfterIptv = false;
+            active.mPlayer.setPlayWhenReady(true);
+        }
+    }""")
+
+    t = replace_method(t, "public static void restoreNm7Player()", """    public static void restoreNm7Player() {
+        PlaybackActivity active = sNm7Active;
+        if (active == null || active.isDestroyed() || active.isFinishing() || active.mPlayer == null) return;
+        try {
+            Class.forName("vn.phuong.iptvplayer.MobileInlinePlayerProviderV2").getMethod("releaseForYoutube").invoke(null);
+        } catch (Throwable ignored) {}
+        sNm7SuspendedForIptv = false;
+        boolean ended = active.mPlayer.getPlaybackState() == Player.STATE_ENDED;
+        if (ended) recoverNm7EndedPlayback(active);
+        if (sNm7RestorePending) return;
+        active.mNm7ResumeAfterTarget = active.mPlayer.getPlayWhenReady() || sNm7ResumeAfterIptv;
+        sNm7RestorePending = true;
+        Intent intent = new Intent(active, active.getClass()).addFlags(
+                Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_NO_ANIMATION | Intent.FLAG_ACTIVITY_NO_USER_ACTION);
+        active.startActivity(intent);
+        try { active.overridePendingTransition(0, 0); } catch (Throwable ignored) {}
+    }""")
+
+    t = replace_method(t, "private void completeNm7RestoreOnResume()", """    private void completeNm7RestoreOnResume() {
+        if (mPlayer == null) return;
+        sNm7SuspendedForIptv = false;
+        com.google.android.exoplayer2.ui.PlayerView miniTarget = null;
+        try {
+            android.view.View view = (android.view.View) Class.forName("vn.phuong.iptvplayer.MobileMiniPlayer").getMethod("surfaceView").invoke(null);
+            if (view instanceof com.google.android.exoplayer2.ui.PlayerView) miniTarget = (com.google.android.exoplayer2.ui.PlayerView) view;
+        } catch (ReflectiveOperationException error) {
+            android.util.Log.e("NM7Playback", "Read mini target", error);
+        }
+        com.google.android.exoplayer2.ui.PlayerView oldTarget = mNm7VideoTarget != null ? mNm7VideoTarget : miniTarget;
+        if (oldTarget != null && oldTarget != mPlayerView) {
+            com.google.android.exoplayer2.ui.PlayerView.switchTargetView(mPlayer, oldTarget, mPlayerView);
+            oldTarget.setPlayer(null);
+        }
+        if (miniTarget != null && miniTarget != mPlayerView) miniTarget.setPlayer(null);
+        if (mPlayerView.getPlayer() != mPlayer) mPlayerView.setPlayer(mPlayer);
+        mNm7VideoTarget = mPlayerView;
+        sNm7RestorePending = false;
+        sNm7Mini = false;
+        mNm7LeavingForMini = false;
+        cancelNm7TargetRestore(false);
+        if (sNm7ResumeAfterIptv || mNm7ResumeAfterTarget) {
+            sNm7ResumeAfterIptv = false;
+            mNm7ResumeAfterTarget = false;
+            mPlayer.setPlayWhenReady(true);
+        } else if (mPlayer.getPlaybackState() == Player.STATE_ENDED && !mNm7Stopped) {
+            recoverNm7EndedPlayback(this);
+            mPlayer.setPlayWhenReady(true);
+        }
+        blockEngine(false);
+        try {
+            Class.forName("vn.phuong.iptvplayer.MobileMiniPlayer").getMethod("remove").invoke(null);
+        } catch (ReflectiveOperationException error) {
+            android.util.Log.e("NM7Playback", "Remove mini after foreground handoff", error);
+        }
+        if (mPanel != null && !isLandscape()) mPanel.setVisibility(View.VISIBLE);
+        android.util.Log.i("NM7Playback", "target=fullscreen; mini=false; back enabled");
+    }""")
+
+    t = replace_method(t, "public static void suspendForNm7Iptv()", """    public static void suspendForNm7Iptv() {
+        PlaybackActivity active = sNm7Active;
+        if (active == null || active.isDestroyed() || active.isFinishing() || active.mPlayer == null) return;
+        if (sNm7SuspendedForIptv) return;
+        sNm7SuspendedForIptv = true;
+        sNm7ResumeAfterIptv = active.mPlayer.getPlayWhenReady() || active.mNm7ResumeAfterTarget;
+        active.cancelNm7TargetRestore(false);
+        active.mNm7Stopped = false;
+        active.mNm7OwnsPlayback = false;
+        active.blockEngine(true);
+        active.mPlayer.setPlayWhenReady(false);
+        active.nm7SetBackground(false);
+        active.stopService(new Intent().setClassName(active, "vn.phuong.iptvplayer.BackgroundPlaybackService"));
+    }""")
+
     return t
 patch_file(p_play, opt_play)
 
