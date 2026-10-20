@@ -423,9 +423,17 @@ public final class MobileNm7Application extends DroidApplication implements andr
                 "iptv_ready");
         if (handoffId <= 0L) return false;
         try {
-            Object result = Class.forName(SMARTTUBE_PLAYBACK)
-                    .getMethod("suspendForNm7Iptv", long.class).invoke(null, handoffId);
-            if (!Boolean.TRUE.equals(result)) return false;
+            Class<?> playback = Class.forName(SMARTTUBE_PLAYBACK);
+            boolean youtubeSessionActive = Boolean.TRUE.equals(
+                    playback.getMethod("isNm7SessionActive").invoke(null));
+            if (youtubeSessionActive) {
+                Object result = playback.getMethod("suspendForNm7Iptv", long.class)
+                        .invoke(null, handoffId);
+                if (!Boolean.TRUE.equals(result)) return false;
+            } else {
+                android.util.Log.i("NM7Playback", "iptv_audio_handoff youtube_session=inactive"
+                        + " handoff_id=" + handoffId);
+            }
             if (!SharedPlaybackSession.completeAudioHandoff(app, handoffId,
                     SharedPlaybackSession.TAB_IPTV)) return false;
         } catch (ReflectiveOperationException | RuntimeException error) {
@@ -435,7 +443,7 @@ public final class MobileNm7Application extends DroidApplication implements andr
         }
         // Keep the YouTube session alive in the background. IPTV temporarily owns
         // playback only while an IPTV player is actually READY/playing.
-        SharedPlaybackSession.setYoutubeBackground(instance, false);
+        SharedPlaybackSession.setYoutubeBackground(app, false);
         System.setProperty("nm7.youtube.background", "0");
         return true;
     }
