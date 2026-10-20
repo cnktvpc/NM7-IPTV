@@ -15,6 +15,7 @@
     private com.google.android.exoplayer2.ui.PlayerView mNm7TargetRestoreView;
     private Object mNm7LastRenderedSurfaceToken;
     private int mNm7TargetRestoreRecoveryAttempts;
+    private long mNm7TargetRestoreLastRecoveryMs;
     private boolean mNm7TargetRestoreFrameConfirmed;
     private boolean mNm7TargetRestoreFailed;
     private boolean mNm7RestoreFailed;
@@ -525,6 +526,7 @@
         mNm7ResumeAfterTarget = resume;
         mNm7TargetRestoreStarted = android.os.SystemClock.elapsedRealtime();
         mNm7TargetRestoreRecoveryAttempts = 0;
+        mNm7TargetRestoreLastRecoveryMs = 0L;
         mNm7TargetRestoreFrameConfirmed = false;
         mNm7TargetRestoreFailed = false;
         mPlayer.setVolume(0f);
@@ -654,14 +656,20 @@
                         return;
                     }
                 }
-                if (elapsed < 3000L) {
-                    if (mNm7TargetRestoreRecoveryAttempts == 0 && nm7TargetSurfaceReady(expectedTarget)
+                if (elapsed < 9_000L) {
+                    long nowMs = android.os.SystemClock.elapsedRealtime();
+                    boolean rebindDue = mNm7TargetRestoreRecoveryAttempts == 0
+                            || nowMs - mNm7TargetRestoreLastRecoveryMs >= 3_000L;
+                    if (mNm7TargetRestoreRecoveryAttempts < 3 && rebindDue
+                            && nm7TargetSurfaceReady(expectedTarget)
                             && expectedTarget.getPlayer() == expectedPlayer) {
                         mNm7TargetRestoreRecoveryAttempts++;
+                        mNm7TargetRestoreLastRecoveryMs = nowMs;
                         expectedTarget.setPlayer(null);
                         expectedTarget.setPlayer(expectedPlayer);
                         android.util.Log.w("NM7Playback", "render_recovery handoff_id=" + handoffId
-                                + " action=target_rebind attempt=" + mNm7TargetRestoreRecoveryAttempts);
+                                + " action=target_rebind attempt=" + mNm7TargetRestoreRecoveryAttempts
+                                + " elapsed_ms=" + elapsed);
                     }
                     mHandler.postDelayed(this, 250L);
                     return;
