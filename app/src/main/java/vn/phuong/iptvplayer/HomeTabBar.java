@@ -150,15 +150,17 @@ public final class HomeTabBar {
             Class<?> playback = Class.forName(
                     "com.liskovsoft.smartyoutubetv2.droid.ui.playback.PlaybackActivity");
             boolean active = (Boolean) playback.getMethod("isNm7SessionActive").invoke(null);
-            boolean isMini = false;
-            try {
-                isMini = Boolean.TRUE.equals(playback.getMethod("isNm7MiniPlayerActive").invoke(null));
-            } catch (ReflectiveOperationException ignored) {}
-            if (active && !isMini) {
+            if (active) {
                 MobileInlinePlayerProviderV2.releaseForYoutube();
                 SmartTubeRuntime.initialize(activity.getApplicationContext());
-                playback.getMethod("restoreNm7Player").invoke(null);
-                return;
+                boolean isMini = false;
+                try {
+                    isMini = Boolean.TRUE.equals(playback.getMethod("isNm7MiniPlayerActive").invoke(null));
+                } catch (ReflectiveOperationException ignored) {}
+                if (!isMini) {
+                    playback.getMethod("restoreNm7Player").invoke(null);
+                    return;
+                }
             }
         } catch (ReflectiveOperationException | RuntimeException error) {
             android.util.Log.w("NM7Navigation", "Existing YouTube session restore failed", error);
