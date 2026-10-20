@@ -150,7 +150,11 @@ public final class HomeTabBar {
             Class<?> playback = Class.forName(
                     "com.liskovsoft.smartyoutubetv2.droid.ui.playback.PlaybackActivity");
             boolean active = (Boolean) playback.getMethod("isNm7SessionActive").invoke(null);
-            if (active) {
+            boolean isMini = false;
+            try {
+                isMini = Boolean.TRUE.equals(playback.getMethod("isNm7MiniPlayerActive").invoke(null));
+            } catch (ReflectiveOperationException ignored) {}
+            if (active && !isMini) {
                 MobileInlinePlayerProviderV2.releaseForYoutube();
                 SmartTubeRuntime.initialize(activity.getApplicationContext());
                 playback.getMethod("restoreNm7Player").invoke(null);
