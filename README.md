@@ -1,3 +1,36 @@
+# NM7 IPTV Mobile — Candidate 1.10.141 — Compact Live event cards — 2026-10-20
+
+> **Trạng thái: candidate; CI chưa chạy.** Bắt đầu từ candidate 1.10.140 đã đồng bộ màu nền Live. Phạm vi bản này chỉ thu gọn kích thước thẻ sự kiện Live để gần bằng thẻ kênh thông thường; không thay đổi logic Live/playback.
+
+## Thông tin bản sửa
+
+- **Version:** 1.10.141
+- **versionCode:** 157
+- **Branch:** `work/mobile-1.10.141-live-card-compact-20261020`
+- **Base candidate:** 1.10.140 — `work/mobile-1.10.140-live-card-background-20261020`
+- **Thay đổi giao diện:** thẻ Live minHeight 66dp; logo 58×36dp; tiêu đề một dòng; padding dọc 2dp; nút server 24dp; hàng thời lượng và nút yêu thích thu gọn theo kích thước hàng kênh.
+- **Giữ nguyên:** nền Live trong suốt đồng bộ `#D914263C`, viền `#304B6887`, góc bo 14dp, URL EPG mặc định và toàn bộ logic feed/player.
+
+## Vì sao thẻ Live quá cao?
+
+So sánh mã nguồn và ảnh thiết bị cho thấy thẻ kênh thường dùng logo 58×36dp, tiêu đề một dòng, hàng tối thiểu 66dp và gần như không có padding dọc. Thẻ Live trước đó có logo 56×56dp, tiêu đề tối đa hai dòng, nút server cao 32dp, padding 9dp và khoảng cách đáy 4dp. Những thông số này làm mỗi thẻ Live cao hơn rõ rệt.
+
+## Sửa đổi trong 1.10.141
+
+- Thu gọn layout để hàng Live có chiều cao tương đương hàng kênh.
+- Giữ tên trận trên một dòng và dùng ellipsis nếu tên quá dài, tránh một số trận kéo cao riêng một thẻ.
+- Giữ đủ thông tin nhóm/môn thể thao, nhãn LIVE, số server, số phút đã live và nút yêu thích.
+- Duy trì vùng bấm chọn server và yêu thích; không đụng đến adapter dữ liệu, gộp trận, lịch refresh, lựa chọn nguồn hoặc player.
+- Cập nhật regression guard để kiểm tra kích thước thẻ và bảo đảm các kiểm tra Live/fullscreen cũ vẫn còn.
+
+## Kiểm thử
+
+- CI build và unit tests: chờ chạy.
+- Sau CI, cần cài APK kiểm tra thực tế: chiều cao các thẻ Live gần bằng nhóm VTV/VTVcab; tên dài không làm tăng chiều cao; chọn server, yêu thích, mở/phát trận và nút đổi server toàn màn hình vẫn hoạt động.
+- Không đánh dấu stable trước khi người dùng xác nhận trên thiết bị thật.
+
+---
+
 # NM7 IPTV Mobile — Candidate 1.10.140 — Live card background — 2026-10-20
 
 > **Trạng thái: CI PASS, candidate chờ kiểm thử trên thiết bị thật.** Bắt đầu từ candidate 1.10.139; không sửa nhánh baseline/stable. Phạm vi chỉ đồng bộ màu nền và viền thẻ Live với các thẻ kênh thông thường.
