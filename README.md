@@ -1,6 +1,6 @@
 # NM7 IPTV Mobile — Candidate 1.10.140 — Live card background — 2026-10-20
 
-> **Trạng thái: đang chờ CI sau khi sửa giao diện.** Bắt đầu từ candidate 1.10.139; không sửa nhánh baseline/stable. Phạm vi chỉ đồng bộ màu nền và viền thẻ Live với các thẻ kênh thông thường.
+> **Trạng thái: CI PASS, candidate chờ kiểm thử trên thiết bị thật.** Bắt đầu từ candidate 1.10.139; không sửa nhánh baseline/stable. Phạm vi chỉ đồng bộ màu nền và viền thẻ Live với các thẻ kênh thông thường.
 
 ## Thông tin bản sửa
 
@@ -20,9 +20,13 @@ Video cho thấy thẻ Live dùng nền gần đen không trong suốt (`#131419
 - Không thay đổi `LiveEventAdapter`, bộ lọc feed, gộp sự kiện, chọn server, yêu thích, thời lượng live, player hoặc nguồn EPG.
 - Đã tăng version lên 1.10.140 / versionCode 156 để phân biệt APK kiểm thử với 1.10.139.
 
-## Kiểm thử
+## Build và kiểm thử
 
-- CI build và unit tests: đang chờ workflow của nhánh này.
+- **GitHub Actions:** [Run 39349112739 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39349112739).
+- **Artifact:** [NM7-IPTV-Mobile-1.10.140-LIVE-CARD-BG](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39349112739/artifacts/12231959910), ID `12231959910`.
+- **APK SHA-256:** `e1138bfb64eb9b459691f9fa78939633f32d6c5a4d8d81b07ef6c968771556ab`.
+- Build `:app:assembleMobileDebug`: **PASS**; toàn bộ `:app:testMobileDebugUnitTest`: **PASS**.
+- Regression guard cho nền/viền/góc bo của thẻ Live: **PASS**.
 - Sau CI, cần cài APK và xác nhận nền Live cùng màu/độ trong suốt với tab nhóm kênh; đồng thời thử mở sự kiện, đổi server và yêu thích để loại trừ hồi quy giao diện/chức năng.
 - Chưa đánh dấu stable cho tới khi kiểm thử thực tế được xác nhận.
 
