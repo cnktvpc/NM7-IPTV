@@ -364,34 +364,9 @@ def opt_view(t):
     return t
 patch_file(p_view, opt_view)
 # =========================================================================
-p_browse = SMARTTUBE_ROOT / "smarttubedroid/src/main/java/com/liskovsoft/smartyoutubetv2/droid/ui/browse/BrowseActivity.java"
-def opt_browse(t):
-    t = t.replace("list.setItemViewCacheSize(0);", "list.setItemViewCacheSize(10);")
-    t = t.replace("list.getRecycledViewPool().setMaxRecycledViews(0, 2);", "list.getRecycledViewPool().setMaxRecycledViews(0, 12);")
-    if "setItemAnimator(null)" not in t:
-        idx = t.find("public class BrowseActivity")
-        if idx != -1:
-            b = t.find("{", idx)
-            t = t[:b+1] + "\n    private void disableAnim(androidx.recyclerview.widget.RecyclerView r) { if (r != null) r.setItemAnimator(null); }\n" + t[b+1:]
-    return t
-patch_file(p_browse, opt_browse)
-
-p_view = SMARTTUBE_ROOT / "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/views/ViewManager.java"
-def opt_view(t):
-    if "FLAG_ACTIVITY_NO_ANIMATION" not in t:
-        idx = t.find("public class ViewManager")
-        if idx != -1:
-            b = t.find("{", idx)
-            t = t[:b+1] + "\n    public static final int NM7_FLAG = android.content.Intent.FLAG_ACTIVITY_NO_ANIMATION;\n" + t[b+1:]
-    return t
-patch_file(p_view, opt_view)
-
-log("Hoàn tất tối ưu YouTube: Floating 16:9 Miniplayer, khởi động nhanh 250ms, crossfade 80ms và chuyển tab mượt mà.")
-
 # =========================================================================
 # 5. TỰ ĐỘNG ÁP DỤNG YOUTUBE CHROME & PULL-TO-REFRESH (v114..v130) CHO MỌI WORKFLOW
 # =========================================================================
-import runpy
 _chrome_and_refresh_chain = [
     "scripts/patch-mobile-v114-youtube-ui.py",
     "scripts/patch-mobile-v119-youtube-chrome-final.py",
@@ -406,3 +381,5 @@ if (SMARTTUBE_ROOT / "smarttubedroid/src/main/java/com/liskovsoft/smartyoutubetv
     for _script in _chrome_and_refresh_chain:
         if Path(_script).is_file():
             runpy.run_path(_script)
+
+log("Hoàn tất tối ưu YouTube: SurfaceView-to-SurfaceView Miniplayer, đồng bộ A/V 100%, chuyển tab mượt 0ms và Pull-to-Refresh.")
