@@ -1,3 +1,29 @@
+# TIẾN ĐỘ MỚI NHẤT — NM7 IPTV MOBILE 1.10.142 — LIVE CARD TAP-TO-PLAY — 2026-10-20
+
+## Trạng thái
+- **CI: PASS** — [Run 39353928422](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39353928422), build APK, unit tests và upload artifact thành công.
+- **Version:** 1.10.142 / `versionCode 158`.
+- **Branch:** `work/mobile-1.10.142-live-card-tap-to-play-20261020`.
+- **Baseline:** candidate 1.10.141; không thay đổi nhánh stable/baseline.
+- **Artifact:** [NM7-IPTV-Mobile-1.10.142-LIVE-TAP-PLAY](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39353928422/artifacts/12234623983), ID `12234623983`.
+- **APK SHA-256:** `2a1f4be3960ae378e646527d77c989f64d95c2c4132738e9dbd6bd3400668517`.
+
+## Yêu cầu và sửa đổi
+1. Chạm trực tiếp vào thẻ Live sẽ gọi `playLiveEvent(event)`, phát bằng server đã lưu/đang chọn hoặc server mặc định; không bắt người dùng phải mở danh sách server trước.
+2. Thêm callback `onEventRequested` trên thẻ và `onEventLongPressed` cho menu thao tác; hành động chạm dài được giữ.
+3. Nút server riêng, cao 36dp và rộng tối thiểu 100dp; nhãn thể hiện **Chọn server** hoặc **Đổi server** tùy sự kiện đang phát. Bấm nút luôn mở picker riêng, lưu nguồn đã chọn và phát nguồn đó.
+4. Đặt nút server và dòng “Đã live … phút” chung một hàng, canh giữa; giới hạn độ rộng dòng thời lượng để không đẩy nút ra ngoài.
+5. Chiều cao tối thiểu mobile 74dp (TV giữ 82dp), giữ logo 58×36dp, nền `#D914263C`, viền `#304B6887`, góc bo 14dp.
+6. Regression guard kiểm tra callback thẻ, listener nút server, nhãn đổi/chọn server, kích thước nút và các kiểm tra Live/fullscreen cũ.
+
+## Kết quả CI
+- Build APK: **PASS**.
+- Toàn bộ Mobile unit tests: **PASS**.
+- Upload artifact và checksum: **PASS**.
+- Runtime trên điện thoại thật chưa được xác nhận; bản phát hành vẫn là candidate.
+
+---
+
 # TIẾN ĐỘ MỚI NHẤT — NM7 IPTV MOBILE 1.10.141 — COMPACT LIVE EVENT CARDS — 2026-10-20
 
 ## Trạng thái
