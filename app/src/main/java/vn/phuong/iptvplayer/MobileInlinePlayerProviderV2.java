@@ -1024,6 +1024,10 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
         ++playGeneration;
         releasePlayer();
         currentChannel = null;
+        resumeAfterYoutube = false;
+        pendingResumePlaying = false;
+        pendingResumePositionMs = 0L;
+        if (currentActivity != null) SharedPlaybackSession.clearIptv(currentActivity);
         backgroundActive = false;
         resumeAfterLifecyclePause = false;
         panel.setVisibility(View.GONE);
@@ -1279,6 +1283,19 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
             attach(main);
         }
         if (currentActivity != main || SharedPlaybackSession.TAB_IPTV.equals(SharedPlaybackSession.tab(main)) == false) return;
+        if (!resumeAfterYoutube) {
+            if (player != null && !userPaused && !player.getPlayWhenReady()) {
+                player.play();
+            }
+            return;
+        }
+        if (player != null) {
+            resumeAfterYoutube = false;
+            if (!userPaused && !player.getPlayWhenReady()) {
+                player.play();
+            }
+            return;
+        }
         long restoredPosition = pendingResumePositionMs;
         boolean restoredPlaying = pendingResumePlaying;
         if (currentChannel == null) {
