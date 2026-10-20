@@ -46,8 +46,8 @@ s = once(s, '        if (changed) mNm7TrackSelector.setParameters(builder);', ''
 # v60 has a second assignment for decoder-null transitions: append at the successful switch.
 anchor = '        if (mini.getPlayer() != active.mPlayer) mini.setPlayer(active.mPlayer);\n        active.mNm7VideoTarget = mini;'
 s = once(s, anchor, anchor + '\n        active.armNm7RenderWatchdog();')
-s = once(s, '        mNm7VideoTarget = mPlayerView;\n        sNm7RestorePending',
-         '        mNm7VideoTarget = mPlayerView;\n        armNm7RenderWatchdog();\n        sNm7RestorePending')
+anchor = '        mNm7VideoTarget = mPlayerView;\n        sNm7Mini = false;'
+s = once(s, anchor, '        mNm7VideoTarget = mPlayerView;\n        armNm7RenderWatchdog();\n        sNm7Mini = false;')
 
 # Manual retry starts a new bounded attempt. A READY event never does.
 s = once(s, '    private void retryNm7Mini() {', '''    private void retryNm7Mini() {

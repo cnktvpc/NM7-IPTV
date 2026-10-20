@@ -552,7 +552,8 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
 
     private void playInline(Channel channel, long resumePositionMs, boolean resumePlaying) {
         if (currentActivity == null || playerView == null) return;
-        SharedPlaybackSession.setTab(currentActivity, SharedPlaybackSession.TAB_IPTV);
+        SharedPlaybackSession.beginTabSwitch(currentActivity, SharedPlaybackSession.TAB_IPTV,
+                "iptv_inline_start");
         requestedResumePositionMs = Math.max(0L, resumePositionMs);
         requestedResumePlaying = resumePlaying;
         java.util.ArrayList<String> savedOptions = new java.util.ArrayList<>(channel.options());
@@ -663,10 +664,7 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
                     }
                     if (state == Player.STATE_READY) {
                         if (next.getPlayWhenReady() && next.getVolume() == 0f) {
-                            MobileNm7Application.suspendYoutubeForIptv();
-                            next.setAudioAttributes(new AudioAttributes.Builder().setUsage(C.USAGE_MEDIA)
-                                    .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(), true);
-                            next.setVolume(1f);
+                            enableIptvAudioAfterHandoff(next, generation);
                         }
                         bufferingSinceMs = 0;
                         updateProgramme(channel);
@@ -691,10 +689,7 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
                 @Override public void onPlayWhenReadyChanged(boolean playWhenReady, int reason) {
                     if (generation != playGeneration || next != player) return;
                     if (playWhenReady && next.getPlaybackState() == Player.STATE_READY && next.getVolume() == 0f) {
-                        MobileNm7Application.suspendYoutubeForIptv();
-                        next.setVolume(1f);
-                        next.setAudioAttributes(new AudioAttributes.Builder().setUsage(C.USAGE_MEDIA)
-                                .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(), true);
+                        enableIptvAudioAfterHandoff(next, generation);
                     }
                     if (reason == Player.PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST && !lifecyclePauseInProgress) {
                         userPaused = !playWhenReady;
@@ -1326,29 +1321,46 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
         if (owner.currentActivity != null) owner.stopBackgroundService(owner.currentActivity);
     }
 
-    public static void releaseForYoutube() {
-        MobileInlinePlayerProviderV2 owner = instance;
-        if (owner == null) return;
-        if (owner.player != null) {
-            owner.resumeAfterYoutube = owner.player.getPlayWhenReady() && !owner.userPaused;
-            owner.pendingResumePositionMs = owner.player.isCurrentMediaItemLive() ? 0L : Math.max(0L, owner.player.getCurrentPosition());
-            owner.pendingResumePlaying = owner.resumeAfterYoutube;
-            if (owner.currentActivity != null && owner.currentChannel != null) {
-                android.os.Bundle headers = new android.os.Bundle();
-                for (java.util.Map.Entry<String,String> entry : owner.currentChannel.headers().entrySet()) {
-                    if (entry.getValue() != null) headers.putString(entry.getKey(), entry.getValue());
-                }
-                SharedPlaybackSession.saveIptv(owner.currentActivity, owner.currentChannel.name(),
-                        owner.currentChannel.url(), owner.currentChannel.mimeHint(), headers,
-                        new java.util.ArrayList<>(owner.currentChannel.options()),
-                        owner.pendingResumePositionMs, owner.pendingResumePlaying);
-            }
+    private void enableIptvAudioAfterHandoff(ExoPlayer candidate, int generation) {
+        if (generation != playGeneration || candidate != player || candidate.getVolume() != 0f) return;
+        if (!MobileNm7Application.suspendYoutubeForIptv()) {
+            android.util.Log.w("NM7Playback", "Inline IPTV remains muted; YouTube handoff did not complete");
+            return;
         }
-        ++owner.playGeneration; // Invalidate pending DRM/retry callbacks before release.
-        owner.resumeAfterLifecyclePause = false;
-        owner.backgroundActive = false;
-        owner.releasePlayer();
-        if (owner.currentActivity != null) owner.stopBackgroundService(owner.currentActivity);
+        candidate.setAudioAttributes(new AudioAttributes.Builder().setUsage(C.USAGE_MEDIA)
+                .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(), true);
+        candidate.setVolume(1f);
+    }
+
+    public static boolean releaseForYoutube() {
+        MobileInlinePlayerProviderV2 owner = instance;
+        if (owner == null) return true;
+        try {
+            if (owner.player != null) {
+                owner.resumeAfterYoutube = owner.player.getPlayWhenReady() && !owner.userPaused;
+                owner.pendingResumePositionMs = owner.player.isCurrentMediaItemLive() ? 0L : Math.max(0L, owner.player.getCurrentPosition());
+                owner.pendingResumePlaying = owner.resumeAfterYoutube;
+                if (owner.currentActivity != null && owner.currentChannel != null) {
+                    android.os.Bundle headers = new android.os.Bundle();
+                    for (java.util.Map.Entry<String,String> entry : owner.currentChannel.headers().entrySet()) {
+                        if (entry.getValue() != null) headers.putString(entry.getKey(), entry.getValue());
+                    }
+                    SharedPlaybackSession.saveIptv(owner.currentActivity, owner.currentChannel.name(),
+                            owner.currentChannel.url(), owner.currentChannel.mimeHint(), headers,
+                            new java.util.ArrayList<>(owner.currentChannel.options()),
+                            owner.pendingResumePositionMs, owner.pendingResumePlaying);
+                }
+            }
+            ++owner.playGeneration; // Invalidate pending DRM/retry callbacks before release.
+            owner.resumeAfterLifecyclePause = false;
+            owner.backgroundActive = false;
+            owner.releasePlayer();
+            if (owner.currentActivity != null) owner.stopBackgroundService(owner.currentActivity);
+            return true;
+        } catch (RuntimeException error) {
+            android.util.Log.e("NM7Playback", "Release inline IPTV for YouTube failed", error);
+            return false;
+        }
     }
     @Override public void onActivitySaveInstanceState(Activity a, Bundle b) { }
 

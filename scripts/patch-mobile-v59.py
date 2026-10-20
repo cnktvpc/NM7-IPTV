@@ -63,7 +63,28 @@ s=method(s,'public static String getNm7ErrorLabel()', '''        PlaybackActivit
         if (error != null) return com.liskovsoft.smartyoutubetv2.droid.ui.shared.Nm7PlaybackError.describe(error, error.type);
         return owner.mNm7ErrorLabel == null ? "Nguồn phát chưa sẵn sàng" : owner.mNm7ErrorLabel;''')
 s=method(s,'public static void toggleNm7Playback()', '''        PlaybackActivity owner = sNm7Active;
-        if (owner == null || owner.mNm7Stopped || owner.isFinishing() || owner.isDestroyed() || sNm7SuspendedForIptv) return;
+        if (owner == null || owner.mNm7Stopped || owner.isFinishing() || owner.isDestroyed() || sNm7SuspendedForIptv || owner.mPlayer == null) return;
+        if (owner.mNm7TargetRestoreWaiting) {
+            sNm7ResumeAfterIptv = false;
+            sNm7RestorePending = false;
+            owner.cancelNm7TargetRestore(false);
+            owner.mNm7RestoreFailed = true;
+            owner.mPlayer.setVolume(0f);
+            owner.mPlayer.setPlayWhenReady(false);
+            return;
+        }
+        if (owner.mNm7RestoreFailed) {
+            com.google.android.exoplayer2.ui.PlayerView target = owner.mNm7VideoTarget != null
+                    ? owner.mNm7VideoTarget : owner.mPlayerView;
+            long generation = owner.beginNm7TargetRestore(target, "user_retry", true);
+            if (generation > 0L) {
+                owner.mNm7RestoreFailed = false;
+                owner.mPlayer.setVolume(0f);
+                owner.armNm7FirstFrameResume(generation);
+                owner.mPlayer.setPlayWhenReady(true);
+            }
+            return;
+        }
         owner.retryNm7Mini();''')
 s=once(s,'        if (sNm7SuspendedForIptv || mNm7Stopped || mPlayer == null) return;','''        if (sNm7SuspendedForIptv || mNm7Stopped) return;
         mPlaybackPresenter.setView(this);

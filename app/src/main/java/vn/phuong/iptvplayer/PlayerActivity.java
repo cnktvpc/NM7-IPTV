@@ -119,11 +119,31 @@ public final class PlayerActivity extends Activity {
     };
     private final Runnable fpsUpdate = new Runnable() {
         @Override public void run() {
+            long nowMs = android.os.SystemClock.elapsedRealtime();
             if (player != null && videoCounters != null) {
-                double fps = fpsMeter.sample(android.os.SystemClock.elapsedRealtime(),
-                        videoCounters.renderedOutputBufferCount, player.isPlaying());
+                videoCounters.ensureUpdated();
+                long renderedFrames = videoCounters.renderedOutputBufferCount;
+                double fps = fpsMeter.sample(nowMs, renderedFrames, player.isPlaying());
                 fpsView.setText(Double.isNaN(fps) ? "FPS: đang đo…" : String.format(Locale.ROOT, "FPS thực tế: %.1f", fps));
-            } else fpsView.setText("FPS: chưa có hình");
+                androidx.media3.common.VideoSize videoSize = player.getVideoSize();
+                boolean visible = playerView != null && playerView.isShown()
+                        && playerView.getWindowVisibility() == View.VISIBLE;
+                boolean frameExpected = playbackContextActive()
+                        && player.getPlaybackState() == Player.STATE_READY
+                        && player.getPlayWhenReady()
+                        && player.getPlaybackSuppressionReason() == Player.PLAYBACK_SUPPRESSION_REASON_NONE
+                        && videoSize.width > 0 && videoSize.height > 0 && visible;
+                if (fpsMeter.shouldRecoverFromFrameStall(nowMs, renderedFrames, frameExpected)) {
+                    android.util.Log.w("NM7Playback", "iptv_frame_stall timeout_ms="
+                            + FpsMeter.FRAME_STALL_TIMEOUT_MS + " state=" + player.getPlaybackState()
+                            + " video_size=" + videoSize.width + "x" + videoSize.height
+                            + " rendered_buffers=" + renderedFrames);
+                    scheduleRecovery("Không có khung hình mới", false);
+                }
+            } else {
+                fpsView.setText("FPS: chưa có hình");
+                fpsMeter.shouldRecoverFromFrameStall(nowMs, 0L, false);
+            }
             fpsHandler.postDelayed(this, 2000);
         }
     };
@@ -183,7 +203,7 @@ public final class PlayerActivity extends Activity {
         findViewById(R.id.btnRetry).setOnClickListener(v -> { position = 0; resumePlayback = true; releasePlayer(); startPlayer(); }); setupMobileEdgeGestures(); loadQuickChannels();
     }
     @Override protected void onStart() { super.onStart(); activityStarted = true; boolean youtubeTab = SharedPlaybackSession.TAB_YOUTUBE.equals(SharedPlaybackSession.tab(this)); keepPlayerForTabSwitch = isYoutubeHandoffPending() || youtubeTab; if(!youtubeTab) stopService(new android.content.Intent(this,BackgroundPlaybackService.class)); backgroundPlaybackActive=false; fpsHandler.post(fpsUpdate); clockHandler.post(clockUpdate); if(!keepPlayerForTabSwitch) startPlayer(); }
-    @Override protected void onResume(){super.onResume();if(player!=null)player.setWakeMode(C.WAKE_MODE_NONE);}
+    @Override protected void onResume(){super.onResume();if(player!=null){player.setWakeMode(C.WAKE_MODE_NONE);if(player.getPlayWhenReady()&&player.getPlaybackState()==Player.STATE_READY&&player.getVolume()==0f)enableIptvAudioAfterHandoff();}}
     @Override protected void onPause(){if(!keepPlayerForTabSwitch&&!isYoutubeHandoffPending()&&!MobileNm7Application.isTabSwitchPending()&&shouldUseBackgroundPlayback()&&!isFinishing()&&player!=null){backgroundPlaybackActive=true;player.setWakeMode(C.WAKE_MODE_NETWORK);android.content.Intent service=new android.content.Intent(this,BackgroundPlaybackService.class).putExtra(BackgroundPlaybackService.EXTRA_CHANNEL_NAME,name);if(android.os.Build.VERSION.SDK_INT>=26)startForegroundService(service);else startService(service);}super.onPause();}
     private boolean shouldUseBackgroundPlayback(){return !AppPreferences.isTvInterface(this)&&AppPreferences.backgroundPlayback(this);}
     private boolean playbackContextActive(){return activityStarted||backgroundPlaybackActive;}
@@ -203,11 +223,7 @@ public final class PlayerActivity extends Activity {
             player.addAnalyticsListener(new AnalyticsListener(){@Override public void onVideoEnabled(EventTime e,DecoderCounters c){videoCounters=c;fpsMeter.reset();}}); applyQuality();
             player.addListener(new Player.Listener(){
                 @Override public void onIsPlayingChanged(boolean playing) {
-                    if(playing && player!=null && player.getVolume()==0f){
-                        MobileNm7Application.suspendYoutubeForIptv();
-                        player.setVolume(1f);
-                        player.setAudioAttributes(new AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(),true);
-                    }
+                    if(playing && player!=null && player.getVolume()==0f) enableIptvAudioAfterHandoff();
                 }
                 @Override public void onPlayerError(PlaybackException e){
                     if(e.errorCode==PlaybackException.ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED&&mime.isEmpty()&&!resolvingStreamMime){resolveRedirectedMime(e);return;}
@@ -218,11 +234,7 @@ public final class PlayerActivity extends Activity {
                 @Override public void onPlaybackStateChanged(int s){
                     if(s==Player.STATE_BUFFERING){status.setText("Đang tải luồng…");if(bufferingSinceMs==0){bufferingSinceMs=android.os.SystemClock.elapsedRealtime();recoveryHandler.removeCallbacks(stalledPlaybackCheck);recoveryHandler.postDelayed(stalledPlaybackCheck,20_000);}}
                     if(s==Player.STATE_READY){bufferingSinceMs=0;recoveryHandler.removeCallbacks(stalledPlaybackCheck);
-                        if(player.getPlayWhenReady() && player.getVolume()==0f){
-                            MobileNm7Application.suspendYoutubeForIptv();
-                            player.setAudioAttributes(new AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(),true);
-                            player.setVolume(1f);
-                        }
+                        if(player.getPlayWhenReady() && player.getVolume()==0f) enableIptvAudioAfterHandoff();
                         findViewById(R.id.playerError).setVisibility(View.GONE);VideoSize v=player.getVideoSize();status.setText(v.width>0?v.width+" × "+v.height+" • độ phân giải thực tế":"Đang phát âm thanh");
                         recoveryHandler.removeCallbacks(resetRecoveryAttempts);recoveryHandler.postDelayed(resetRecoveryAttempts,30_000);
                     }
@@ -266,6 +278,7 @@ public final class PlayerActivity extends Activity {
     }
     private void scheduleRecovery(String reason,boolean fromEnd){
         if(!playbackContextActive()||isFinishing()||isDestroyed())return;
+        fpsMeter.resetFrameStall();
         recoveryHandler.removeCallbacks(resetRecoveryAttempts);
         if(recoveryAttempts>=MAX_RECOVERY_ATTEMPTS){showError(reason+". Đã thử nối lại "+MAX_RECOVERY_ATTEMPTS+" lần.\nBấm thử lại để tiếp tục.");return;}
         int attempt=++recoveryAttempts;
@@ -427,21 +440,37 @@ public final class PlayerActivity extends Activity {
         activity.keepPlayerForTabSwitch = true;
         activity.backgroundPlaybackActive=false;
         System.setProperty(YOUTUBE_HANDOFF_PROPERTY, "1");
-        SharedPlaybackSession.setTab(activity,SharedPlaybackSession.TAB_YOUTUBE);
     }
     public static boolean isYoutubeHandoffPending(){
         return "1".equals(System.getProperty(YOUTUBE_HANDOFF_PROPERTY, "0"));
     }
 
-    public static void releaseForYoutube() {
+    public static boolean releaseForYoutube() {
         PlayerActivity active = currentInstance;
-        if (active == null) return;
-        active.rememberPosition();
-        active.recoveryHandler.removeCallbacksAndMessages(null);
-        active.backgroundPlaybackActive = false;
-        active.releasePlayer();
-        cancelYoutubeHandoff();
-        active.stopService(new android.content.Intent(active, BackgroundPlaybackService.class));
+        if (active == null) return true;
+        try {
+            active.rememberPosition();
+            active.recoveryHandler.removeCallbacksAndMessages(null);
+            active.backgroundPlaybackActive = false;
+            active.releasePlayer();
+            cancelYoutubeHandoff();
+            active.stopService(new android.content.Intent(active, BackgroundPlaybackService.class));
+            return true;
+        } catch (RuntimeException error) {
+            android.util.Log.e("NM7Playback", "Release IPTV for YouTube failed", error);
+            return false;
+        }
+    }
+
+    private void enableIptvAudioAfterHandoff() {
+        if (player == null || player.getVolume() != 0f) return;
+        if (!MobileNm7Application.suspendYoutubeForIptv()) {
+            android.util.Log.w("NM7Playback", "IPTV remains muted; YouTube handoff did not complete");
+            return;
+        }
+        player.setAudioAttributes(new AudioAttributes.Builder().setUsage(C.USAGE_MEDIA)
+                .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(), true);
+        player.setVolume(1f);
     }
 
     public static void cancelYoutubeHandoff(){

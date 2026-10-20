@@ -25,7 +25,119 @@ public final class SharedPlaybackSession {
     private static final String KEY_HEADERS = "headers";
     private static final String KEY_OPTIONS = "options";
 
+    // Playback ownership is process-local: no player or callback survives process death.
+    private static long tabSwitchGeneration;
+    private static long handoffGeneration;
+    private static long visualGeneration;
+    private static long audioTabSwitchGeneration;
+    private static long visualTabSwitchGeneration;
+    private static long tabSwitchStartedAtMs;
+    private static long audioHandoffStartedAtMs;
+    private static long visualHandoffStartedAtMs;
+    private static String audioOwner = TAB_IPTV;
+    private static String audioHandoffFromOwner = TAB_IPTV;
+    private static String pendingAudioOwner = "";
+    private static String audioHandoffType = "";
+    private static String visualHandoffType = "";
+
     private SharedPlaybackSession() {}
+
+    /** Start a tab transition and invalidate callbacks from the previous transition. */
+    public static synchronized long beginTabSwitch(Context context, String tab, String type) {
+        if (!TAB_IPTV.equals(tab) && !TAB_YOUTUBE.equals(tab)) return -1L;
+        String previousTab = tab(context);
+        long id = ++tabSwitchGeneration;
+        tabSwitchStartedAtMs = android.os.SystemClock.elapsedRealtime();
+        pendingAudioOwner = "";
+        prefs(context).edit().putString(KEY_TAB, tab).apply();
+        logHandoff("handoff_start", id, type == null ? "tab_switch" : type, audioOwner, tab,
+                "kind=tab previous_tab=" + previousTab);
+        return id;
+    }
+
+    /** Start a YouTube view/surface transition without changing the selected tab. */
+    public static synchronized long beginVisualHandoff(Context context, String type) {
+        if (!TAB_YOUTUBE.equals(tab(context))) return -1L;
+        long id = ++visualGeneration;
+        visualTabSwitchGeneration = tabSwitchGeneration;
+        visualHandoffStartedAtMs = android.os.SystemClock.elapsedRealtime();
+        visualHandoffType = type == null ? "youtube_view" : type;
+        logHandoff("handoff_start", id, visualHandoffType, audioOwner, TAB_YOUTUBE,
+                "kind=visual");
+        return id;
+    }
+
+    /** Begin the audio-owner transfer only after the destination player is ready to take over. */
+    public static synchronized long beginAudioHandoff(Context context, String owner, String type) {
+        if ((!TAB_IPTV.equals(owner) && !TAB_YOUTUBE.equals(owner)) || !owner.equals(tab(context))) {
+            return -1L;
+        }
+        long id = ++handoffGeneration;
+        audioTabSwitchGeneration = tabSwitchGeneration;
+        audioHandoffStartedAtMs = android.os.SystemClock.elapsedRealtime();
+        audioHandoffType = type == null ? "audio_owner" : type;
+        audioHandoffFromOwner = audioOwner;
+        pendingAudioOwner = owner;
+        logHandoff("handoff_start", id, audioHandoffType, audioOwner, owner,
+                "kind=audio");
+        return id;
+    }
+
+    public static synchronized long currentHandoffGeneration() {
+        return handoffGeneration;
+    }
+
+    public static synchronized long currentTabSwitchGeneration() {
+        return tabSwitchGeneration;
+    }
+
+    public static synchronized String audioOwner() {
+        return audioOwner;
+    }
+
+    public static synchronized boolean isCurrentTabHandoff(Context context, long id, String targetTab) {
+        return id > 0L && id == tabSwitchGeneration && targetTab.equals(tab(context));
+    }
+
+    public static synchronized boolean completeTabSwitch(Context context, long id, String targetTab) {
+        if (!isCurrentTabHandoff(context, id, targetTab)) return false;
+        logHandoff("handoff_completed", id, "tab_switch", audioOwner, targetTab,
+                "kind=tab duration_ms=" + (android.os.SystemClock.elapsedRealtime() - tabSwitchStartedAtMs));
+        return true;
+    }
+
+    public static synchronized boolean isCurrentVisualHandoff(Context context, long id) {
+        return id > 0L && id == visualGeneration && visualTabSwitchGeneration == tabSwitchGeneration
+                && TAB_YOUTUBE.equals(tab(context));
+    }
+
+    public static synchronized boolean isCurrentAudioHandoff(Context context, long id, String targetOwner) {
+        return id > 0L && id == handoffGeneration && audioTabSwitchGeneration == tabSwitchGeneration
+                && targetOwner.equals(tab(context))
+                && targetOwner.equals(pendingAudioOwner);
+    }
+
+    public static synchronized boolean completeAudioHandoff(Context context, long id, String owner) {
+        if (!isCurrentAudioHandoff(context, id, owner)) return false;
+        audioOwner = owner;
+        pendingAudioOwner = "";
+        logHandoff("handoff_completed", id, audioHandoffType, audioHandoffFromOwner, owner,
+                "kind=audio duration_ms=" + (android.os.SystemClock.elapsedRealtime() - audioHandoffStartedAtMs));
+        return true;
+    }
+
+    public static synchronized boolean completeVisualHandoff(Context context, long id, String type) {
+        if (!isCurrentVisualHandoff(context, id) || !pendingAudioOwner.isEmpty()) return false;
+        logHandoff("handoff_completed", id, type == null ? visualHandoffType : type, audioOwner, TAB_YOUTUBE,
+                "kind=visual duration_ms=" + (android.os.SystemClock.elapsedRealtime() - visualHandoffStartedAtMs));
+        return true;
+    }
+
+    private static void logHandoff(String event, long id, String type, String from, String to,
+                                   String detail) {
+        android.util.Log.i("NM7Playback", event + " handoff_id=" + id + " type=" + type
+                + " from=" + from + " to=" + to + " " + detail);
+    }
 
     public static synchronized void setTab(Context context, String tab) {
         prefs(context).edit().putString(KEY_TAB, tab).apply();
@@ -52,6 +164,19 @@ public final class SharedPlaybackSession {
         // makes the inline IPTV provider skip its first attach on the launcher screen.
         prefs(context).edit().putBoolean(KEY_YOUTUBE_BACKGROUND, false)
                 .putString(KEY_TAB, TAB_IPTV).apply();
+        tabSwitchGeneration = 0L;
+        handoffGeneration = 0L;
+        visualGeneration = 0L;
+        audioTabSwitchGeneration = 0L;
+        visualTabSwitchGeneration = 0L;
+        tabSwitchStartedAtMs = 0L;
+        audioHandoffStartedAtMs = 0L;
+        visualHandoffStartedAtMs = 0L;
+        audioOwner = TAB_IPTV;
+        audioHandoffFromOwner = TAB_IPTV;
+        pendingAudioOwner = "";
+        audioHandoffType = "";
+        visualHandoffType = "";
     }
 
     public static synchronized void saveIptv(Context context, String name, String url,

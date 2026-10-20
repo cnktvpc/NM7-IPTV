@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-NM7 IPTV - YouTube Performance & Seamless Mobile Transition Patch v1.10.106 (Optimized)
-- Xóa bỏ triệt để màn hình đen & khôi phục poster tức thì từ card vừa chạm (0ms gap).
-- Tăng tốc mở video YouTube: hạ buffer khởi động từ 2500ms xuống 250ms (giữ RAM đệm 128MB cho 4K).
+NM7 IPTV - YouTube Performance, Floating Miniplayer & Seamless Mobile Transition Patch v1.10.106
+- Xóa bỏ triệt để màn hình đen khi mở video và khi bấm Back thu nhỏ xuống miniplayer.
+- Tăng tốc mở video YouTube: hạ buffer khởi động xuống 250ms (giữ RAM đệm 128MB cho 4K).
 - Chuyển cảnh mượt từ poster sang video đang chạy bằng hiệu ứng crossfade 80ms ngay khi có frame mới.
-- Khởi động sớm yêu cầu lấy luồng (format pre-warm) ngay ở sự kiện chạm tay (ACTION_DOWN).
-- Giữ ấm surface YouTube khi chuyển sang tab IPTV, loại bỏ độ trễ 750ms khi quay lại tab YouTube.
+- Không gọi warmup trên ACTION_DOWN khi cuộn danh sách (tránh nghẽn luồng J2V8 single-thread).
+- Đồng bộ hoàn hảo surface handoff giữa Fullscreen <-> Floating Miniplayer <-> Tab IPTV.
 """
 
 from pathlib import Path
@@ -27,6 +27,11 @@ def patch_file(path: Path, transform_fn):
         log(f"Patched: {path.name}")
         return True
     return False
+
+def replace_method(text: str, signature: str, new_method: str) -> str:
+    pattern = re.compile(r"(?ms)^    " + re.escape(signature) + r" \{.*?^    \}")
+    updated, count = pattern.subn(lambda _: new_method.rstrip(), text, count=1)
+    return updated if count == 1 else text
 
 # =========================================================================
 # 1. FIX LỖI BUILD GRADLE & DEPENDENCY NULL
@@ -59,7 +64,7 @@ for p_gradle in SMARTTUBE_ROOT.rglob("*.gradle*"):
     if ".git" in p_gradle.parts: continue
     patch_file(p_gradle, fix_test_deps)
 
-# Cập nhật cache định dạng 60s + thêm pre-warm bất đồng bộ khi chạm vào card video
+# Cập nhật cache định dạng 60s
 p_item = SMARTTUBE_ROOT / "MediaServiceCore/youtubeapi/src/main/java/com/liskovsoft/youtubeapi/service/YouTubeMediaItemService.java"
 def opt_item(t):
     if "NM7_FORMAT_REUSE_MS" in t:
@@ -69,26 +74,6 @@ def opt_item(t):
         if idx != -1:
             b = t.find("{", idx)
             t = t[:b+1] + "\n    public static final long NM7_FORMAT_REUSE_MS = 60_000L;\n" + t[b+1:]
-
-    if "nm7WarmupFormatAsync" not in t and "getFastPlaybackFormatInfo" in t:
-        warmup_helper = """    private final java.util.Set<String> mNm7WarmupInFlight =
-            java.util.Collections.newSetFromMap(new java.util.concurrent.ConcurrentHashMap<>());
-
-    public void nm7WarmupFormatAsync(final String videoId) {
-        if (videoId == null || videoId.isEmpty()) return;
-        if (nm7ReuseGet(videoId) != null || !mNm7WarmupInFlight.add(videoId)) return;
-        io.reactivex.Completable.fromAction(() -> {
-            try {
-                getFastPlaybackFormatInfo(videoId, null);
-            } catch (Throwable ignored) {
-            } finally {
-                mNm7WarmupInFlight.remove(videoId);
-            }
-        }).subscribeOn(io.reactivex.schedulers.Schedulers.io()).subscribe(() -> {}, error -> mNm7WarmupInFlight.remove(videoId));
-    }
-
-"""
-        t = t.replace("    private MediaItemFormatInfo getFastPlaybackFormatInfo(", warmup_helper + "    private MediaItemFormatInfo getFastPlaybackFormatInfo(", 1)
     return t
 patch_file(p_item, opt_item)
 
@@ -111,37 +96,41 @@ for p_pv in SMARTTUBE_ROOT.rglob("PlayerView.java"):
     patch_file(p_pv, disable_shutter)
 
 # =========================================================================
-# 3. TỐI ƯU CHUYỂN KHUNG HÌNH & PRE-WARM TRONG VIDEOCARDHOLDER & PLAYBACKACTIVITY
+# 3. TỐI ƯU VIDEOCARDHOLDER & PLAYBACKACTIVITY (MINIPLAYER + FULLSCREEN + IPTV)
 # =========================================================================
 p_card = SMARTTUBE_ROOT / "smarttubedroid/src/main/java/com/liskovsoft/smartyoutubetv2/droid/ui/shared/VideoCardHolder.java"
 def opt_card(t):
     t = re.sub(r'\.delaySubscription\(650[^)]*\)', '', t)
     t = re.sub(r'private(\s+static\s+(volatile\s+)?(android\.graphics\.)?Bitmap\s+sNm7TransitionPoster)', r'public\1', t)
-    old_click = """            itemView.setOnClickListener(v -> {
-                nm7CaptureTransitionPoster(video);
-                listener.onVideoClicked(video);
-            });"""
-    new_click = """            itemView.setOnTouchListener((v, event) -> {
-                if (event != null && event.getActionMasked() == android.view.MotionEvent.ACTION_DOWN && video != null) {
-                    nm7CaptureTransitionPoster(video);
-                    try {
-                        Object svc = com.liskovsoft.youtubeapi.service.YouTubeServiceManager.instance().getMediaItemService();
-                        svc.getClass().getMethod("nm7WarmupFormatAsync", String.class).invoke(svc, video.videoId);
-                    } catch (Throwable ignored) { }
-                }
-                return false;
-            });
-            itemView.setOnClickListener(v -> {
-                nm7CaptureTransitionPoster(video);
-                listener.onVideoClicked(video);
-            });"""
-    if old_click in t and "nm7WarmupFormatAsync" not in t:
-        t = t.replace(old_click, new_click, 1)
     return t
 patch_file(p_card, opt_card)
 
 p_play = SMARTTUBE_ROOT / "smarttubedroid/src/main/java/com/liskovsoft/smartyoutubetv2/droid/ui/playback/PlaybackActivity.java"
 def opt_play(t):
+    player_create = "        mPlayer = mPlayerInitializer.createPlayer(this, renderersFactory, trackSelector);"
+    if "mNm7DesiredVolume = mPlayer.getVolume();" not in t:
+        if player_create not in t:
+            raise SystemExit("Missing SmartTube player creation anchor for fail-closed audio mute")
+        t = t.replace(player_create, player_create + "\n        mNm7DesiredVolume = mPlayer.getVolume();\n        mPlayer.setVolume(0f);", 1)
+
+    set_volume = """    public void setVolume(float volume) {
+        mNm7DesiredVolume = Math.max(0f, Math.min(1f, volume));
+        if (mPlayer != null) mPlayer.setVolume(mNm7OwnsPlayback ? mNm7DesiredVolume : 0f);
+    }"""
+    if set_volume not in t:
+        original = t
+        t = replace_method(t, "public void setVolume(float volume)", set_volume)
+        if t == original:
+            raise SystemExit("Missing SmartTube setVolume method for fail-closed audio mute")
+    get_volume = """    public float getVolume() {
+        return mNm7DesiredVolume;
+    }"""
+    if get_volume not in t:
+        original = t
+        t = replace_method(t, "public float getVolume()", get_volume)
+        if t == original:
+            raise SystemExit("Missing SmartTube getVolume method for stored user volume")
+
     t = re.sub(r'getString\(\s*R\.string\.section_is_empty\s*\)', '"Section is empty"', t)
     t = re.sub(r'.*mNm74kRecoveryWatchdog.*', '', t)
     t = re.sub(r'.*setMaxVideoSize\(2560,\s*1440\);?.*', '', t)
@@ -155,11 +144,12 @@ def opt_play(t):
             b = t.find("{", idx)
             t = t[:b+1] + "\n    // NM7 Lifecycle: Build the decoder/player before the Activity is shown\n" + t[b+1:]
 
-    # 3a) Ensure mNm7Backgrounding is tracked across HOME/background so presenter is not torn down
+    # 3a) Ensure mNm7Backgrounding is tracked across HOME/background and prevent mPanel from turning black in onPause()
     if "private boolean mNm7Backgrounding;" not in t:
         t = t.replace("    private boolean mNm7LeavingForMini;\n", "    private boolean mNm7LeavingForMini;\n    private boolean mNm7Backgrounding;\n", 1)
     t = t.replace("        mIsBackPressed = false;\n", "        mIsBackPressed = false;\n        mNm7Backgrounding = false;\n", 1)
     t = t.replace("        if (!sNm7Mini) mPlaybackPresenter.onViewPaused();", "        mNm7Backgrounding = !isFinishing() && !mNm7Stopped;\n        if (!sNm7Mini && !mNm7Backgrounding) mPlaybackPresenter.onViewPaused();", 1)
+    t = t.replace("        showHideWidgets(false);", "        if (isInPIPMode()) showHideWidgets(false);", 1)
 
     # 3b) Re-enable synchronous clicked-card poster handoff disabled by v95 so frame 0 has the exact card thumbnail
     old_disabled_poster = """        // NM7 1.10.95: do not use the synchronous clicked-card poster.
@@ -190,7 +180,7 @@ def opt_play(t):
     t = t.replace("mHandler.postDelayed(mNm7PosterRenderProbe, 80L);", "mHandler.postDelayed(mNm7PosterRenderProbe, 24L);")
     t = t.replace("mHandler.postDelayed(mNm7PosterReadyFallback, 350L);", "mHandler.postDelayed(mNm7PosterReadyFallback, 110L);")
 
-    # Smooth 80ms crossfade in nm7HideStartupPoster so the frame transition never snaps harshly
+    # Smooth 80ms crossfade in nm7HideStartupPoster
     old_hide_body = """        if (mNm7StartupPoster != null) {
             try {
                 Glide.with(PlaybackActivity.this).clear(mNm7StartupPoster);
@@ -220,21 +210,15 @@ def opt_play(t):
     if old_hide_body in t:
         t = t.replace(old_hide_body, new_hide_body, 1)
 
-    # 3d) Keep mPlayer attached to mPlayerView during IPTV suspension & eliminate the 750ms restore stall
-    old_suspend_detach = """        if (active.mNm7VideoTarget != null) active.mNm7VideoTarget.setPlayer(null);
-        active.mNm7VideoTarget = null;
-        active.mPlayerView.setPlayer(null);"""
-    t = t.replace(old_suspend_detach, "        active.mNm7VideoTarget = active.mPlayerView;")
+    # 3d) Increase Watch feed RecyclerView cache so scrolling below player never stutters
+    t = t.replace("mSuggestionsView.setItemViewCacheSize(0);", "mSuggestionsView.setItemViewCacheSize(10);")
+    t = t.replace("mSuggestionsView.setItemViewCacheSize(1);", "mSuggestionsView.setItemViewCacheSize(10);")
+    t = t.replace("mSuggestionsView.getRecycledViewPool().setMaxRecycledViews(1, 2);", "mSuggestionsView.getRecycledViewPool().setMaxRecycledViews(1, 12);")
+    t = t.replace("mSuggestionsView.getRecycledViewPool().setMaxRecycledViews(1, 4);", "mSuggestionsView.getRecycledViewPool().setMaxRecycledViews(1, 12);")
 
-    old_restore = """        if (sNm7RestorePending) return;
-        active.beginNm7TargetRestore();
-        sNm7RestorePending = true;"""
-    new_restore = """        if (sNm7RestorePending) return;
-        if (active.mNm7VideoTarget != active.mPlayerView) active.beginNm7TargetRestore();
-        else active.mNm7ResumeAfterTarget = active.mPlayer.getPlayWhenReady() || sNm7ResumeAfterIptv;
-        sNm7RestorePending = true;"""
-    t = t.replace(old_restore, new_restore)
-    t = t.replace("mHandler.postDelayed(mNm7TargetRestoreTimeout, 750);", "mHandler.postDelayed(mNm7TargetRestoreTimeout, 90);")
+    # 3e) Keep the generation-aware lifecycle methods from the active v37 payload.
+    # Replacing them here used to bypass the first-frame gate and resume audio immediately.
+
     return t
 patch_file(p_play, opt_play)
 
@@ -276,10 +260,12 @@ for p_java in SMARTTUBE_ROOT.rglob("*.java"):
     patch_file(p_java, tune_buffers)
 
 # =========================================================================
-# 5. TẮT ANIMATION CHUYỂN CẢNH GÂY GIẬT KHUNG HÌNH
+# 5. TỐI ƯU RECYCLERVIEW BROWSE & TẮT ANIMATION CHUYỂN CẢNH GÂY GIẬT
 # =========================================================================
 p_browse = SMARTTUBE_ROOT / "smarttubedroid/src/main/java/com/liskovsoft/smartyoutubetv2/droid/ui/browse/BrowseActivity.java"
 def opt_browse(t):
+    t = t.replace("list.setItemViewCacheSize(0);", "list.setItemViewCacheSize(10);")
+    t = t.replace("list.getRecycledViewPool().setMaxRecycledViews(0, 2);", "list.getRecycledViewPool().setMaxRecycledViews(0, 12);")
     if "setItemAnimator(null)" not in t:
         idx = t.find("public class BrowseActivity")
         if idx != -1:
@@ -298,4 +284,23 @@ def opt_view(t):
     return t
 patch_file(p_view, opt_view)
 
-log("Hoàn tất tối ưu YouTube: Khởi động nhanh 250ms, pre-warm khi chạm, crossfade poster 80ms và chuyển tab 0ms.")
+log("Hoàn tất tối ưu YouTube: Floating 16:9 Miniplayer, khởi động nhanh 250ms, crossfade 80ms và chuyển tab mượt mà.")
+
+# =========================================================================
+# 6. TỰ ĐỘNG ÁP DỤNG YOUTUBE CHROME & PULL-TO-REFRESH (v114..v130) CHO MỌI WORKFLOW
+# =========================================================================
+import runpy
+_chrome_and_refresh_chain = [
+    "scripts/patch-mobile-v114-youtube-ui.py",
+    "scripts/patch-mobile-v119-youtube-chrome-final.py",
+    "scripts/patch-mobile-v120-youtube-statusbar-final.py",
+    "scripts/patch-mobile-v121-native-statusbar.py",
+    "scripts/patch-mobile-v122-youtube-overdraw-final.py",
+    "scripts/patch-mobile-v123-youtube-wordmark-final.py",
+    "scripts/patch-mobile-v128-youtube-wordmark-exact.py",
+    "scripts/patch-mobile-v130-pull-refresh.py",
+]
+if (SMARTTUBE_ROOT / "smarttubedroid/src/main/java/com/liskovsoft/smartyoutubetv2/droid/ui/browse/BrowseActivity.java").is_file() and Path("smarttube/build.gradle.kts").is_file():
+    for _script in _chrome_and_refresh_chain:
+        if Path(_script).is_file():
+            runpy.run_path(_script)

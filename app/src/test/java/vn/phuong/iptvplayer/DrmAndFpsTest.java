@@ -83,4 +83,26 @@ public class DrmAndFpsTest {
         assertEquals(0.0, meter.sample(4000, 70, false), 0.001);
         assertTrue(Double.isNaN(meter.sample(5000, 90, true)));
     }
+
+    @Test public void frameStallRecoveryWaitsSixSecondsAndLatchesUntilFramesResume() {
+        FpsMeter meter = new FpsMeter();
+        assertFalse(meter.shouldRecoverFromFrameStall(1000, 12, true));
+        assertFalse(meter.shouldRecoverFromFrameStall(6999, 12, true));
+        assertTrue(meter.shouldRecoverFromFrameStall(7000, 12, true));
+        assertFalse(meter.shouldRecoverFromFrameStall(9000, 12, true));
+        assertFalse(meter.shouldRecoverFromFrameStall(9001, 13, true));
+        assertFalse(meter.shouldRecoverFromFrameStall(15000, 13, true));
+        assertTrue(meter.shouldRecoverFromFrameStall(15001, 13, true));
+    }
+
+    @Test public void frameStallRecoveryIgnoresIneligiblePlaybackAndCanBeReset() {
+        FpsMeter meter = new FpsMeter();
+        assertFalse(meter.shouldRecoverFromFrameStall(1000, 4, true));
+        assertFalse(meter.shouldRecoverFromFrameStall(9000, 4, false));
+        assertFalse(meter.shouldRecoverFromFrameStall(10000, 4, true));
+        assertFalse(meter.shouldRecoverFromFrameStall(15999, 4, true));
+        assertTrue(meter.shouldRecoverFromFrameStall(16000, 4, true));
+        meter.resetFrameStall();
+        assertFalse(meter.shouldRecoverFromFrameStall(30000, 4, true));
+    }
 }

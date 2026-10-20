@@ -472,7 +472,7 @@ public final class MainActivity extends Activity {
     private void updateSummary(){}
     private void play(Channel c){play(c,null);}
     private void play(Channel c,LiveEvent liveEvent){
-        SharedPlaybackSession.setTab(this,SharedPlaybackSession.TAB_IPTV);
+        SharedPlaybackSession.beginTabSwitch(this, SharedPlaybackSession.TAB_IPTV, "iptv_channel_start");
         PlayerActivity.cancelYoutubeHandoff();
         if(liveEvent==null)LivePlaybackSession.clearIfNotLiveSource(c);
         else LivePlaybackSession.setActive(liveEvent.withPreferredUrl(c.url()));

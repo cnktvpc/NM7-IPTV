@@ -32,18 +32,20 @@ if s.count(old) != 1:
 s = s.replace(old, new, 1)
 p.write_text(s, encoding="utf-8")
 
-# 2) Keep the same 1.10.72 thumbnail quality. Never substitute mqdefault.
+# 2) Keep the existing high-resolution card-image fallback unchanged.
 ui_patch = Path("scripts/patch-mobile-ui.py")
-if not ui_patch.is_file() or "maxresdefault.jpg" not in ui_patch.read_text(encoding="utf-8"):
-    raise SystemExit("v74: YouTube thumbnail target must remain maxresdefault.jpg")
+ui_text = ui_patch.read_text(encoding="utf-8") if ui_patch.is_file() else ""
+if "maxresdefault.jpg" not in ui_text and 'replace("/mqdefault.jpg", "/hqdefault.jpg")' not in ui_text:
+    raise SystemExit("v74: shared thumbnail policy marker missing")
 
 # 3) Hide NM7's two bottom tabs while the SmartTube phone player is in the
 # landscape/fullscreen state, then restore them when returning to portrait.
 p = Path("app/src/main/java/vn/phuong/iptvplayer/MobileNm7Application.java")
 s = p.read_text(encoding="utf-8")
 anchor = '''        } else if (SMARTTUBE_PLAYBACK.equals(name)) {
-            activity.getWindow().getDecorView().post(() -> HomeTabBar.attach(activity, true));'''
+            smartTubePlaybackActivity = activity;'''
 replacement = '''        } else if (SMARTTUBE_PLAYBACK.equals(name)) {
+            smartTubePlaybackActivity = activity;
             activity.getWindow().getDecorView().post(() -> {
                 HomeTabBar.attach(activity, true);
                 final android.view.View root = activity.findViewById(android.R.id.content);
@@ -64,3 +66,4 @@ s = s.replace(anchor, replacement, 1)
 p.write_text(s, encoding="utf-8")
 
 print("NM7 1.10.74 optimization/fullscreen patch applied")
+

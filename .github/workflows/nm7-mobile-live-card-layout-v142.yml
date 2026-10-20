@@ -7,8 +7,12 @@ name: NM7 IPTV Mobile 1.10.142 Live Card Tap-to-Play — Build
   push:
     branches:
       - "work/mobile-1.10.142-live-card-tap-to-play-20261020"
+      - "work/mobile-1.10.142-youtube-handoff-20261020"
+      - "stable/mobile-1.10.142"
+      - "main"
     paths:
       - "app/**"
+      - "scripts/**"
       - "scripts/verify-mobile-live-feed-v134.py"
       - "scripts/verify-mobile-live-feed-v138.py"
       - "scripts/verify-mobile-live-fullscreen-server-v138.py"
@@ -94,24 +98,16 @@ jobs:
               if t!=orig: p.write_text(t)
           PY
 
-      # Chạy nền tảng Mobile UI/performance trước, sau đó áp dụng riêng v114 chrome UI.
+      # Chạy toàn bộ patch chain Mobile một lần; v106 đã gắn chrome v114-v130 vào chuỗi v37.
       - name: Patch SmartTube Mobile UI and playback lifecycle
         run: |
           set -euxo pipefail
           python3 scripts/patch-mobile-v37.py
-          python3 scripts/patch-mobile-v106.py
 
-      - name: Patch Mobile YouTube chrome architecture v1.10.130
+      - name: Verify YouTube and IPTV P0 handoff guards
         run: |
           set -euxo pipefail
-          python3 scripts/patch-mobile-v114-youtube-ui.py
-          python3 scripts/patch-mobile-v119-youtube-chrome-final.py
-          python3 scripts/patch-mobile-v120-youtube-statusbar-final.py
-          python3 scripts/patch-mobile-v121-native-statusbar.py
-          python3 scripts/patch-mobile-v122-youtube-overdraw-final.py
-          python3 scripts/patch-mobile-v123-youtube-wordmark-final.py
-          python3 scripts/patch-mobile-v128-youtube-wordmark-exact.py
-          python3 scripts/patch-mobile-v130-pull-refresh.py
+          python3 scripts/verify-youtube-handoff.py
 
       - name: Verify baseline v1.10.130 pull-to-refresh wiring
         run: |
@@ -353,3 +349,4 @@ jobs:
           git add LIVE_FEED_CI_RESULT.md
           git commit -m "ci: publish failed Mobile Live feed build result"
           git push origin "HEAD:refs/heads/$branch"
+
