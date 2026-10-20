@@ -1,5 +1,5 @@
 name: NM7 IPTV Mobile 1.10.140 Live Card Background — Build
-## Builds an isolated 1.10.140 candidate from 1.10.140 with only Live event-card styling changes.
+## Builds an isolated 1.10.140 candidate from 1.10.139 with only Live event-card styling changes.
 # Preserve all 1.10.138 Live features while changing only the default EPG URL.
 # Build is gated on Live feature checks, baseline pull-to-refresh checks, and the full unit-test suite.
 
@@ -13,7 +13,7 @@ name: NM7 IPTV Mobile 1.10.140 Live Card Background — Build
       - "scripts/verify-mobile-live-feed-v138.py"
       - "scripts/verify-mobile-live-fullscreen-server-v138.py"
       - "scripts/diagnose-mobile-live-feed.py"
-      - ".github/workflows/nm7-mobile-live-card-background-v140.yml"
+      - ".github/workflows/nm7-mobile-default-epg-v139.yml"
   workflow_dispatch:
 
 permissions:
