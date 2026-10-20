@@ -12,6 +12,9 @@ inline = read("app/src/main/java/vn/phuong/iptvplayer/MobileInlinePlayerProvider
 player = read("app/src/main/java/vn/phuong/iptvplayer/PlayerActivity.java")
 player_layout = read("app/src/main/res/layout/activity_player.xml")
 layout = read("app/src/main/res/layout/item_live_event.xml")
+colors = read("app/src/main/res/values/colors.xml")
+channel_card = read("app/src/main/res/drawable/channel_card.xml")
+live_card = read("app/src/main/res/drawable/live_event_card.xml")
 tests = read("app/src/test/java/vn/phuong/iptvplayer/LiveEventTest.java")
 gradle = read("app/build.gradle.kts")
 playlist_store = read("app/src/main/java/vn/phuong/iptvplayer/PlaylistSourceStore.java")
@@ -46,7 +49,8 @@ checks = [
     ("tests cover provider time skew, alternate timestamp order, merge/filtering and server restore", all(v in tests for v in ("dedicatedFeedGroupsProviderAndTransportVariantsIntoOneFreshLiveMatch", "dedicatedFeedDoesNotDependOnUserPlaylistLiveGroups", "dedicatedFeedMergesSameFixtureWithProviderKickoffSkewAndLongRunningLiveStatus", "dedicatedFeedAcceptsDateBeforeTimeAndTextLiveMarker", "restoredLiveEventPreservesServerLabelsAndSelectedUrl", "elapsedLiveMinutesAreWholeAndNeverNegative", "dedicatedFeedOrdersNewestLiveKickoffFirst"))),
     ("server picker renders selectable source rows without the broken message/list combination", "setItems(labels" in main and "Do not combine a message panel with a choice list" in main),
     ("M3U fixture tests use valid Java escaped newlines and quotes", r"\\n" not in tests and r'\\"' not in tests),
-    ("version is 1.10.139 / code 155", 'versionName = "1.10.139"' in gradle and "versionCode = 155" in gradle),
+    ("version is 1.10.140 / code 156", 'versionName = "1.10.140"' in gradle and "versionCode = 156" in gradle),
+    ("Live event cards match channel-card default surface, border and corner radius", 'name="live_surface">#D914263C</color>' in colors and "#D914263C" in channel_card and 'android:color="@color/live_surface"' in live_card and "#304B6887" in live_card and "14dp" in live_card),
     ("temporary inspection files have been removed", not Path(".github/workflows/inspect-live-feed.yml").exists() and not Path("LIVE_FEED_INSPECTION.md").exists() and not Path("LIVE_BRANCH_PROBE.txt").exists()),
 ]
 for label, ok in checks:
