@@ -1,6 +1,6 @@
 # NM7 IPTV Mobile — Candidate 1.10.141 — Compact Live event cards — 2026-10-20
 
-> **Trạng thái: candidate; CI chưa chạy.** Bắt đầu từ candidate 1.10.140 đã đồng bộ màu nền Live. Phạm vi bản này chỉ thu gọn kích thước thẻ sự kiện Live để gần bằng thẻ kênh thông thường; không thay đổi logic Live/playback.
+> **Trạng thái: CI PASS, candidate chờ kiểm thử trên thiết bị thật.** Bắt đầu từ candidate 1.10.140 đã đồng bộ màu nền Live. Phạm vi bản này chỉ thu gọn kích thước thẻ sự kiện Live để gần bằng thẻ kênh thông thường; không thay đổi logic Live/playback.
 
 ## Thông tin bản sửa
 
@@ -23,11 +23,14 @@ So sánh mã nguồn và ảnh thiết bị cho thấy thẻ kênh thường dù
 - Duy trì vùng bấm chọn server và yêu thích; không đụng đến adapter dữ liệu, gộp trận, lịch refresh, lựa chọn nguồn hoặc player.
 - Cập nhật regression guard để kiểm tra kích thước thẻ và bảo đảm các kiểm tra Live/fullscreen cũ vẫn còn.
 
-## Kiểm thử
+## Build và kiểm thử
 
-- CI build và unit tests: chờ chạy.
-- Sau CI, cần cài APK kiểm tra thực tế: chiều cao các thẻ Live gần bằng nhóm VTV/VTVcab; tên dài không làm tăng chiều cao; chọn server, yêu thích, mở/phát trận và nút đổi server toàn màn hình vẫn hoạt động.
-- Không đánh dấu stable trước khi người dùng xác nhận trên thiết bị thật.
+- **GitHub Actions:** [Run 39351043416 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39351043416).
+- **Artifact:** [NM7-IPTV-Mobile-1.10.141-COMPACT-LIVE](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39351043416/artifacts/12233590958), ID `12233590958`.
+- **APK SHA-256:** `f2e66e0d5eaec49ba6991b3c50a25b5826e93fcd3e76ff081263d33919d11d6e`.
+- Build `:app:assembleMobileDebug`: **PASS**; toàn bộ `:app:testMobileDebugUnitTest`: **PASS**.
+- Regression guards cho nguồn Live, nút đổi server fullscreen và sizing thẻ Live: **PASS**.
+- Kiểm thử runtime trên điện thoại thật vẫn cần người dùng xác nhận; không đánh dấu stable trước khi được xác nhận.
 
 ---
 
