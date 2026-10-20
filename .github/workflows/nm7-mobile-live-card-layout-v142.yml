@@ -18,6 +18,7 @@ name: NM7 IPTV Mobile 1.10.142 YouTube MiniPlayer — Build
       - "scripts/patch-mobile-v106.py"
       - "scripts/patch-mobile-v69-no-miniplayer.py"
       - "scripts/smarttube-playback-mobile.java.inc"
+      - ".github/workflows/nm7-mobile-live-card-layout-v142.yml"
   workflow_dispatch:
 
 permissions:
