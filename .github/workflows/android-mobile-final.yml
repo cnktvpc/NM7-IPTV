@@ -90,8 +90,8 @@ jobs:
       - name: Verify 1.10.112 build configuration
         run: |
           set -euxo pipefail
-          test "$(grep -c 'versionName = "1.10.112"' app/build.gradle.kts)" -eq 1
-          test "$(grep -c 'versionCode = 128' app/build.gradle.kts)" -eq 1
+          test "$(grep -c 'versionName = "1.10.142"' app/build.gradle.kts)" -eq 1
+          test "$(grep -c 'versionCode = 158' app/build.gradle.kts)" -eq 1
 
       - name: Check Mobile lifecycle regression guards
         run: |

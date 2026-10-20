@@ -209,6 +209,48 @@
                 && !sNm7Active.isFinishing() && sNm7Active.mPlayer != null;
     }
 
+    public static String getNm7VideoTitle() {
+        if (sNm7Active == null || sNm7Active.mNm7SessionVideo == null) return null;
+        try {
+            return sNm7Active.mNm7SessionVideo.getTitle();
+        } catch (Throwable error) {
+            try {
+                return (String) sNm7Active.mNm7SessionVideo.getClass().getField("title").get(sNm7Active.mNm7SessionVideo);
+            } catch (Throwable ignored) {}
+        }
+        return null;
+    }
+
+    public static String getNm7VideoAuthor() {
+        if (sNm7Active == null || sNm7Active.mNm7SessionVideo == null) return null;
+        try {
+            return sNm7Active.mNm7SessionVideo.getAuthor();
+        } catch (Throwable error) {
+            try {
+                return (String) sNm7Active.mNm7SessionVideo.getClass().getField("author").get(sNm7Active.mNm7SessionVideo);
+            } catch (Throwable ignored) {}
+        }
+        return null;
+    }
+
+    public static long getNm7VideoPosition() {
+        if (sNm7Active == null || sNm7Active.mPlayer == null) return 0L;
+        try {
+            return sNm7Active.mPlayer.getCurrentPosition();
+        } catch (Throwable ignored) {
+            return 0L;
+        }
+    }
+
+    public static long getNm7VideoDuration() {
+        if (sNm7Active == null || sNm7Active.mPlayer == null) return 0L;
+        try {
+            return sNm7Active.mPlayer.getDuration();
+        } catch (Throwable ignored) {
+            return 0L;
+        }
+    }
+
     public static void attachNm7MiniPlayer(android.view.View previousSurface, android.view.View nextSurface) {
         PlaybackActivity active = sNm7Active;
         if (!isNm7MiniPlayerActive()) return;
@@ -258,6 +300,8 @@
 
     private void completeNm7RestoreOnResume() {
         if (mPlayer == null) return;
+
+
         sNm7SuspendedForIptv = false;
         com.google.android.exoplayer2.ui.PlayerView oldTarget = mNm7VideoTarget;
         if (oldTarget == null) {
