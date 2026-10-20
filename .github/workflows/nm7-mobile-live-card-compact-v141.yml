@@ -1,6 +1,6 @@
 name: NM7 IPTV Mobile 1.10.141 Compact Live Card — Build
-## Builds a compact 1.10.141 candidate based on 1.10.141; only Live event-card sizing is changed.
-# Preserve all 1.10.141 behavior; only compact the Live event card layout.
+## Builds a compact 1.10.141 candidate based on 1.10.140; only Live event-card sizing is changed.
+# Preserve all 1.10.140 behavior; only compact the Live event card layout.
 # Build is gated on Live feature checks, baseline pull-to-refresh checks, and the full unit-test suite.
 
 "on":
@@ -13,7 +13,6 @@ name: NM7 IPTV Mobile 1.10.141 Compact Live Card — Build
       - "scripts/verify-mobile-live-feed-v138.py"
       - "scripts/verify-mobile-live-fullscreen-server-v138.py"
       - "scripts/diagnose-mobile-live-feed.py"
-      - ".github/workflows/nm7-mobile-live-card-compact-v141.yml"
   workflow_dispatch:
 
 permissions:
