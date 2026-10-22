@@ -1,5 +1,5 @@
-name: NM7 IPTV Mobile 1.10.144 News Reader — Build
-## Builds 1.10.144 from stable 1.10.142 with the new native RSS news reader.
+name: NM7 IPTV Mobile 1.10.145 News Reader — Build
+## Builds 1.10.145 from stable 1.10.142 with the new native RSS news reader.
 # Keep stable 1.10.142 intact; build the news-reader candidate on a separate branch.
 # Build is gated on baseline playback checks, Reader wiring checks, and full unit tests.
 
@@ -22,7 +22,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: nm7-mobile-news-reader-v143
+  group: nm7-mobile-news-reader-v145
   cancel-in-progress: true
 
 jobs:
@@ -54,7 +54,7 @@ jobs:
           report_dir="$(mktemp -d)"
           git clone --quiet --depth 1 --branch "$branch" "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git" "$report_dir"
           cd "$report_dir"
-          printf '# NM7 IPTV Mobile 1.10.144 — CI result\n\n- Status: **RUNNING**\n- Branch: `%s`\n- Source commit: `%s`\n- Workflow run: https://github.com/%s/actions/runs/%s\n\nBuild and full unit tests are in progress.\n' "$branch" "$GITHUB_SHA" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > LIVE_FEED_CI_RESULT.md
+          printf '# NM7 IPTV Mobile 1.10.145 — CI result\n\n- Status: **RUNNING**\n- Branch: `%s`\n- Source commit: `%s`\n- Workflow run: https://github.com/%s/actions/runs/%s\n\nBuild and full unit tests are in progress.\n' "$branch" "$GITHUB_SHA" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > LIVE_FEED_CI_RESULT.md
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add LIVE_FEED_CI_RESULT.md
@@ -106,26 +106,35 @@ jobs:
           set -euxo pipefail
           python3 scripts/verify-mobile-pull-refresh.py
 
-      - name: Verify 1.10.144 Reader build configuration
+      - name: Verify 1.10.145 Reader build configuration
         run: |
           set -euxo pipefail
-          test "$(grep -c 'versionName = "1.10.144"' app/build.gradle.kts)" -eq 1
-          test "$(grep -c 'versionCode = 160' app/build.gradle.kts)" -eq 1
+          test "$(grep -c 'versionName = "1.10.145"' app/build.gradle.kts)" -eq 1
+          test "$(grep -c 'versionCode = 161' app/build.gradle.kts)" -eq 1
 
       - name: Verify NM7 Reader wiring
         run: |
           set -euxo pipefail
           test -f app/src/main/java/vn/phuong/iptvplayer/NewsReaderActivity.java
+          test -f app/src/main/java/vn/phuong/iptvplayer/ReaderArticleExtractor.java
+          test -f app/src/main/java/vn/phuong/iptvplayer/ReaderPluginRuntime.java
+          test -f app/src/main/java/vn/phuong/iptvplayer/ReaderPluginStore.java
+          test -f app/src/main/java/vn/phuong/iptvplayer/ReaderPluginActivity.java
           grep -q 'attachReader' app/src/main/java/vn/phuong/iptvplayer/HomeTabBar.java
           grep -q 'NewsReaderActivity' app/src/main/AndroidManifest.xml
           grep -q 'XmlPullParser' app/src/main/java/vn/phuong/iptvplayer/NewsReaderActivity.java
           grep -q 'Cài đặt tất cả' app/src/main/java/vn/phuong/iptvplayer/NewsReaderActivity.java
           grep -q 'Xóa tất cả' app/src/main/java/vn/phuong/iptvplayer/NewsReaderActivity.java
 
-      - name: Verify Reader visual, insets and ad-filter behavior
+      - name: Verify Reader native article mode, insets and typography
         run: |
           set -euxo pipefail
-          python3 scripts/verify-mobile-news-reader-ui-v144.py
+          python3 scripts/verify-mobile-news-reader-ui-v145.py
+
+      - name: Verify NM7 Reader JavaScript source plugins
+        run: |
+          set -euxo pipefail
+          python3 scripts/verify-mobile-news-reader-plugin-v145.py
 
       - name: Verify NM7 dedicated Live feed implementation
         run: |
@@ -260,7 +269,7 @@ jobs:
               p.write_text(''.join(lines))
           PY
 
-      - name: Build Mobile 1.10.144 (news reader)
+      - name: Build Mobile 1.10.145 (news reader)
         run: |
           set -o pipefail
           gradle --no-daemon --console=plain \
@@ -294,7 +303,7 @@ jobs:
       - name: Upload Mobile APK
         uses: actions/upload-artifact@v4
         with:
-          name: NM7-IPTV-Mobile-1.10.144-NEWS-READER
+          name: NM7-IPTV-Mobile-1.10.145-READER-PLUGINS
           path: dist/mobile/
           retention-days: 30
           if-no-files-found: error
@@ -307,7 +316,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          artifact_id="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts" --jq '.artifacts[] | select(.name == "NM7-IPTV-Mobile-1.10.144-NEWS-READER") | .id' | head -n1)"
+          artifact_id="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts" --jq '.artifacts[] | select(.name == "NM7-IPTV-Mobile-1.10.145-READER-PLUGINS") | .id' | head -n1)"
           test -n "$artifact_id"
           branch="$GITHUB_REF_NAME"
           short_sha="${GITHUB_SHA:0:12}"
@@ -315,13 +324,13 @@ jobs:
           git clone --quiet --depth 1 --branch "$branch" "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git" "$report_dir"
           cd "$report_dir"
           {
-            echo "# NM7 IPTV Mobile 1.10.144 — CI result"
+            echo "# NM7 IPTV Mobile 1.10.145 — CI result"
             echo
             echo "- Result: **PASS** (APK build and full Mobile unit-test suite completed successfully)"
             echo "- Branch: $branch"
             echo "- Source commit: $GITHUB_SHA"
             echo "- Workflow run: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-            echo "- Artifact: [Download NM7-IPTV-Mobile-1.10.144-NEWS-READER](https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts/$artifact_id)"
+            echo "- Artifact: [Download NM7-IPTV-Mobile-1.10.145-READER-PLUGINS](https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts/$artifact_id)"
             echo "- Artifact ID: $artifact_id"
             echo
             echo "## SHA-256"
@@ -350,7 +359,7 @@ jobs:
           report_dir="$(mktemp -d)"
           git clone --quiet --depth 1 --branch "$branch" "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git" "$report_dir"
           cd "$report_dir"
-          printf '# NM7 IPTV Mobile 1.10.144 — CI result\n\n- Status: **FAILED**\n- Branch: `%s`\n- Source commit: `%s`\n- Workflow run: https://github.com/%s/actions/runs/%s\n\nCheck this run for the failing build or unit-test step.\n' "$branch" "$GITHUB_SHA" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > LIVE_FEED_CI_RESULT.md
+          printf '# NM7 IPTV Mobile 1.10.145 — CI result\n\n- Status: **FAILED**\n- Branch: `%s`\n- Source commit: `%s`\n- Workflow run: https://github.com/%s/actions/runs/%s\n\nCheck this run for the failing build or unit-test step.\n' "$branch" "$GITHUB_SHA" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > LIVE_FEED_CI_RESULT.md
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add LIVE_FEED_CI_RESULT.md

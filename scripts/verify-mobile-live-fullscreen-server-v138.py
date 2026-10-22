@@ -25,9 +25,9 @@ checks = [
     ("the ordinary inline selector is preserved",
      "private android.widget.Button liveServerButton;" in player
      and "liveServerButton.setOnClickListener(v -> showLiveServerPicker())" in player),
-    ("version is stable 1.10.142 / code 158 or Reader candidate 1.10.144 / code 160",
+    ("version is stable 1.10.142 / code 158, prior Reader 1.10.144 / code 160, or Reader 1.10.145 / code 161",
      ('versionName = "1.10.142"' in gradle and "versionCode = 158" in gradle)
-     or ('versionName = "1.10.144"' in gradle and "versionCode = 160" in gradle)),
+     or ('versionName = "1.10.144"' in gradle and "versionCode = 160" in gradle) or ('versionName = "1.10.145"' in gradle and "versionCode = 161" in gradle)),
     ("dedicated CI runs this check on the candidate branch",
      "python3 scripts/verify-mobile-live-fullscreen-server-v138.py" in workflow
      and ("fix/mobile-news-reader-20261022" in workflow)),

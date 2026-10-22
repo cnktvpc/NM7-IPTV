@@ -33,6 +33,7 @@
         <activity android:name="com.liskovsoft.smartyoutubetv2.droid.ui.adddevice.AddDeviceActivity" android:theme="@style/Theme.SmartTubeDroid" />
         <activity android:name="com.liskovsoft.smartyoutubetv2.droid.ui.webbrowser.WebBrowserActivity" android:theme="@style/Theme.SmartTubeDroid" />
 
+        <activity android:name=".ReaderPluginActivity" android:exported="false" android:configChanges="keyboardHidden|orientation|screenSize" />
         <activity android:name=".NewsReaderActivity" android:exported="false" android:configChanges="keyboardHidden|orientation|screenSize" />
         <activity android:name=".MainActivity" android:launchMode="standard" android:alwaysRetainTaskState="true" android:configChanges="keyboardHidden|orientation|screenSize" android:windowSoftInputMode="stateAlwaysHidden|adjustPan" android:exported="true">
             <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>

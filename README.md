@@ -1,32 +1,26 @@
-# NM7 IPTV Mobile 1.10.144 — Reader visual and navigation refinement — 2026-10-22
+# NM7 IPTV Mobile 1.10.145 — Native Reader and JS Source Plugins — 2026-10-22
 
-> **CI PASS; candidate chưa được nâng lên stable trước khi thử trên điện thoại thật.** Bản này tiếp tục phát triển từ nhánh tính năng tách riêng trên baseline `stable/mobile-1.10.142`; nhánh stable 1.10.142 vẫn nguyên trạng.
+> Candidate branch, not yet marked stable. The shared top/bottom tab geometry remains as confirmed. This candidate fixes article reading by extracting the publisher's content into NM7's own clean dark reader, and adds a JavaScript source installer/reader for comic and text-novel plugins.
 
-- **Version:** 1.10.144 / versionCode 160
-- **Feature branch:** `fix/mobile-news-reader-20261022`
-- **Build source commit:** `1eb5769ac6faa5d3054901f94cf75dee26467f35`
-- **CI:** [Run 39765597412 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39765597412)
-- **Artifact:** [NM7-IPTV-Mobile-1.10.144-NEWS-READER](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39765597412/artifacts/12419494923)
-- **APK SHA-256:** `47e0447854ec92aa28a3598b394eec7faa1bcba8a3282403c4800a07c9ac6b11`
-- **Nghiên cứu và ghi chú cập nhật:** [docs/NEWS_READER_REFINEMENT_1.10.144.md](docs/NEWS_READER_REFINEMENT_1.10.144.md)
+- Version: 1.10.145 / versionCode 161
+- Feature branch: fix/mobile-news-reader-20261022
+- Baseline unchanged: stable/mobile-1.10.142
+- Design and test notes: [docs/NEWS_READER_MODE_AND_JS_PLUGINS_1.10.145.md](docs/NEWS_READER_MODE_AND_JS_PLUGINS_1.10.145.md)
 
-## Những lỗi được xử lý
+## Changes in this candidate
 
-- Tab **Đọc báo** dành khoảng trống status bar/display cutout ở trên cùng, tránh chữ nguồn chồng lên giờ/trạng thái hệ thống.
-- Thanh tab dưới dùng chung được đặt theo system navigation/gesture inset; phần nội dung IPTV cũng dự trữ đúng vùng cuộn, để vị trí thanh tab đồng nhất hơn giữa YouTube, IPTV và Đọc báo.
-- Trang bài chuyển sang chế độ đọc nền tối `#101114`, chữ sáng, cỡ chữ/dòng dễ đọc; cố gắng trích riêng tiêu đề, mô tả và phần nội dung bài thay vì giữ nguyên toàn bộ giao diện website.
-- WebView lọc các host quảng cáo/tracker phổ biến, chặn một số đường dẫn quảng cáo và loại bỏ các khối quảng cáo/đề xuất thường gặp trong DOM; ảnh lazy-load được ưu tiên giữ lại khi dựng phần nội dung sạch.
+- Tapping a news item now downloads/parses the article on a worker thread and displays a sanitized, standalone document inside NM7. A fixed dark background/light text style, typography, metadata, lead image, summary, body images and captions are used; publisher page scripts/styles and web chrome are not loaded into the reader.
+- On extraction error, a clear summary/fallback card remains inside NM7; opening the original is a separate browser action.
+- Truyện chữ and Truyện tranh source tabs open a dedicated source-plugin screen. Users can install JS sources from a URL or local .js file, review/enable/disable/remove them, browse/search, view chapters and read comic images or novel text.
+- The news catalogue remains unchanged. No additional newspaper source was added. New plugins apply only to comic/text-novel categories.
+- The plugin runtime has bounded script size, hidden Java class access and a restricted NM7 HTTP/DOM API. The plugin API is NM7-specific; compatibility with a proprietary Super OK source file is not claimed without inspecting an actual sample.
 
-## Kiểm thử
+## Testing
 
-- Kiểm tra cấu hình/version và Reader wiring: PASS.
-- 11 kiểm tra tự động bổ sung cho insets, dark mode, trích xuất nội dung và lọc quảng cáo: PASS.
-- 30 kiểm tra Live feed, kiểm tra fullscreen Live và regression guards: PASS.
-- Gradle `:app:assembleMobileDebug`: PASS.
-- Full Mobile unit-test suite: PASS.
-- APK đã được tải về, kiểm tra tính toàn vẹn ZIP và đối chiếu checksum bên trong artifact: PASS.
-
-**Giới hạn kiểm thử:** trong phiên này chưa có thao tác cài APK lên điện thoại thật để quay/chụp UI. Bộ lọc chặn các host và cấu trúc quảng cáo đã biết nhưng không thể cam kết loại tuyệt đối mọi quảng cáo nếu nhà xuất bản nhúng quảng cáo như nội dung first-party hoặc thay đổi HTML. Cần thử trực tiếp các nguồn VnExpress, Dân Trí và các nguồn báo khác trước khi nâng candidate lên stable.
+- Adds ReaderArticleExtractorTest and ReaderPluginRuntimeTest.
+- Adds native article/typography and JS plugin static regression gates.
+- Existing Live feed/fullscreen regression checks remain included.
+- This is a candidate; CI is not a substitute for installing and testing on the phone.
 
 ---
 
