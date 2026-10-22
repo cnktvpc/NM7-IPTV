@@ -167,7 +167,7 @@ public final class NewsReaderActivity extends Activity {
                   });
                   Array.prototype.forEach.call(clone.querySelectorAll('iframe'), function (frame) {
                     var src = frame.getAttribute('src') || '';
-                    if (!/youtube\.com|youtu\.be|player\.vimeo\.com/i.test(src)) {
+                    if (!/youtube\\.com|youtu\\.be|player\\.vimeo\\.com/i.test(src)) {
                       if (frame.parentNode) frame.parentNode.removeChild(frame);
                     }
                   });
