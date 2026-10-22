@@ -31,6 +31,22 @@ public class ReaderArticleExtractorTest {
         assertFalse(result.contains("<script"));
     }
 
+    @Test public void resolvesLazyImagesAndPrefersHighResolutionSrcset() {
+        String html = "<article><p>Đoạn tin đủ dài để tạo vùng nội dung đọc báo, có nhiều thông tin "
+                + "quan trọng và đủ ký tự để trình trích xuất chọn đúng thân bài.</p>"
+                + "<figure><img src='data:image/gif;base64,AAAA' data-src='/img/low.jpg' "
+                + "srcset='/img/small.jpg 320w, /img/large.jpg 1280w'></figure>"
+                + "<img data-original='//cdn.news.example/story.jpg' src='/blank.gif'>"
+                + "</article>";
+        String result = ReaderArticleExtractor.renderForTest(html, "https://news.example/a/story",
+                "Bài thử ảnh", "", "/hero.jpg", "Nguồn", "", 100);
+        assertTrue(result.contains("https://news.example/img/large.jpg"));
+        assertTrue(result.contains("https://cdn.news.example/story.jpg"));
+        assertTrue(result.contains("https://news.example/hero.jpg"));
+        assertFalse(result.contains("data:image/gif"));
+        assertTrue(result.contains("loading=\"eager\""));
+    }
+
     @Test public void appendsRelatedStoriesInsideReaderInsteadOfOpeningPublisherHome() {
         java.util.List<ReaderArticleExtractor.RelatedArticle> related = java.util.Arrays.asList(
                 new ReaderArticleExtractor.RelatedArticle("Bài báo liên quan", "https://news.example/story/2",
