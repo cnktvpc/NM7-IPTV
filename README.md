@@ -1,6 +1,6 @@
 # NM7 IPTV Mobile — Stable 1.10.142 — YouTube Floating MiniPlayer / SurfaceView — 2026-10-20
 
-> **Trạng thái:** CI build và unit tests đã hoàn tất thành công. APK được tạo từ mã nguồn mới nhất trên nhánh `build/youtube-miniplayer-20261020`, sau đó checksum được đối chiếu với `SHA256SUMS.txt` trong artifact. Cần tiếp tục kiểm thử trên thiết bị thật để xác nhận chuyển đổi SurfaceView và đồng bộ hình/tiếng; CI không thay thế runtime test.
+> **Trạng thái cập nhật 2026-10-22:** Build APK thành công. Lưu ý: bước `:app:testMobileDebugUnitTest` trong run 39407088691 có lỗi nhưng được cấu hình `continue-on-error: true`, vì vậy workflow vẫn báo SUCCESS. Không ghi nhận unit tests là PASS cho lần build này. Cần xử lý lỗi test và kiểm thử trên thiết bị thật trước khi xác nhận riêng các thay đổi YouTube MiniPlayer là ổn định.
 
 ## Thông tin phát hành
 
@@ -10,9 +10,10 @@
 - **Nhánh phát hành:** `stable/mobile-1.10.142`
 - **Nhánh nguồn đã build:** `build/youtube-miniplayer-20261020`
 - **Commit nguồn đã build:** [4fc8b187db7e48591e1bcb11969436a56d27d06a](https://github.com/cnktvpc/NM7-IPTV/commit/4fc8b187db7e48591e1bcb11969436a56d27d06a)
-- **GitHub Actions:** [Run 39416454050 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39416454050)
+- **GitHub Actions:** [Run 39407088691 — workflow SUCCESS; unit-test step failed non-blocking](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39407088691)
 - **Artifact:** `NM7-IPTV-Mobile-1.10.142-YOUTUBE-MINIPLAYER`
-- **APK SHA-256:** `65c40c36132585c896e1d388cc931fb2e17a245f1c40044b4a5f6e97ccfd820e`
+- **Artifact ID:** `12258102908` (đã xác nhận tồn tại; hết hạn dự kiến 2026-11-19).
+- **APK SHA-256:** Chưa xác minh được checksum của APK trong artifact của run 39407088691; không dùng checksum của run khác để đại diện.
 
 ## Nội dung trong bản
 
@@ -27,10 +28,10 @@
 ## Kiểm tra build và artifact
 
 - GitHub Actions build job: **SUCCESS**.
-- Unit tests trong pipeline: **hoàn thành thành công**.
+- Unit tests trong run 39407088691: **FAILED nhưng không chặn build** (`continue-on-error: true`).
 - Artifact ZIP: **đọc được, không lỗi cấu trúc**.
 - APK: **đọc được như ZIP Android package và có `AndroidManifest.xml`**.
-- SHA-256 APK khớp với checksum trong artifact: **PASS**.
+- SHA-256 APK của run 39407088691: **chưa xác minh**.
 - Ghi chú: kết quả CI không tự xác nhận chất lượng phát video trên thiết bị. Cần kiểm tra thực tế: mở video, thu nhỏ về mini-player, kéo thả, phóng to lại, chuyển qua tab IPTV rồi quay lại YouTube, và xác nhận hình/tiếng đồng bộ.
 
 ## Quy tắc nhánh
@@ -39,6 +40,15 @@
 - Không ghi đè các nhánh stable cũ.
 - Các chỉnh sửa CI chỉ dùng để tạo và xác minh artifact; không xem chúng là thay đổi chức năng ứng dụng.
 - Mọi sửa đổi tiếp theo cần đi qua nhánh candidate/build riêng, chạy build, unit tests và regression checks trước khi promote.
+
+
+## Ghi chú ổn định — cập nhật 2026-10-22
+
+- Commit build: [4fc8b187db7e48591e1bcb11969436a56d27d06a](https://github.com/cnktvpc/NM7-IPTV/commit/4fc8b187db7e48591e1bcb11969436a56d27d06a).
+- Commit chỉ bổ sung `scripts/patch-mobile-v130-pull-refresh.py` vào bộ lọc `paths` của workflow để thay đổi script này cũng kích hoạt build.
+- APK build và upload thành công trong [run 39407088691](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39407088691), artifact ID `12258102908`.
+- Unit-test step thất bại nhưng không chặn workflow; do đó không tuyên bố toàn bộ test pass cho lần build này.
+- Nhánh `stable/mobile-1.10.142` giữ nguyên baseline; không nâng mã nguồn ứng dụng chỉ vì thay đổi trigger CI. Cần sửa/đánh giá lỗi unit test và kiểm thử APK trên thiết bị trước khi xác nhận thay đổi MiniPlayer mới là ổn định.
 
 ---
 
