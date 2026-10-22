@@ -431,8 +431,8 @@ public final class ReaderPluginActivity extends Activity {
                             Object element = array.opt(i);
                             if (element instanceof String) {
                                 item = new JSONObject();
-                                item.put("title", String.valueOf(element));
-                                item.put("url", String.valueOf(element));
+                                putJson(item, "title", String.valueOf(element));
+                                putJson(item, "url", String.valueOf(element));
                             }
                         }
                         if (item != null) addItemRow(rows, item);
@@ -456,7 +456,7 @@ public final class ReaderPluginActivity extends Activity {
         String url = absolute(first(item, "url", "link", "href", "slug"), activeSource.baseUrl);
         String cover = absolute(first(item, "cover", "image", "thumbnail", "coverUrl", "imageUrl", "src"), activeSource.baseUrl);
         if (title.isEmpty()) title = "Không có tiêu đề";
-        JSONObject stableItem = new JSONObject(item.toString());
+        JSONObject stableItem = cloneJson(item);
         try {
             stableItem.put("title", title);
             stableItem.put("url", url);
@@ -504,7 +504,7 @@ public final class ReaderPluginActivity extends Activity {
         final int token = ++requestToken;
         showBusy("Đang tải thông tin truyện…");
         io.execute(() -> {
-            JSONObject details = new JSONObject(item.toString());
+            JSONObject details = cloneJson(item);
             JSONArray chapters = null;
             try {
                 Object value = ReaderPluginRuntime.invoke(activeScript, "details", oneArg(item.optString("url")));
@@ -598,7 +598,7 @@ public final class ReaderPluginActivity extends Activity {
                 }
             }
             if (chapter == null) continue;
-            JSONObject stable = new JSONObject(chapter.toString());
+            JSONObject stable = cloneJson(chapter);
             String title = first(stable, "title", "name", "chapter", "number");
             String url = absolute(first(stable, "url", "link", "href"), activeSource.baseUrl);
             if (title.isEmpty()) title = "Chương " + (i + 1);
@@ -816,6 +816,22 @@ public final class ReaderPluginActivity extends Activity {
             }
         }
         return null;
+    }
+
+    private JSONObject cloneJson(JSONObject source) {
+        try {
+            return new JSONObject(source == null ? "{}" : source.toString());
+        } catch (org.json.JSONException e) {
+            throw new IllegalArgumentException("Không sao chép được dữ liệu nguồn đọc.", e);
+        }
+    }
+
+    private void putJson(JSONObject object, String key, Object value) {
+        try {
+            object.put(key, value);
+        } catch (org.json.JSONException e) {
+            throw new IllegalArgumentException("Không cập nhật được dữ liệu plugin.", e);
+        }
     }
 
     private JSONObject merge(JSONObject base, JSONObject extra) throws Exception {
