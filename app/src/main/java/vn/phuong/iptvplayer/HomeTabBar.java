@@ -25,6 +25,16 @@ public final class HomeTabBar {
     private HomeTabBar() {}
 
     public static void attach(Activity activity, boolean youtubeSelected) {
+        attachInternal(activity, youtubeSelected ? 0 : 1);
+    }
+
+    /** Attach the same navigation bar with the in-app news reader selected. */
+    public static void attachReader(Activity activity) {
+        attachInternal(activity, 2);
+    }
+
+    private static void attachInternal(Activity activity, int selectedTab) {
+        boolean youtubeSelected = selectedTab == 0;
         View content = activity.findViewById(android.R.id.content);
         if (!(content instanceof FrameLayout)) return;
         FrameLayout host = (FrameLayout) content;
@@ -39,18 +49,20 @@ public final class HomeTabBar {
         bar.setElevation(dp(activity, 8));
         bar.setPadding(0, dp(activity, 4), 0, dp(activity, 4));
 
-        addItem(activity, bar, R.drawable.nm7_nav_youtube, youtubeSelected, "YouTube", () -> {
-            if (!youtubeSelected) openBrowse(activity);
+        addItem(activity, bar, R.drawable.nm7_nav_youtube, selectedTab == 0, "YouTube", () -> {
+            if (selectedTab != 0) openBrowse(activity);
         });
 
-        addItem(activity, bar, R.drawable.nm7_nav_iptv, !youtubeSelected, "IPTV", () -> {
-            if (youtubeSelected) openIptv(activity);
+        addItem(activity, bar, R.drawable.nm7_nav_iptv, selectedTab == 1, "IPTV", () -> {
+            if (selectedTab != 1) openIptv(activity);
         });
 
-        // Application settings is a top-level destination of the same bottom bar.
-        // It reuses MainActivity's existing dialog so every existing setting and behavior
-        // stays identical to the 1.10.112 implementation.
-        addItem(activity, bar, R.drawable.nm7_nav_settings, false, "Tùy chọn",
+        addItem(activity, bar, R.drawable.nm7_nav_news, selectedTab == 2, "Đọc báo", () -> {
+            if (selectedTab != 2) openNews(activity);
+        });
+
+        // Keep the existing settings destination and behavior from Stable 1.10.142.
+        addItem(activity, bar, R.drawable.nm7_nav_settings, selectedTab == 3, "Tùy chọn",
                 () -> openAppSettings(activity));
 
         FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
@@ -115,6 +127,12 @@ public final class HomeTabBar {
         startWithoutAnimation(activity, intent);
         activity.getWindow().getDecorView().post(
                 () -> MobileInlinePlayerProviderV2.resumeForIptvTab(activity));
+    }
+
+    private static void openNews(Activity activity) {
+        Intent intent = new Intent(activity, NewsReaderActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        startWithoutAnimation(activity, intent);
     }
 
     private static void openAppSettings(Activity activity) {
