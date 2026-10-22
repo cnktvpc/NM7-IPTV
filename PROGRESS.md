@@ -17,7 +17,7 @@
 
 ## CI gate — KẾT QUẢ ĐÃ XÁC NHẬN
 - Lịch sử sửa test: run `39804935539` thất bại ở `YouTubeSurfaceLayoutTest.miniUsesSurfaceAfterAllResourceMerges` vì XML mini-player còn `texture_view`; đã sửa XML sang `surface_view` tại commit `b0a91061b8a3c9225f3c20725b4d0b6e46890d0e`.
-- [Run 39806147553](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39809129235): **SUCCESS**.
+- [Latest run 39809129235](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39809129235): **SUCCESS**.
 - `:app:assembleMobileDebug`: PASS.
 - `:app:testMobileDebugUnitTest`: PASS (the earlier failure was fixed by switching the mini-player XML to `surface_view`; no YouTube playback Java classes were replaced).
 - Artifact đã upload: [NM7-IPTV-Mobile-1.10.146-SOURCE4FC-NEWS-READER](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39809129235/artifacts/12439107567), ID `12439107567`.
