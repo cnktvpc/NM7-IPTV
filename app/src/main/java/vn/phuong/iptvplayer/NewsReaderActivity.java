@@ -20,6 +20,7 @@ import android.text.InputType;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
@@ -50,6 +51,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -83,6 +86,7 @@ public final class NewsReaderActivity extends Activity {
     private final Handler main = new Handler(Looper.getMainLooper());
     private final ExecutorService io = Executors.newFixedThreadPool(3);
     private final List<Article> articles = new ArrayList<>();
+    private final Set<String> pluginCategoriesLoading = new HashSet<>();
     private LinearLayout root;
     private LinearLayout toolbar;
     private HorizontalScrollView categoryScroller;
@@ -302,6 +306,7 @@ public final class NewsReaderActivity extends Activity {
         categoryRow.removeAllViews();
         Source source = getSource(sourceId);
         if (!source.categories.containsKey(categoryName)) categoryName = source.categories.keySet().iterator().next();
+        ensurePluginCategories(source);
         for (String name : source.categories.keySet()) {
             TextView tab = text(name, 14, name.equals(categoryName) ? ORANGE : MUTED, name.equals(categoryName));
             tab.setGravity(Gravity.CENTER);
@@ -315,11 +320,63 @@ public final class NewsReaderActivity extends Activity {
                 loadFeed();
             });
         }
+        categoryScroller.post(() -> {
+            for (int i = 0; i < categoryRow.getChildCount(); i++) {
+                View child = categoryRow.getChildAt(i);
+                if (child instanceof TextView && categoryName.equals(((TextView) child).getText().toString())) {
+                    int target = child.getLeft() - Math.max(0, (categoryScroller.getWidth() - child.getWidth()) / 2);
+                    categoryScroller.smoothScrollTo(Math.max(0, target), 0);
+                    break;
+                }
+            }
+        });
+    }
+
+    private void stepCategoryBySwipe(int direction) {
+        Source source = getSource(sourceId);
+        List<String> names = new ArrayList<>(source.categories.keySet());
+        if (names.size() < 2) return;
+        int current = names.indexOf(categoryName);
+        if (current < 0) current = 0;
+        int next = (current + direction + names.size()) % names.size();
+        if (next == current) return;
+        categoryName = names.get(next);
+        searchQuery = "";
+        buildCategories();
+        loadFeed();
+    }
+
+    private final class FeedScrollView extends ScrollView {
+        private float downX;
+        private float downY;
+        FeedScrollView(Context context) { super(context); }
+        @Override public boolean dispatchTouchEvent(MotionEvent event) {
+            boolean horizontalSwipe = false;
+            int direction = 0;
+            if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                downX = event.getX();
+                downY = event.getY();
+            } else if (event.getActionMasked() == MotionEvent.ACTION_UP) {
+                float dx = event.getX() - downX;
+                float dy = event.getY() - downY;
+                float threshold = dp(72);
+                if (Math.abs(dx) >= threshold && Math.abs(dx) > Math.abs(dy) * 1.3f) {
+                    horizontalSwipe = true;
+                    direction = dx < 0 ? 1 : -1;
+                }
+            }
+            boolean handled = super.dispatchTouchEvent(event);
+            if (horizontalSwipe) {
+                final int move = direction;
+                post(() -> stepCategoryBySwipe(move));
+            }
+            return handled;
+        }
     }
 
     private void showArticleList() {
         content.removeAllViews();
-        ScrollView scroll = new ScrollView(this);
+        FeedScrollView scroll = new FeedScrollView(this);
         scroll.setFillViewport(true);
         scroll.setClipToPadding(false);
         scroll.setPadding(0, dp(2), 0, dp(8));
@@ -335,23 +392,30 @@ public final class NewsReaderActivity extends Activity {
     private void loadFeed() {
         if (mode != Mode.FEED) return;
         Source source = getSource(sourceId);
+        if (source.categories.isEmpty()) {
+            sourceId = VNEXPRESS.id;
+            source = VNEXPRESS;
+            getPreferencesStore().edit().putString(KEY_SOURCE, sourceId).apply();
+        }
         String feed = source.categories.get(categoryName);
         if (feed == null) {
             categoryName = source.categories.keySet().iterator().next();
             feed = source.categories.get(categoryName);
         }
         final String feedUrl = feed;
+        final String selectedCategory = categoryName;
+        final Source selectedSource = source;
         final int token = ++requestToken;
-        showLoading("Đang tải " + source.name + "…");
+        showLoading("Đang tải tin từ " + source.name + "…");
         io.execute(() -> {
-            List<Article> loaded;
+            List<Article> loaded = Collections.emptyList();
             String error = null;
             try {
-                loaded = parseFeed(feedUrl, source.name);
-                if (loaded.isEmpty()) error = "Nguồn chưa trả về bài viết. Thử làm mới hoặc mở trang báo trực tiếp.";
+                loaded = loadArticlesWithFallback(selectedSource, feedUrl, selectedCategory);
+                if (loaded.isEmpty()) error = "Nguồn chưa trả về bài nào. Hãy thử chuyên mục khác hoặc thêm nguồn RSS/JS hoạt động.";
             } catch (Exception e) {
-                loaded = Collections.emptyList();
-                error = "Không tải được nguồn tin. Kiểm tra kết nối hoặc thử nguồn khác.";
+                String detail = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+                error = "Không tải được danh sách tin từ RSS/trang nguồn. " + detail;
             }
             final List<Article> result = loaded;
             final String message = error;
@@ -360,7 +424,7 @@ public final class NewsReaderActivity extends Activity {
                 articles.clear();
                 articles.addAll(result);
                 if (message != null && articles.isEmpty()) {
-                    showLoading(message + "\n" + source.name);
+                    showLoading(message + "\n\nBạn vẫn ở trong NM7; ứng dụng sẽ không tự mở trang chủ bên ngoài.");
                 } else {
                     renderArticleRows();
                 }
@@ -374,11 +438,23 @@ public final class NewsReaderActivity extends Activity {
         status = text(message, 14, MUTED, false);
         status.setGravity(Gravity.CENTER);
         status.setPadding(dp(24), dp(20), dp(24), dp(20));
-        articleRows.addView(status, new LinearLayout.LayoutParams(-1, dp(120)));
-        TextView action = text("Mở trang " + getSource(sourceId).name, 14, ORANGE, true);
-        action.setGravity(Gravity.CENTER);
-        articleRows.addView(action, new LinearLayout.LayoutParams(-1, dp(44)));
-        action.setOnClickListener(v -> openOriginalPage(getSource(sourceId).homeUrl()));
+        articleRows.addView(status, new LinearLayout.LayoutParams(-1, dp(122)));
+        LinearLayout actions = new LinearLayout(this);
+        actions.setGravity(Gravity.CENTER);
+        actions.setOrientation(LinearLayout.HORIZONTAL);
+        actions.setPadding(dp(12), dp(4), dp(12), dp(12));
+        articleRows.addView(actions, new LinearLayout.LayoutParams(-1, dp(54)));
+        Button retry = actionButton("Thử lại", true);
+        Button manage = actionButton("Nguồn báo", false);
+        actions.addView(retry, new LinearLayout.LayoutParams(0, -1, 1f));
+        LinearLayout.LayoutParams manageParams = new LinearLayout.LayoutParams(0, -1, 1f);
+        manageParams.setMargins(dp(8), 0, 0, 0);
+        actions.addView(manage, manageParams);
+        retry.setOnClickListener(v -> loadFeed());
+        manage.setOnClickListener(v -> {
+            managerKind = "Báo";
+            renderManager();
+        });
     }
 
     private void renderArticleRows() {
@@ -534,16 +610,17 @@ public final class NewsReaderActivity extends Activity {
         final String sourceName = currentArticleSource == null || currentArticleSource.isEmpty()
                 ? getSource(sourceId).name : currentArticleSource;
         final int scale = textScale;
+        final List<ReaderArticleExtractor.RelatedArticle> related = collectRelatedArticles(url);
         io.execute(() -> {
             String html;
             try {
                 html = ReaderArticleExtractor.fetchAndRender(url, articleTitle, articleSummary,
-                        articleImage, sourceName, articleDate, scale);
+                        articleImage, sourceName, articleDate, related, scale);
             } catch (Exception error) {
                 // Never fall back to the publisher's full page: retain a legible article shell.
                 html = ReaderArticleExtractor.fallback(url, articleTitle, articleSummary,
-                        articleImage, sourceName, articleDate, scale,
-                        "Không lấy được phần nội dung đầy đủ từ nguồn báo. Bạn vẫn có thể đọc phần tóm tắt; nút ↗ mở bài gốc trong trình duyệt.");
+                        articleImage, sourceName, articleDate, related, scale,
+                        "Không tải được nội dung đầy đủ từ nguồn báo. NM7 vẫn giữ chế độ đọc; hãy thử lại hoặc mở bài gốc bằng nút ↗.");
             }
             String rendered = html;
             main.post(() -> {
@@ -570,19 +647,61 @@ public final class NewsReaderActivity extends Activity {
         settings.setTextZoom(textScale);
         articleWebView.setWebViewClient(new WebViewClient() {
             @Override public boolean shouldOverrideUrlLoading(WebView view, String newUrl) {
-                openOriginalPage(newUrl);
-                return true;
+                return handleArticleWebViewNavigation(newUrl);
             }
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                if (request != null && request.getUrl() != null) {
-                    openOriginalPage(request.getUrl().toString());
-                    return true;
-                }
-                return true;
+                return request == null || request.getUrl() == null
+                        || handleArticleWebViewNavigation(request.getUrl().toString());
             }
         });
         content.addView(articleWebView, new FrameLayout.LayoutParams(-1, -1));
         articleWebView.loadDataWithBaseURL(baseUrl, html, "text/html", "UTF-8", null);
+    }
+
+    private List<ReaderArticleExtractor.RelatedArticle> collectRelatedArticles(String currentUrl) {
+        List<ReaderArticleExtractor.RelatedArticle> result = new ArrayList<>();
+        String current = canonicalArticleUrl(currentUrl);
+        for (Article article : articles) {
+            if (article == null || !isWebUrl(article.url)
+                    || canonicalArticleUrl(article.url).equals(current)) continue;
+            result.add(new ReaderArticleExtractor.RelatedArticle(article.title, article.url,
+                    article.summary, article.imageUrl, article.source.isEmpty() ? getSource(sourceId).name : article.source));
+            if (result.size() >= 8) break;
+        }
+        return result;
+    }
+
+    private boolean handleArticleWebViewNavigation(String target) {
+        if (TextUtils.isEmpty(target)) return true;
+        Uri uri = Uri.parse(target);
+        if ("nm7".equalsIgnoreCase(uri.getScheme()) && "related".equalsIgnoreCase(uri.getHost())) {
+            int index = -1;
+            try { index = Integer.parseInt(uri.getLastPathSegment()); } catch (Exception ignored) { }
+            List<ReaderArticleExtractor.RelatedArticle> related = collectRelatedArticles(currentArticleUrl);
+            if (index >= 0 && index < related.size()) {
+                ReaderArticleExtractor.RelatedArticle item = related.get(index);
+                for (Article article : articles) {
+                    if (canonicalArticleUrl(article.url).equals(canonicalArticleUrl(item.url))) {
+                        currentArticleTitle = article.title;
+                        currentArticleSummary = article.summary;
+                        currentArticleImageUrl = article.imageUrl;
+                        currentArticleDate = article.date;
+                        currentArticleSource = article.source.isEmpty() ? getSource(sourceId).name : article.source;
+                        openArticlePage(article.url);
+                        return true;
+                    }
+                }
+                currentArticleTitle = item.title;
+                currentArticleSummary = item.summary;
+                currentArticleImageUrl = item.imageUrl;
+                currentArticleSource = item.source;
+                currentArticleDate = "";
+                openArticlePage(item.url);
+            }
+            return true;
+        }
+        openOriginalPage(target);
+        return true;
     }
 
     private void openOriginalPage(String url) {
@@ -673,7 +792,8 @@ public final class NewsReaderActivity extends Activity {
 
         Set<String> installed = installedIds();
         Set<String> enabled = enabledIds();
-        TextView count = text("Đã cài: " + installed.size() + "  •  Đang bật: " + enabled.size(),
+        int totalInstalled = installed.size() + getCustomRssSources().size() + ReaderPluginStore.list(this, "news").size() + 1;
+        TextView count = text("Có " + totalInstalled + " nguồn báo đã cài; nguồn RSS có thể dùng RSS hoặc trang danh sách tin",
                 13, MUTED, false);
         count.setPadding(dp(3), dp(4), 0, dp(12));
         body.addView(count, new LinearLayout.LayoutParams(-1, -2));
@@ -730,6 +850,10 @@ public final class NewsReaderActivity extends Activity {
             }
             saveSet(KEY_INSTALLED, new HashSet<>());
             saveSet(KEY_ENABLED, new HashSet<>());
+            saveCustomRssSources(new JSONArray());
+            for (ReaderPluginStore.SourceInfo info : ReaderPluginStore.list(this, "news")) {
+                ReaderPluginStore.remove(this, info);
+            }
             sourceId = "vnexpress";
             categoryName = "Trang chủ";
             getPreferencesStore().edit().putString(KEY_SOURCE, sourceId).apply();
@@ -738,7 +862,7 @@ public final class NewsReaderActivity extends Activity {
 
         if (!"Báo".equals(managerKind)) {
             TextView empty = text("Chưa có gói " + managerKind.toLowerCase(Locale.ROOT)
-                    + " trong bản NM7 Reader này.\n\nDanh mục Báo đã có bộ đọc RSS tích hợp và có thể cài, bật hoặc gỡ từng nguồn.",
+                    + " trong bản NM7 Reader này.\n\nDanh mục Báo đã có bộ đọc RSS/HTML và cài được nguồn JS riêng.",
                     14, MUTED, false);
             empty.setGravity(Gravity.CENTER);
             empty.setPadding(dp(20), dp(32), dp(20), dp(32));
@@ -746,7 +870,273 @@ public final class NewsReaderActivity extends Activity {
             return;
         }
 
+        Button addNews = actionButton("＋ Thêm nguồn báo RSS / JavaScript", true);
+        body.addView(addNews, new LinearLayout.LayoutParams(-1, dp(48)));
+        addNews.setOnClickListener(v -> showAddNewsSourceOptions());
+
+        addDefaultNewsSourceCard(body);
         for (Source s : CATALOG) addSourceCard(body, s, installed, enabled);
+        for (Source s : getCustomRssSources()) addCustomRssCard(body, s);
+        for (ReaderPluginStore.SourceInfo info : ReaderPluginStore.list(this, "news")) addNewsPluginCard(body, info);
+    }
+
+    private void addDefaultNewsSourceCard(LinearLayout body) {
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.HORIZONTAL);
+        card.setGravity(Gravity.CENTER_VERTICAL);
+        card.setPadding(dp(12), dp(11), dp(12), dp(11));
+        card.setBackground(makeRound(SURFACE, 12));
+        LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(-1, -2);
+        cp.setMargins(0, dp(9), 0, dp(9));
+        body.addView(card, cp);
+        TextView logo = text("V", 20, ORANGE, true);
+        logo.setGravity(Gravity.CENTER);
+        logo.setBackground(makeRound(SURFACE_2, 11));
+        card.addView(logo, new LinearLayout.LayoutParams(dp(46), dp(46)));
+        LinearLayout labels = new LinearLayout(this);
+        labels.setOrientation(LinearLayout.VERTICAL);
+        labels.setPadding(dp(11), 0, 0, 0);
+        card.addView(labels, new LinearLayout.LayoutParams(0, -2, 1f));
+        labels.addView(text("VnExpress", 15, TEXT, true), new LinearLayout.LayoutParams(-1, -2));
+        labels.addView(text("Nguồn mặc định · RSS, tự chuyển sang đọc trang tin khi RSS rỗng", 11, MUTED, false),
+                new LinearLayout.LayoutParams(-1, -2));
+        TextView state = text("Mặc định", 12, ORANGE, true);
+        card.addView(state, new LinearLayout.LayoutParams(-2, dp(36)));
+    }
+
+    private void addCustomRssCard(LinearLayout body, Source source) {
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.HORIZONTAL);
+        card.setGravity(Gravity.CENTER_VERTICAL);
+        card.setPadding(dp(12), dp(10), dp(12), dp(10));
+        card.setBackground(makeRound(SURFACE, 12));
+        LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(-1, -2);
+        cp.setMargins(0, 0, 0, dp(8));
+        body.addView(card, cp);
+        LinearLayout labels = new LinearLayout(this);
+        labels.setOrientation(LinearLayout.VERTICAL);
+        card.addView(labels, new LinearLayout.LayoutParams(0, -2, 1f));
+        labels.addView(text(source.name, 15, TEXT, true), new LinearLayout.LayoutParams(-1, -2));
+        TextView url = text(source.categories.get("Trang chủ"), 11, MUTED, false);
+        url.setMaxLines(2);
+        labels.addView(url, new LinearLayout.LayoutParams(-1, -2));
+        LinearLayout controls = new LinearLayout(this);
+        controls.setOrientation(LinearLayout.VERTICAL);
+        card.addView(controls, new LinearLayout.LayoutParams(-2, -2));
+        Switch enabled = new Switch(this);
+        enabled.setText(source.sourceEnabled ? "Bật" : "Tắt");
+        enabled.setTextColor(MUTED);
+        enabled.setChecked(source.sourceEnabled);
+        controls.addView(enabled, new LinearLayout.LayoutParams(-2, dp(40)));
+        enabled.setOnCheckedChangeListener((button, checked) -> updateCustomRssSource(source.id, checked));
+        Button remove = actionButton("Gỡ", false);
+        controls.addView(remove, new LinearLayout.LayoutParams(dp(72), dp(32)));
+        remove.setOnClickListener(v -> removeCustomRssSource(source.id));
+    }
+
+    private void addNewsPluginCard(LinearLayout body, ReaderPluginStore.SourceInfo info) {
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.HORIZONTAL);
+        card.setGravity(Gravity.CENTER_VERTICAL);
+        card.setPadding(dp(12), dp(10), dp(12), dp(10));
+        card.setBackground(makeRound(SURFACE, 12));
+        LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(-1, -2);
+        cp.setMargins(0, 0, 0, dp(8));
+        body.addView(card, cp);
+        LinearLayout labels = new LinearLayout(this);
+        labels.setOrientation(LinearLayout.VERTICAL);
+        card.addView(labels, new LinearLayout.LayoutParams(0, -2, 1f));
+        labels.addView(text(info.name + " · JS", 15, TEXT, true), new LinearLayout.LayoutParams(-1, -2));
+        labels.addView(text(info.baseUrl, 11, ORANGE, false), new LinearLayout.LayoutParams(-1, -2));
+        labels.addView(text(info.description.isEmpty() ? "Nguồn báo dạng plugin JavaScript" : info.description, 11, MUTED, false),
+                new LinearLayout.LayoutParams(-1, -2));
+        LinearLayout controls = new LinearLayout(this);
+        controls.setOrientation(LinearLayout.VERTICAL);
+        card.addView(controls, new LinearLayout.LayoutParams(-2, -2));
+        Switch enabled = new Switch(this);
+        enabled.setText(info.enabled ? "Bật" : "Tắt");
+        enabled.setTextColor(MUTED);
+        enabled.setChecked(info.enabled);
+        controls.addView(enabled, new LinearLayout.LayoutParams(-2, dp(40)));
+        enabled.setOnCheckedChangeListener((button, checked) -> {
+            try { ReaderPluginStore.setEnabled(this, info, checked); enabled.setText(checked ? "Bật" : "Tắt"); }
+            catch (Exception e) { enabled.setChecked(!checked); toast("Không cập nhật được nguồn: " + safeError(e)); }
+        });
+        Button remove = actionButton("Gỡ", false);
+        controls.addView(remove, new LinearLayout.LayoutParams(dp(72), dp(32)));
+        remove.setOnClickListener(v -> new AlertDialog.Builder(this)
+                .setTitle("Gỡ plugin báo?")
+                .setMessage(info.name)
+                .setPositiveButton("Gỡ", (dialog, which) -> {
+                    ReaderPluginStore.remove(this, info);
+                    if (sourceId.equals("jsnews_" + info.id)) {
+                        sourceId = VNEXPRESS.id;
+                        getPreferencesStore().edit().putString(KEY_SOURCE, sourceId).apply();
+                    }
+                    renderManager();
+                }).setNegativeButton("Hủy", null).show());
+    }
+
+    private void showAddNewsSourceOptions() {
+        new AlertDialog.Builder(this).setTitle("Thêm nguồn báo")
+                .setItems(new String[]{"Thêm RSS hoặc trang danh sách tin", "Cài plugin báo JavaScript từ URL", "Chọn tệp plugin .js trên máy"},
+                        (dialog, which) -> {
+                            if (which == 0) showAddRssSourceDialog();
+                            else if (which == 1) showAddNewsPluginUrlDialog();
+                            else chooseNewsPluginFile();
+                        }).setNegativeButton("Hủy", null).show();
+    }
+
+    private void showAddRssSourceDialog() {
+        LinearLayout form = new LinearLayout(this);
+        form.setOrientation(LinearLayout.VERTICAL);
+        form.setPadding(dp(20), dp(4), dp(20), 0);
+        EditText name = new EditText(this);
+        name.setSingleLine(true);
+        name.setHint("Tên nguồn, ví dụ Báo mới");
+        EditText url = new EditText(this);
+        url.setSingleLine(true);
+        url.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+        url.setHint("https://.../rss hoặc trang danh sách tin");
+        form.addView(name, new LinearLayout.LayoutParams(-1, -2));
+        form.addView(url, new LinearLayout.LayoutParams(-1, -2));
+        new AlertDialog.Builder(this).setTitle("Thêm RSS/trang tin")
+                .setMessage("NM7 sẽ thử đọc RSS trước, sau đó thử trích danh sách bài trực tiếp từ trang nguồn. Bấm bài sẽ mở trong Reader của NM7.")
+                .setView(form)
+                .setPositiveButton("Thêm", (dialog, which) -> addCustomRssSource(
+                        name.getText().toString().trim(), url.getText().toString().trim()))
+                .setNegativeButton("Hủy", null).show();
+    }
+
+    private void addCustomRssSource(String name, String url) {
+        if (name == null || name.trim().isEmpty()) { toast("Hãy nhập tên nguồn"); return; }
+        if (!isWebUrl(url) || hostOf(url).isEmpty()) { toast("URL nguồn phải bắt đầu bằng http:// hoặc https://"); return; }
+        try {
+            JSONArray items = new JSONArray(getPreferencesStore().getString(KEY_CUSTOM_RSS, "[]"));
+            for (int i = 0; i < items.length(); i++) {
+                JSONObject existing = items.optJSONObject(i);
+                if (existing != null && url.equalsIgnoreCase(existing.optString("url", ""))) {
+                    toast("Nguồn này đã được thêm");
+                    return;
+                }
+            }
+            JSONObject item = new JSONObject();
+            item.put("id", "custom_rss_" + System.currentTimeMillis());
+            item.put("name", name.trim());
+            item.put("url", url);
+            item.put("enabled", true);
+            items.put(item);
+            saveCustomRssSources(items);
+            renderManager();
+            toast("Đã thêm nguồn báo. Chọn nguồn ở thanh trên để tải tin.");
+        } catch (Exception e) { toast("Không lưu được nguồn báo: " + safeError(e)); }
+    }
+
+    private void updateCustomRssSource(String id, boolean enabled) {
+        try {
+            JSONArray items = new JSONArray(getPreferencesStore().getString(KEY_CUSTOM_RSS, "[]"));
+            for (int i = 0; i < items.length(); i++) {
+                JSONObject item = items.optJSONObject(i);
+                if (item != null && id.equals(item.optString("id", ""))) item.put("enabled", enabled);
+            }
+            saveCustomRssSources(items);
+            if (!enabled && sourceId.equals(id)) {
+                sourceId = VNEXPRESS.id;
+                getPreferencesStore().edit().putString(KEY_SOURCE, sourceId).apply();
+            }
+            renderManager();
+        } catch (Exception e) { toast("Không cập nhật được nguồn: " + safeError(e)); }
+    }
+
+    private void removeCustomRssSource(String id) {
+        try {
+            JSONArray items = new JSONArray(getPreferencesStore().getString(KEY_CUSTOM_RSS, "[]"));
+            JSONArray next = new JSONArray();
+            for (int i = 0; i < items.length(); i++) {
+                JSONObject item = items.optJSONObject(i);
+                if (item != null && !id.equals(item.optString("id", ""))) next.put(item);
+            }
+            saveCustomRssSources(next);
+            if (sourceId.equals(id)) {
+                sourceId = VNEXPRESS.id;
+                getPreferencesStore().edit().putString(KEY_SOURCE, sourceId).apply();
+            }
+            renderManager();
+        } catch (Exception e) { toast("Không gỡ được nguồn: " + safeError(e)); }
+    }
+
+    private void showAddNewsPluginUrlDialog() {
+        EditText url = new EditText(this);
+        url.setSingleLine(true);
+        url.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+        url.setHint("https://.../source.js");
+        new AlertDialog.Builder(this).setTitle("Cài plugin báo từ URL")
+                .setMessage("Plugin cần khai báo type: news và hàm articles(category,page) hoặc popular(category,page).")
+                .setView(url)
+                .setPositiveButton("Cài đặt", (dialog, which) -> installNewsPluginFromUrl(url.getText().toString().trim()))
+                .setNegativeButton("Hủy", null).show();
+    }
+
+    private void chooseNewsPluginFile() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("*/*");
+        intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"application/javascript", "text/javascript", "text/plain", "application/x-javascript"});
+        startActivityForResult(intent, REQUEST_NEWS_PLUGIN_FILE);
+    }
+
+    private void installNewsPluginFromUrl(String url) {
+        if (!isWebUrl(url)) { toast("URL plugin phải bắt đầu bằng http:// hoặc https://"); return; }
+        toast("Đang tải và kiểm tra plugin báo…");
+        io.execute(() -> {
+            try {
+                String script = ReaderPluginStore.download(url);
+                ReaderPluginStore.SourceInfo info = ReaderPluginStore.install(this, script, "news", url);
+                main.post(() -> {
+                    managerKind = "Báo";
+                    renderManager();
+                    toast("Đã cài plugin báo " + info.name);
+                });
+            } catch (Exception e) {
+                main.post(() -> new AlertDialog.Builder(this).setTitle("Không cài được plugin báo")
+                        .setMessage(safeError(e)).setPositiveButton("Đóng", null).show());
+            }
+        });
+    }
+
+    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != REQUEST_NEWS_PLUGIN_FILE || resultCode != RESULT_OK
+                || data == null || data.getData() == null) return;
+        Uri uri = data.getData();
+        io.execute(() -> {
+            try (InputStream input = getContentResolver().openInputStream(uri)) {
+                if (input == null) throw new java.io.IOException("Không đọc được tệp.");
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                byte[] buffer = new byte[8192];
+                int n;
+                while ((n = input.read(buffer)) >= 0) {
+                    if (out.size() + n > MAX_PLUGIN_FILE_BYTES) throw new java.io.IOException("File .js quá lớn (giới hạn 512 KiB).");
+                    out.write(buffer, 0, n);
+                }
+                String script = new String(out.toByteArray(), java.nio.charset.StandardCharsets.UTF_8);
+                ReaderPluginStore.SourceInfo info = ReaderPluginStore.install(this, script, "news", uri.toString());
+                main.post(() -> {
+                    managerKind = "Báo";
+                    renderManager();
+                    toast("Đã cài plugin báo " + info.name);
+                });
+            } catch (Exception e) {
+                main.post(() -> new AlertDialog.Builder(this).setTitle("Không cài được tệp JS")
+                        .setMessage(safeError(e)).setPositiveButton("Đóng", null).show());
+            }
+        });
+    }
+
+    private static String safeError(Exception e) {
+        if (e == null) return "Lỗi không xác định";
+        String message = e.getMessage();
+        return message == null || message.trim().isEmpty() ? e.getClass().getSimpleName() : message;
     }
 
     private void addSourceCard(LinearLayout body, Source source, Set<String> installed, Set<String> enabled) {
@@ -825,6 +1215,77 @@ public final class NewsReaderActivity extends Activity {
         }
     }
 
+    private LinkedHashMap<String, String> pluginCategoriesFor(String pluginId) {
+        LinkedHashMap<String, String> result = new LinkedHashMap<>();
+        String key = KEY_PLUGIN_CATEGORY_PREFIX + pluginId;
+        try {
+            if (getPreferencesStore().contains(key)) {
+                JSONArray categories = new JSONArray(getPreferencesStore().getString(key, "[]"));
+                for (int i = 0; i < categories.length(); i++) {
+                    JSONObject item = categories.optJSONObject(i);
+                    if (item == null) continue;
+                    String name = item.optString("name", "").trim();
+                    String value = item.optString("key", name).trim();
+                    if (!name.isEmpty()) result.put(name, value.isEmpty() ? name : value);
+                }
+            }
+        } catch (Exception ignored) { }
+        if (result.isEmpty()) result.put("Trang chủ", "home");
+        return result;
+    }
+
+    private void ensurePluginCategories(Source source) {
+        if (source == null || !source.jsPlugin) return;
+        String prefKey = KEY_PLUGIN_CATEGORY_PREFIX + source.pluginId;
+        if (getPreferencesStore().contains(prefKey) || !pluginCategoriesLoading.add(source.pluginId)) return;
+        io.execute(() -> {
+            JSONArray saved = new JSONArray();
+            try {
+                ReaderPluginStore.SourceInfo info = ReaderPluginStore.find(this, "news", source.pluginId);
+                String script = ReaderPluginStore.script(this, info);
+                Object raw = ReaderPluginRuntime.invoke(script, "categories", new JSONArray());
+                JSONArray list = asNewsArray(raw, "categories", "sections", "tabs", "items", "data");
+                for (int i = 0; i < list.length(); i++) {
+                    Object value = list.opt(i);
+                    String name = "";
+                    String key = "";
+                    if (value instanceof JSONObject) {
+                        JSONObject object = (JSONObject) value;
+                        name = firstNonBlankNews(object.optString("name", ""), object.optString("title", ""));
+                        key = firstNonBlankNews(object.optString("key", ""), object.optString("id", ""),
+                                object.optString("slug", ""), name);
+                    } else if (value != null) {
+                        name = String.valueOf(value).trim();
+                        key = name;
+                    }
+                    if (!name.isEmpty()) {
+                        JSONObject item = new JSONObject();
+                        item.put("name", name);
+                        item.put("key", key.isEmpty() ? name : key);
+                        saved.put(item);
+                    }
+                }
+            } catch (Exception ignored) {
+                // categories() is optional; the provider still works as a single home tab.
+            }
+            final JSONArray categories = saved;
+            main.post(() -> {
+                pluginCategoriesLoading.remove(source.pluginId);
+                getPreferencesStore().edit().putString(prefKey, categories.toString()).apply();
+                if (!categories.isEmpty() && mode == Mode.FEED && sourceId.equals(source.id)) {
+                    LinkedHashMap<String, String> loaded = pluginCategoriesFor(source.pluginId);
+                    source.categories.clear();
+                    source.categories.putAll(loaded);
+                    if (!source.categories.containsKey(categoryName)) {
+                        categoryName = source.categories.keySet().iterator().next();
+                    }
+                    buildCategories();
+                    loadFeed();
+                }
+            });
+        });
+    }
+
     private List<Source> getEnabledSources() {
         List<Source> result = new ArrayList<>();
         result.add(VNEXPRESS);
@@ -833,6 +1294,13 @@ public final class NewsReaderActivity extends Activity {
         for (Source source : CATALOG) {
             if (installed.contains(source.id) && enabled.contains(source.id)) result.add(source);
         }
+        for (Source source : getCustomRssSources()) if (source.sourceEnabled) result.add(source);
+        for (ReaderPluginStore.SourceInfo info : ReaderPluginStore.list(this, "news")) {
+            if (!info.enabled) continue;
+            String host = hostOf(info.baseUrl);
+            result.add(new Source("jsnews_" + info.id, info.name, info.description,
+                    host, pluginCategoriesFor(info.id), true, false, true, info.id));
+        }
         return result;
     }
 
@@ -840,9 +1308,44 @@ public final class NewsReaderActivity extends Activity {
         if (VNEXPRESS.id.equals(id)) return VNEXPRESS;
         for (Source source : CATALOG) if (source.id.equals(id)) {
             if (installedIds().contains(id) && enabledIds().contains(id)) return source;
-            break;
+        }
+        for (Source source : getCustomRssSources()) if (source.id.equals(id) && source.sourceEnabled) return source;
+        for (ReaderPluginStore.SourceInfo info : ReaderPluginStore.list(this, "news")) {
+            if (("jsnews_" + info.id).equals(id) && info.enabled) {
+                return new Source(id, info.name, info.description, hostOf(info.baseUrl),
+                        pluginCategoriesFor(info.id), true, false, true, info.id);
+            }
         }
         return VNEXPRESS;
+    }
+
+    private List<Source> getCustomRssSources() {
+        List<Source> result = new ArrayList<>();
+        try {
+            JSONArray items = new JSONArray(getPreferencesStore().getString(KEY_CUSTOM_RSS, "[]"));
+            for (int i = 0; i < items.length(); i++) {
+                JSONObject item = items.optJSONObject(i);
+                if (item == null) continue;
+                String id = item.optString("id", "");
+                String name = item.optString("name", "").trim();
+                String url = item.optString("url", "").trim();
+                if (id.isEmpty() || name.isEmpty() || !isWebUrl(url)) continue;
+                result.add(new Source(id, name, "Nguồn báo do người dùng thêm", hostOf(url),
+                        cats("Trang chủ", url), false, true, item.optBoolean("enabled", true), ""));
+            }
+        } catch (Exception ignored) { }
+        return result;
+    }
+
+    private static String hostOf(String url) {
+        try {
+            String host = Uri.parse(url).getHost();
+            return host == null ? "" : host;
+        } catch (Exception ignored) { return ""; }
+    }
+
+    private void saveCustomRssSources(JSONArray items) {
+        getPreferencesStore().edit().putString(KEY_CUSTOM_RSS, items.toString()).apply();
     }
 
     private Set<String> installedIds() { return readSet(KEY_INSTALLED); }
@@ -853,6 +1356,310 @@ public final class NewsReaderActivity extends Activity {
     }
     private void saveSet(String key, Set<String> value) {
         getPreferencesStore().edit().putStringSet(key, new HashSet<>(value)).apply();
+    }
+
+    private List<Article> loadArticlesWithFallback(Source source, String feedUrl, String category) throws Exception {
+        if (source.jsPlugin) return parsePluginNewsSource(source, category);
+
+        Exception rssFailure = null;
+        List<Article> result = Collections.emptyList();
+        try {
+            result = parseFeed(feedUrl, source.name);
+        } catch (Exception e) {
+            rssFailure = e;
+        }
+        if (!result.isEmpty()) return result;
+
+        String pageUrl = htmlUrlFor(source, category);
+        Exception pageFailure = null;
+        if (isWebUrl(pageUrl)) {
+            try {
+                result = parseHtmlFeed(pageUrl, source);
+                if (!result.isEmpty()) return result;
+            } catch (Exception e) {
+                pageFailure = e;
+            }
+        }
+        if (isWebUrl(feedUrl) && !feedUrl.equals(pageUrl)) {
+            try {
+                result = parseHtmlFeed(feedUrl, source);
+                if (!result.isEmpty()) return result;
+            } catch (Exception e) {
+                if (pageFailure == null) pageFailure = e;
+            }
+        }
+
+        if (pageFailure != null) throw new java.io.IOException("RSS và trang tin đều không tải được: "
+                + safeError(pageFailure), pageFailure);
+        if (rssFailure != null) throw new java.io.IOException("RSS không dùng được và trang tin không có bài: "
+                + safeError(rssFailure), rssFailure);
+        return result;
+    }
+
+    private static String htmlUrlFor(Source source, String category) {
+        String id = source.id;
+        if (source.jsPlugin) return source.homeUrl();
+        if (source.customRss) return source.homeUrl();
+
+        if ("vnexpress".equals(id)) {
+            switch (category) {
+                case "Thế giới": return "https://vnexpress.net/the-gioi";
+                case "Thời sự": return "https://vnexpress.net/thoi-su";
+                case "Kinh doanh": return "https://vnexpress.net/kinh-doanh";
+                case "Giải trí": return "https://vnexpress.net/giai-tri";
+                case "Thể thao": return "https://vnexpress.net/the-thao";
+                case "Pháp luật": return "https://vnexpress.net/phap-luat";
+                case "Giáo dục": return "https://vnexpress.net/giao-duc";
+                case "Góc nhìn": return "https://vnexpress.net/goc-nhin";
+                case "Bất động sản": return "https://vnexpress.net/bat-dong-san";
+                case "Sức khỏe": return "https://vnexpress.net/suc-khoe";
+                case "Đời sống": return "https://vnexpress.net/doi-song";
+                case "Du lịch": return "https://vnexpress.net/du-lich";
+                case "Khoa học công nghệ": return "https://vnexpress.net/khoa-hoc-cong-nghe";
+                case "Ô tô xe máy": return "https://vnexpress.net/oto-xe-may";
+                case "Ý kiến": return "https://vnexpress.net/y-kien";
+                case "Tâm sự": return "https://vnexpress.net/tam-su";
+                case "Thư giãn": return "https://vnexpress.net/thu-gian";
+                case "Tin xem nhiều": return "https://vnexpress.net/tin-xem-nhieu";
+                default: return "https://vnexpress.net/";
+            }
+        }
+        if ("24h".equals(id)) {
+            switch (category) {
+                case "Tin tức": return "https://www.24h.com.vn/tin-tuc-trong-ngay-c46.html";
+                case "Bóng đá": return "https://www.24h.com.vn/bong-da-c48.html";
+                case "Thể thao": return "https://www.24h.com.vn/the-thao-c101.html";
+                case "Công nghệ": return "https://www.24h.com.vn/cong-nghe-thong-tin-c55.html";
+                default: return "https://www.24h.com.vn/";
+            }
+        }
+        if ("dantri".equals(id)) {
+            switch (category) {
+                case "Thời sự": return "https://dantri.com.vn/thoi-su.htm";
+                case "Thế giới": return "https://dantri.com.vn/the-gioi.htm";
+                case "Kinh doanh": return "https://dantri.com.vn/kinh-doanh.htm";
+                case "Thể thao": return "https://dantri.com.vn/the-thao.htm";
+                case "Công nghệ": return "https://dantri.com.vn/cong-nghe.htm";
+                default: return "https://dantri.com.vn/";
+            }
+        }
+        if ("tuoitre".equals(id)) {
+            switch (category) {
+                case "Thời sự": return "https://tuoitre.vn/thoi-su.htm";
+                case "Thế giới": return "https://tuoitre.vn/the-gioi.htm";
+                case "Công nghệ": return "https://tuoitre.vn/cong-nghe.htm";
+                default: return "https://tuoitre.vn/";
+            }
+        }
+        if ("thanhnien".equals(id)) {
+            switch (category) {
+                case "Thời sự": return "https://thanhnien.vn/thoi-su.htm";
+                case "Công nghệ": return "https://thanhnien.vn/cong-nghe.htm";
+                default: return "https://thanhnien.vn/";
+            }
+        }
+        if ("vtv".equals(id)) {
+            if ("Thời sự".equals(category)) return "https://vtv.vn/thoi-su.htm";
+            return "https://vtv.vn/";
+        }
+        return source.homeUrl();
+    }
+
+    private static List<Article> parseHtmlFeed(String pageUrl, Source source) throws Exception {
+        Document document = Jsoup.connect(pageUrl)
+                .userAgent(userAgent())
+                .referrer("https://www.google.com/")
+                .header("Accept-Language", "vi-VN,vi;q=0.9,en;q=0.5")
+                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                .timeout(16000)
+                .maxBodySize(6 * 1024 * 1024)
+                .followRedirects(true)
+                .get();
+
+        Elements links = document.select(
+                "article a[href],.item-news a[href],.item-news-common a[href],.news-item a[href]," +
+                ".news-card a[href],.box-category-link-title a[href],.title-news a[href]," +
+                ".news-title a[href],.story-title a[href],h1 a[href],h2 a[href],h3 a[href]");
+        if (links.size() < 5) links = document.select("a[href]");
+
+        LinkedHashMap<String, Article> unique = new LinkedHashMap<>();
+        String pageKey = canonicalArticleUrl(pageUrl);
+        String sourceHost = source.domain == null ? "" : source.domain.toLowerCase(Locale.ROOT);
+        for (Element link : links) {
+            if (unique.size() >= 80) break;
+            String url = absolutizeUrl(link.absUrl("href"), pageUrl);
+            if (!isWebUrl(url) || pageKey.equals(canonicalArticleUrl(url))) continue;
+            if (!sameNewsSite(url, sourceHost)) continue;
+            String path = Uri.parse(url).getPath();
+            String lowerPath = path == null ? "" : path.toLowerCase(Locale.ROOT);
+            if (lowerPath.isEmpty() || "/".equals(lowerPath) || isNonArticlePath(lowerPath)) continue;
+
+            String title = firstNonBlankNews(link.attr("title"), link.text());
+            Element imageNode = link.selectFirst("img");
+            if (title.isEmpty() && imageNode != null) title = firstNonBlankNews(
+                    imageNode.attr("alt"), imageNode.attr("title"));
+            if (title.length() < 12 || title.length() > 240) continue;
+            String lowerTitle = title.toLowerCase(Locale.ROOT);
+            if (lowerTitle.matches(".*(xem thêm|đọc tiếp|tin liên quan|video nổi bật|xem tất cả).*")) continue;
+
+            Element card = link;
+            Element bestCard = link;
+            int bestLength = link.text().length();
+            Element parent = link.parent();
+            for (int depth = 0; parent != null && depth < 4; depth++, parent = parent.parent()) {
+                String parentText = parent.text().trim();
+                if (parentText.length() >= Math.max(40, title.length()) && parentText.length() <= 1400) {
+                    bestCard = parent;
+                    bestLength = parentText.length();
+                } else if (parentText.length() > 1400) {
+                    break;
+                }
+            }
+            card = bestCard;
+            if (card != null) {
+                String combined = card.text().trim();
+                if (combined.length() > bestLength) bestLength = combined.length();
+            }
+
+            String image = "";
+            if (imageNode == null && card != null) imageNode = card.selectFirst("img");
+            if (imageNode != null) {
+                image = firstNonBlankNews(imageNode.absUrl("data-src"),
+                        imageNode.absUrl("data-original"), imageNode.absUrl("data-lazy-src"),
+                        imageNode.absUrl("src"));
+                if (image.isEmpty()) {
+                    String raw = firstNonBlankNews(imageNode.attr("data-src"), imageNode.attr("data-original"),
+                            imageNode.attr("data-lazy-src"), imageNode.attr("src"));
+                    image = absolutizeUrl(raw, pageUrl);
+                }
+            }
+
+            String summary = "";
+            String date = "";
+            if (card != null) {
+                summary = cleanText(card.text().replace(title, " "));
+                Element dateNode = card.selectFirst("time,.time,.date,.publish-date,.time-update,.date-time");
+                if (dateNode != null) date = cleanDate(dateNode.text());
+            }
+            if (summary.equalsIgnoreCase(title)) summary = "";
+            if (summary.length() > 360) summary = summary.substring(0, 357) + "...";
+
+            Article article = new Article();
+            article.title = cleanText(title);
+            article.url = url;
+            article.summary = summary;
+            article.imageUrl = isWebUrl(image) ? image : "";
+            article.date = date;
+            article.source = source.name;
+            String key = canonicalArticleUrl(url);
+            if (!unique.containsKey(key)) unique.put(key, article);
+        }
+        return new ArrayList<>(unique.values());
+    }
+
+    private List<Article> parsePluginNewsSource(Source source, String category) throws Exception {
+        ReaderPluginStore.SourceInfo info = ReaderPluginStore.find(this, "news", source.pluginId);
+        String script = ReaderPluginStore.script(this, info);
+        JSONArray args = new JSONArray().put(category).put(1);
+        Object value;
+        try {
+            value = ReaderPluginRuntime.invoke(script, "articles", args);
+        } catch (Exception first) {
+            value = ReaderPluginRuntime.invoke(script, "popular", args);
+        }
+        JSONArray items = asNewsArray(value, "articles", "items", "results", "news", "data");
+        List<Article> result = new ArrayList<>();
+        for (int i = 0; i < items.length() && result.size() < 80; i++) {
+            JSONObject item = items.optJSONObject(i);
+            if (item == null) continue;
+            Article article = new Article();
+            article.title = firstNonBlankNews(item.optString("title", ""), item.optString("headline", ""),
+                    item.optString("name", ""));
+            article.url = absolutizeUrl(firstNonBlankNews(item.optString("url", ""),
+                    item.optString("link", ""), item.optString("href", "")), source.homeUrl());
+            article.summary = cleanText(firstNonBlankNews(item.optString("summary", ""),
+                    item.optString("description", ""), item.optString("excerpt", "")));
+            article.imageUrl = absolutizeUrl(firstNonBlankNews(item.optString("imageUrl", ""),
+                    item.optString("image", ""), item.optString("thumbnail", ""),
+                    item.optString("cover", "")), source.homeUrl());
+            article.date = cleanDate(firstNonBlankNews(item.optString("date", ""),
+                    item.optString("published", ""), item.optString("publishedAt", "")));
+            article.source = source.name;
+            if (!article.title.isEmpty() && isWebUrl(article.url)) result.add(article);
+        }
+        if (result.isEmpty()) throw new java.io.IOException("Plugin báo không trả về bài nào. Kiểm tra articles(category,page).");
+        return result;
+    }
+
+    private static JSONArray asNewsArray(Object value, String... wrappers) {
+        if (value instanceof JSONArray) return (JSONArray) value;
+        if (value instanceof JSONObject) {
+            JSONObject object = (JSONObject) value;
+            for (String key : wrappers) {
+                JSONArray array = object.optJSONArray(key);
+                if (array != null) return array;
+            }
+        }
+        if (value instanceof String) {
+            String raw = ((String) value).trim();
+            if (raw.startsWith("[") || raw.startsWith("{")) {
+                try {
+                    Object parsed = new org.json.JSONTokener(raw).nextValue();
+                    if (parsed instanceof JSONArray) return (JSONArray) parsed;
+                    if (parsed instanceof JSONObject) return asNewsArray(parsed, wrappers);
+                } catch (Exception ignored) { }
+            }
+        }
+        return new JSONArray();
+    }
+
+    private static boolean sameNewsSite(String url, String hostSuffix) {
+        String host = hostOf(url).toLowerCase(Locale.ROOT);
+        if (host.isEmpty() || hostSuffix == null || hostSuffix.isEmpty()) return true;
+        return host.equals(hostSuffix) || host.endsWith("." + hostSuffix)
+                || hostSuffix.endsWith("." + host);
+    }
+
+    private static boolean isNonArticlePath(String path) {
+        String p = path.toLowerCase(Locale.ROOT);
+        return p.endsWith(".jpg") || p.endsWith(".jpeg") || p.endsWith(".png")
+                || p.endsWith(".webp") || p.endsWith(".gif") || p.endsWith(".css")
+                || p.endsWith(".js") || p.endsWith(".xml") || p.contains("/rss")
+                || p.contains("/search") || p.contains("/tim-kiem") || p.contains("/tag/")
+                || p.contains("/tags/") || p.contains("/author/") || p.contains("/tac-gia/")
+                || p.contains("/dang-nhap") || p.contains("/lien-he") || p.contains("/contact")
+                || p.contains("/gioi-thieu") || p.contains("/chinh-sach");
+    }
+
+    private static String canonicalArticleUrl(String raw) {
+        try {
+            Uri uri = Uri.parse(raw);
+            String path = uri.getPath() == null ? "" : uri.getPath();
+            return (uri.getHost() == null ? "" : uri.getHost().toLowerCase(Locale.ROOT)) + path;
+        } catch (Exception ignored) { return raw == null ? "" : raw; }
+    }
+
+    private static String absolutizeUrl(String raw, String baseUrl) {
+        if (raw == null || raw.trim().isEmpty()) return "";
+        String value = raw.trim();
+        if (value.startsWith("//")) return "https:" + value;
+        if (isWebUrl(value)) return value;
+        try { return new URL(new URL(baseUrl), value).toString(); }
+        catch (Exception ignored) { return ""; }
+    }
+
+    private static String firstNonBlankNews(String... values) {
+        if (values == null) return "";
+        for (String value : values) if (value != null && !value.trim().isEmpty()
+                && !"null".equalsIgnoreCase(value.trim())) return value.trim();
+        return "";
+    }
+
+    private static String safeError(Exception e) {
+        String message = e == null ? "" : e.getMessage();
+        return message == null || message.trim().isEmpty()
+                ? (e == null ? "Lỗi không xác định" : e.getClass().getSimpleName())
+                : message;
     }
 
     private static List<Article> parseFeed(String feedUrl, String sourceName) throws Exception {
@@ -876,7 +1683,9 @@ public final class NewsReaderActivity extends Activity {
                     if (event == XmlPullParser.START_TAG) {
                         String name = parser.getName();
                         if ("item".equalsIgnoreCase(name) || "entry".equalsIgnoreCase(name)) {
-                            Article a = parseItem(parser);
+                                            Article a = parseItem(parser);
+                            a.url = absolutizeUrl(a.url, feedUrl);
+                            a.imageUrl = absolutizeUrl(a.imageUrl, feedUrl);
                             if (!TextUtils.isEmpty(a.title) && !TextUtils.isEmpty(a.url)) {
                                 a.source = sourceName;
                                 result.add(a);
@@ -1050,11 +1859,24 @@ public final class NewsReaderActivity extends Activity {
     private static final class Source {
         final String id, name, description, domain;
         final LinkedHashMap<String, String> categories;
+        final boolean jsPlugin, customRss, sourceEnabled;
+        final String pluginId;
         Source(String id, String name, String description, String domain, LinkedHashMap<String, String> categories) {
-            this.id = id; this.name = name; this.description = description; this.domain = domain;
-            this.categories = categories;
+            this(id, name, description, domain, categories, false, false, true, "");
         }
-        String homeUrl() { return "https://" + domain; }
+        Source(String id, String name, String description, String domain,
+               LinkedHashMap<String, String> categories, boolean jsPlugin,
+               boolean customRss, boolean sourceEnabled, String pluginId) {
+            this.id = id; this.name = name; this.description = description;
+            this.domain = domain == null ? "" : domain;
+            this.categories = categories;
+            this.jsPlugin = jsPlugin; this.customRss = customRss;
+            this.sourceEnabled = sourceEnabled; this.pluginId = pluginId == null ? "" : pluginId;
+        }
+        String homeUrl() {
+            if (domain.startsWith("http://") || domain.startsWith("https://")) return domain;
+            return "https://" + domain;
+        }
     }
 
     private static final class Article {

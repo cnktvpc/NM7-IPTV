@@ -41,6 +41,7 @@ import java.util.Locale;
  *   chapters: function(url) { ... return [{title:"Chapter 1", url:"..."}]; },
  *   pages: function(chapterUrl) { ... return ["https://.../1.jpg", ...]; },
  *   chapter: function(chapterUrl) { ... return "<p>...</p>"; } // text/novel source
+ *   articles: function(category, page) { ... return [{title,url,summary,imageUrl,date}]; } // news source
  * };
  *
  * The helpers are NM7.http.get(url) and NM7.dom.{text,attr,select}(html,...).
@@ -82,20 +83,25 @@ public final class ReaderPluginRuntime {
                 throw new IllegalArgumentException("Plugin cần id ngắn, chỉ gồm chữ, số, dấu chấm, gạch dưới hoặc gạch ngang.");
             }
             if (name.trim().isEmpty()) throw new IllegalArgumentException("Plugin chưa khai báo name.");
-            if (!"comic".equals(type) && !"novel".equals(type)) {
-                throw new IllegalArgumentException("type phải là comic hoặc novel.");
+            if (!"comic".equals(type) && !"novel".equals(type) && !"news".equals(type)) {
+                throw new IllegalArgumentException("type phải là news, comic hoặc novel.");
             }
             if (!isHttpUrl(baseUrl)) throw new IllegalArgumentException("baseUrl phải là URL http/https hợp lệ.");
             boolean hasSearch = hasAny(source, "search", "searchManga", "searchNovels");
             boolean hasPopular = hasAny(source, "popular", "latest", "home");
+            boolean hasArticles = hasAny(source, "articles", "feed", "news");
             boolean hasDetails = hasAny(source, "details", "mangaDetails", "getDetails", "getMangaDetails");
             boolean hasChapters = hasAny(source, "chapters", "getChapters", "getChapterList");
             boolean hasPages = hasAny(source, "pages", "getPages", "chapterPages");
             boolean hasChapter = hasAny(source, "chapter", "chapterContent", "getChapterContent");
-            if (!hasSearch && !hasPopular) throw new IllegalArgumentException("Plugin phải có hàm search(query,page) hoặc popular(page).");
-            if ("comic".equals(type) && !hasPages) throw new IllegalArgumentException("Nguồn truyện tranh cần hàm pages(chapterUrl).");
-            if ("novel".equals(type) && !hasChapter) throw new IllegalArgumentException("Nguồn truyện chữ cần hàm chapter(chapterUrl).");
-            if (!hasDetails && !hasChapters) throw new IllegalArgumentException("Plugin cần hàm details(url) hoặc chapters(url).");
+            if ("news".equals(type)) {
+                if (!hasArticles && !hasPopular) throw new IllegalArgumentException("Nguồn báo cần articles(category,page) hoặc popular(category,page).");
+            } else {
+                if (!hasSearch && !hasPopular) throw new IllegalArgumentException("Plugin phải có hàm search(query,page) hoặc popular(page).");
+                if ("comic".equals(type) && !hasPages) throw new IllegalArgumentException("Nguồn truyện tranh cần hàm pages(chapterUrl).");
+                if ("novel".equals(type) && !hasChapter) throw new IllegalArgumentException("Nguồn truyện chữ cần hàm chapter(chapterUrl).");
+                if (!hasDetails && !hasChapters) throw new IllegalArgumentException("Plugin cần hàm details(url) hoặc chapters(url).");
+            }
 
             JSONObject out = new JSONObject();
             out.put("id", id);
@@ -357,6 +363,8 @@ public final class ReaderPluginRuntime {
     private static String[] aliasesFor(String method) {
         switch (method) {
             case "popular": return new String[]{"popular", "latest", "home"};
+            case "articles": return new String[]{"articles", "feed", "news", "popular", "latest", "home"};
+            case "categories": return new String[]{"categories", "sections", "tabs"};
             case "search": return new String[]{"search", "searchManga", "searchNovels"};
             case "details": return new String[]{"details", "mangaDetails", "getDetails", "getMangaDetails"};
             case "chapters": return new String[]{"chapters", "getChapters", "getChapterList"};
@@ -394,6 +402,7 @@ public final class ReaderPluginRuntime {
         String type = raw == null ? "" : raw.trim().toLowerCase(Locale.ROOT);
         if ("manga".equals(type) || "mangas".equals(type) || "truyen-tranh".equals(type)) return "comic";
         if ("book".equals(type) || "novel".equals(type) || "text".equals(type) || "truyen-chu".equals(type)) return "novel";
+        if ("news".equals(type) || "rss".equals(type) || "bao".equals(type) || "newspaper".equals(type)) return "news";
         return type;
     }
 

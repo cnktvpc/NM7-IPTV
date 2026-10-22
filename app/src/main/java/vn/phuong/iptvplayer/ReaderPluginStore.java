@@ -121,7 +121,10 @@ public final class ReaderPluginStore {
     }
 
     private static File sourceDir(Context context, String type) {
-        String safeType = "novel".equals(type) ? "novel" : "comic";
+        String safeType;
+        if ("novel".equals(type)) safeType = "novel";
+        else if ("news".equals(type)) safeType = "news";
+        else safeType = "comic";
         return new File(new File(context.getFilesDir(), "reader-plugins"), safeType);
     }
 
@@ -176,6 +179,7 @@ public final class ReaderPluginStore {
     private static String label(String type) {
         if ("comic".equals(type)) return "Truyện tranh";
         if ("novel".equals(type)) return "Truyện chữ";
+        if ("news".equals(type)) return "Báo";
         return type;
     }
 }

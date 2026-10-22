@@ -31,6 +31,21 @@ public class ReaderArticleExtractorTest {
         assertFalse(result.contains("<script"));
     }
 
+    @Test public void appendsRelatedStoriesInsideReaderInsteadOfOpeningPublisherHome() {
+        java.util.List<ReaderArticleExtractor.RelatedArticle> related = java.util.Arrays.asList(
+                new ReaderArticleExtractor.RelatedArticle("Bài báo liên quan", "https://news.example/story/2",
+                        "Tóm tắt bài liên quan", "https://news.example/image.jpg", "Nguồn thử"));
+        String result = ReaderArticleExtractor.renderForTestWithRelated(
+                "<article><p>Nội dung bài viết đủ dài để kiểm tra phần đọc bài riêng biệt của NM7 "
+                        + "có thể hiển thị nội dung trong vùng đọc mà không chuyển sang trang web ngoài.</p></article>",
+                "https://news.example/story/1", "Bài đang đọc", "Tóm tắt", "",
+                "Nguồn thử", "22/10/2026", related, 100);
+        assertTrue(result.contains("Bài viết liên quan"));
+        assertTrue(result.contains("Bài báo liên quan"));
+        assertTrue(result.contains("nm7://related/0"));
+        assertFalse(result.contains("target=\"_blank\""));
+    }
+
     @Test public void givesAReadableFallbackWithoutReturningRawPublisherMarkup() {
         String result = ReaderArticleExtractor.fallback("https://news.example/a",
                 "Tiêu đề", "Tóm tắt bài viết", "", "VnExpress", "22/10/2026", 100,

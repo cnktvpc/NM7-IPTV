@@ -50,6 +50,26 @@ public class ReaderPluginRuntimeTest {
         assertEquals("https://example.test/pages/1.jpg", ((JSONArray) pages).getString(0));
     }
 
+    @Test public void validatesAndRunsNewsSourcePlugin() throws Exception {
+        String script = "var NM7_SOURCE = {"
+                + "id:'sample-news',name:'Sample News',type:'news',baseUrl:'https://news.example',"
+                + "categories:function(){return [{name:'Trang chủ',key:'home'},{name:'Thế giới',key:'world'}];},"
+                + "articles:function(category,page){return [{title:'Tin thử nghiệm',url:'/story/1',summary:'Tóm tắt',imageUrl:'/cover.jpg'}];}"
+                + "};";
+        JSONObject info = ReaderPluginRuntime.inspect(script);
+        assertEquals("news", info.getString("type"));
+        assertEquals("sample-news", info.getString("id"));
+        Object raw = ReaderPluginRuntime.invoke(script, "articles",
+                new JSONArray().put("world").put(1));
+        assertTrue(raw instanceof JSONArray);
+        JSONObject article = ((JSONArray) raw).getJSONObject(0);
+        assertEquals("Tin thử nghiệm", article.getString("title"));
+        assertEquals("/story/1", article.getString("url"));
+        Object categories = ReaderPluginRuntime.invoke(script, "categories", new JSONArray());
+        assertTrue(categories instanceof JSONArray);
+        assertEquals("Thế giới", ((JSONArray) categories).getJSONObject(1).getString("name"));
+    }
+
     @Test public void rejectsSourceWithNoRequiredReaderMethods() throws Exception {
         String invalid = "var NM7_SOURCE={id:'bad',name:'Bad',type:'comic',baseUrl:'https://example.test'};";
         try {

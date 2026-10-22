@@ -9,6 +9,9 @@ import org.jsoup.safety.Safelist;
 
 import java.io.IOException;
 import java.util.Locale;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Fetches an article once, extracts the editorial body, and renders it into NM7's own
@@ -42,9 +45,27 @@ public final class ReaderArticleExtractor {
 
     private ReaderArticleExtractor() { }
 
+    public static final class RelatedArticle {
+        public final String title, url, summary, imageUrl, source;
+        public RelatedArticle(String title, String url, String summary, String imageUrl, String source) {
+            this.title = title == null ? "" : title;
+            this.url = url == null ? "" : url;
+            this.summary = summary == null ? "" : summary;
+            this.imageUrl = imageUrl == null ? "" : imageUrl;
+            this.source = source == null ? "" : source;
+        }
+    }
+
     public static String fetchAndRender(String url, String requestedTitle, String summary,
                                         String imageUrl, String sourceName, String publishedDate,
                                         int fontScale) throws IOException {
+        return fetchAndRender(url, requestedTitle, summary, imageUrl, sourceName, publishedDate,
+                Collections.emptyList(), fontScale);
+    }
+
+    public static String fetchAndRender(String url, String requestedTitle, String summary,
+                                        String imageUrl, String sourceName, String publishedDate,
+                                        List<RelatedArticle> related, int fontScale) throws IOException {
         Document document = Jsoup.connect(url)
                 .userAgent("Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 " +
                         "(KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36")
@@ -56,27 +77,42 @@ public final class ReaderArticleExtractor {
                 .followRedirects(true)
                 .get();
         return render(document, url, requestedTitle, summary, imageUrl,
-                sourceName, publishedDate, fontScale, "");
+                sourceName, publishedDate, related, fontScale, "");
     }
 
     public static String fallback(String url, String title, String summary, String imageUrl,
                                   String sourceName, String publishedDate, int fontScale,
                                   String message) {
+        return fallback(url, title, summary, imageUrl, sourceName, publishedDate,
+                Collections.emptyList(), fontScale, message);
+    }
+
+    public static String fallback(String url, String title, String summary, String imageUrl,
+                                  String sourceName, String publishedDate, List<RelatedArticle> related,
+                                  int fontScale, String message) {
         return render(Jsoup.parse("", url), url, title, summary, imageUrl,
-                sourceName, publishedDate, fontScale, message);
+                sourceName, publishedDate, related, fontScale, message);
     }
 
     public static String renderForTest(String rawHtml, String baseUrl, String title,
                                        String summary, String imageUrl, String sourceName,
                                        String publishedDate, int fontScale) {
+        return renderForTestWithRelated(rawHtml, baseUrl, title, summary, imageUrl, sourceName,
+                publishedDate, Collections.emptyList(), fontScale);
+    }
+
+    public static String renderForTestWithRelated(String rawHtml, String baseUrl, String title,
+                                                  String summary, String imageUrl, String sourceName,
+                                                  String publishedDate, List<RelatedArticle> related,
+                                                  int fontScale) {
         return render(Jsoup.parse(rawHtml, baseUrl), baseUrl, title, summary, imageUrl,
-                sourceName, publishedDate, fontScale, "");
+                sourceName, publishedDate, related, fontScale, "");
     }
 
     private static String render(Document document, String baseUrl, String requestedTitle,
                                  String requestedSummary, String requestedImage,
-                                 String sourceName, String publishedDate, int fontScale,
-                                 String fallbackMessage) {
+                                 String sourceName, String publishedDate,
+                                 List<RelatedArticle> related, int fontScale, String fallbackMessage) {
         if (document == null) document = Jsoup.parse("", baseUrl);
 
         String title = firstNonBlank(requestedTitle, meta(document, "og:title"),
@@ -168,6 +204,7 @@ public final class ReaderArticleExtractor {
                 .append(".body li{margin:.5em 0;}.body table{width:100%;border-collapse:collapse;display:block;overflow-x:auto;font-size:.84em;}")
                 .append(".body th,.body td{border:1px solid #3b3c43;padding:7px;text-align:left;}")
                 .append(".notice{font-size:13px;color:").append(MUTED).append(";border-top:1px solid #303138;padding-top:14px;margin-top:24px;}")
+                .append(".related{border-top:1px solid #303138;margin-top:26px;padding-top:18px}.related h2{font-size:18px;color:#fff;margin:0 0 12px}.rel-card{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid #292a32;text-decoration:none;color:").append(TEXT).append(";}.rel-card img{width:108px;height:76px;object-fit:cover;border-radius:7px;flex-shrink:0}.rel-copy{display:block;min-width:0}.rel-title{display:block;font-size:14px;font-weight:650;line-height:1.45;color:").append(TEXT).append(";}.rel-meta{display:block;font-size:11px;color:").append(MUTED).append(";margin-top:5px}.rel-summary{display:block;font-size:12px;line-height:1.4;color:#bfc1ca;margin-top:5px}")
                 .append("</style></head><body><article class=\"article\">");
 
         html.append("<h1>").append(escape(title)).append("</h1>");
@@ -188,8 +225,29 @@ public final class ReaderArticleExtractor {
                             : fallbackMessage))
                     .append("</div>");
         }
+        appendRelatedCards(html, related);
         html.append("</article></body></html>");
         return html.toString();
+    }
+
+    private static void appendRelatedCards(StringBuilder html, List<RelatedArticle> related) {
+        if (related == null || related.isEmpty()) return;
+        int count = 0;
+        html.append("<section class=\"related\"><h2>Bài viết liên quan</h2>");
+        for (RelatedArticle item : related) {
+            if (item == null || !isHttpUrl(item.url) || item.title.trim().isEmpty()) continue;
+            html.append("<a class=\"rel-card\" href=\"nm7://related/").append(count).append("\">");
+            if (isHttpUrl(item.imageUrl)) {
+                html.append("<img loading=\"lazy\" src=\"").append(escape(item.imageUrl)).append("\" alt=\"\">");
+            }
+            html.append("<span class=\"rel-copy\"><span class=\"rel-title\">")
+                    .append(escape(item.title)).append("</span>");
+            String meta = joinMeta(item.source, item.summary);
+            if (!meta.isEmpty()) html.append("<span class=\"rel-summary\">").append(escape(meta.length() > 170 ? meta.substring(0, 167) + "..." : meta)).append("</span>");
+            html.append("</span></a>");
+            if (++count >= 8) break;
+        }
+        html.append("</section>");
     }
 
     private static Element findArticleBody(Document document) {

@@ -1,27 +1,26 @@
-# NM7 IPTV Mobile 1.10.145 — Native Reader and JS Source Plugins — 2026-10-22
+# NM7 IPTV Mobile 1.10.146 — News Reader recovery + JS news sources — 2026-10-22
 
-> Candidate branch, not yet marked stable. The shared top/bottom tab geometry remains as confirmed. This candidate fixes article reading by extracting the publisher's content into NM7's own clean dark reader, and adds a JavaScript source installer/reader for comic and text-novel plugins.
+> Candidate branch; do not promote to stable until the new source/feed paths are tested on a phone. This revision addresses the blank news lists and browser hand-off seen in video 228129.mp4. It keeps the current top/bottom tab geometry unchanged.
 
-- Version: 1.10.145 / versionCode 161
-- Feature branch: fix/mobile-news-reader-20261022
-- Baseline unchanged: stable/mobile-1.10.142
-- Design and test notes: [docs/NEWS_READER_MODE_AND_JS_PLUGINS_1.10.145.md](docs/NEWS_READER_MODE_AND_JS_PLUGINS_1.10.145.md)
+- Version: 1.10.146 / versionCode 162
+- Branch: fix/mobile-news-reader-20261022
+- Stable baseline kept unchanged: stable/mobile-1.10.142
+- Detailed implementation note: [docs/NEWS_READER_SUPEROK_STYLE_1.10.146.md](docs/NEWS_READER_SUPEROK_STYLE_1.10.146.md)
 
-## Changes in this candidate
+## Changes in this revision
 
-- Tapping a news item now downloads/parses the article on a worker thread and displays a sanitized, standalone document inside NM7. A fixed dark background/light text style, typography, metadata, lead image, summary, body images and captions are used; publisher page scripts/styles and web chrome are not loaded into the reader.
-- On extraction error, a clear summary/fallback card remains inside NM7; opening the original is a separate browser action.
-- Truyện chữ and Truyện tranh source tabs open a dedicated source-plugin screen. Users can install JS sources from a URL or local .js file, review/enable/disable/remove them, browse/search, view chapters and read comic images or novel text.
-- The news catalogue remains unchanged. No additional newspaper source was added. New plugins apply only to comic/text-novel categories.
-- The plugin runtime has bounded script size, hidden Java class access and a restricted NM7 HTTP/DOM API. The plugin API is NM7-specific; compatibility with a proprietary Super OK source file is not claimed without inspecting an actual sample.
+- Feed loading no longer depends on RSS alone. If RSS fails or returns no items, NM7 requests the source's category/home page and extracts article cards (headline, URL, summary, thumbnail/date) into NM7's own feed list.
+- A failed feed no longer presents a button that opens the publisher's home page in an external browser. It shows retry/source-management actions inside NM7.
+- Tapping a feed item stays in NM7's dark reading view. The article reader has readable typography and shows up to eight related articles at the end. Related links are intercepted and open the next article inside the same reader.
+- Users can swipe left/right on the feed to move between that source's category tabs; the selected tab also scrolls into view.
+- News source manager supports custom RSS/feed or news-list page URLs, and JavaScript news-provider plugins from URL or local .js file. Providers may expose categories and return articles through articles(category,page) or popular(category,page). Built-in sources remain available.
+- The existing comic/novel plugin paths and Live playback checks are retained.
 
-## Testing
+## Validation status
 
-- Adds ReaderArticleExtractorTest and ReaderPluginRuntimeTest.
-- Adds native article/typography and JS plugin static regression gates.
-- Existing Live feed/fullscreen regression checks remain included.
-- This is a candidate; CI is not a substitute for installing and testing on the phone.
-
+- Adds unit coverage for news JavaScript providers and related-article links.
+- CI checks now guard HTML-list fallback, swipe navigation, custom source import, related article navigation and news-plugin runtime validation.
+- Build/test status for 1.10.146 is being checked on this branch; this README does not imply a CI pass before the run reports success.
 ---
 
 # NM7 IPTV Mobile — Stable 1.10.142 — YouTube Floating MiniPlayer / SurfaceView — 2026-10-20
