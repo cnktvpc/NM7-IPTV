@@ -1,3 +1,21 @@
+# CẬP NHẬT TIẾN ĐỘ — BUILD YOUTUBE MINIPLAYER 1.10.142 — 2026-10-22
+
+## Kết quả kiểm tra
+- Repository: `cnktvpc/NM7-IPTV`.
+- Stable branch: `stable/mobile-1.10.142` (đã tồn tại; không ghi đè stable branch cũ).
+- Build branch: `build/youtube-miniplayer-20261020`.
+- Commit: [4fc8b187db7e48591e1bcb11969436a56d27d06a](https://github.com/cnktvpc/NM7-IPTV/commit/4fc8b187db7e48591e1bcb11969436a56d27d06a).
+- Thay đổi commit: thêm `scripts/patch-mobile-v130-pull-refresh.py` vào `paths` trong workflow `.github/workflows/nm7-mobile-live-card-layout-v142.yml`; đây là sửa điều kiện kích hoạt CI, không thay đổi trực tiếp mã app.
+- [GitHub Actions run 39407088691](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39407088691): build APK và upload artifact thành công; artifact ID `12258102908`.
+- Cảnh báo: bước `:app:testMobileDebugUnitTest` có lỗi nhưng được đặt `continue-on-error: true`, nên job tổng thể vẫn SUCCESS. Chưa xác nhận unit tests pass cho run này.
+- Kiểm thử thực tế YouTube MiniPlayer trên thiết bị: chưa có xác nhận mới từ lần build này.
+
+## Quyết định phát hành
+- Giữ nguyên stable baseline 1.10.142; không tuyên bố lỗi test đã được xử lý.
+- Để xác nhận bản MiniPlayer mới ổn định, cần lấy log lỗi unit-test, sửa nguyên nhân nếu có, chạy lại test không bỏ qua lỗi, rồi kiểm tra trên thiết bị: mở YouTube, thu nhỏ, Back, phóng to lại, chuyển tab IPTV/quay lại YouTube và xác nhận hình/tiếng.
+
+---
+
 # TIẾN ĐỘ MỚI NHẤT — NM7 IPTV MOBILE 1.10.142 — ĐÃ XÁC NHẬN — 2026-10-20
 
 ## Trạng thái phát hành
