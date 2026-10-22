@@ -49,8 +49,18 @@ checks = [
     ("RSS failures fall back to parsing the publisher news page instead of opening its home page",
      "loadArticlesWithFallback" in reader and "parseHtmlFeed" in reader and "htmlUrlFor" in reader
      and 'openOriginalPage(getSource(sourceId).homeUrl())' not in reader),
-    ("horizontal swipes move between category tabs",
-     "class FeedScrollView extends ScrollView" in reader and "stepCategoryBySwipe" in reader),
+    ("24h exposes the full 21-feed RSS catalog",
+     'makeSource("24h"' in reader
+     and reader.count("https://www.24h.com.vn/upload/rss/") >= 21
+     and "Cười 24h" in reader and "Sức khỏe đời sống" in reader),
+    ("horizontal category swipe intercepts before child click handling",
+     "class FeedScrollView extends ScrollView" in reader
+     and "onInterceptTouchEvent(MotionEvent event)" in reader
+     and "Cancel child click handling" not in reader
+     and "stepCategoryBySwipe" in reader),
+    ("font size options are persisted across Reader sessions",
+     '"reader_text_scale"' in reader and "setSingleChoiceItems(labels, selected" in reader
+     and "putInt(\"reader_text_scale\", textScale)" in reader),
     ("article page displays related links within the NM7 reader",
      "collectRelatedArticles" in reader and "handleArticleWebViewNavigation" in reader
      and "nm7://related/" in extractor and "appendRelatedCards(html, related)" in extractor),
