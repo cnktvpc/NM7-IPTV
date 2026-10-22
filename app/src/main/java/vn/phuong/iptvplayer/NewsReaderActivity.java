@@ -10,6 +10,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Build;
 import android.os.Handler;
@@ -21,7 +22,10 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowInsets;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -38,6 +42,7 @@ import android.widget.TextView;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -75,6 +80,134 @@ public final class NewsReaderActivity extends Activity {
     private static final Pattern IMG_SRC = Pattern.compile("(?is)<img[^>]+(?:src|data-src)\\s*=\\s*['\"]([^'\"]+)['\"]");
     private static final Pattern TAGS = Pattern.compile("(?is)<[^>]+>");
     private static final Pattern SPACE = Pattern.compile("\\s+");
+    private static final String READER_MODE_SCRIPT = """
+            (function () {
+              try {
+                var adSelector = '[id^="ad-"],[id*="-ad-"],[id*="_ad_"],[id*="ads-"],[id*="ads_"],' +
+                  '[class*="advert"],[class*="adsense"],[class*="ad-container"],[class*="adslot"],' +
+                  '[class*="ad-slot"],[class*="banner-ad"],[class*="sponsor"],[class*="sponsored"],' +
+                  '[data-ad],[data-ad-unit],[data-ad-slot],[aria-label*="quang cao"],[aria-label*="advertisement"]';
+                function stripAds(root) {
+                  if (!root || !root.querySelectorAll) return;
+                  try { Array.prototype.forEach.call(root.querySelectorAll(adSelector), function (node) {
+                    if (node && node.parentNode) node.parentNode.removeChild(node);
+                  }); } catch (ignored) {}
+                }
+                stripAds(document);
+
+                var css = [
+                  'html,body{background:#101114!important;color:#f1f2f5!important;min-height:100%;}',
+                  'body{margin:0!important;padding:18px 16px 42px!important;font-family:Roboto,Arial,sans-serif!important;font-size:18px!important;line-height:1.78!important;}',
+                  'body *{color:#e9e9ed!important;border-color:#373840!important;text-shadow:none!important;box-shadow:none!important;}',
+                  'body a{color:#ff9b45!important;text-decoration:none;}',
+                  'body img,body video,body iframe,body svg,body canvas{max-width:100%!important;}',
+                  'body img{height:auto!important;object-fit:contain;}',
+                  'body > header,body > nav,body > aside,body > footer,[class*="advert"],[class*="adsense"],[class*="ad-container"],[class*="adslot"],[class*="ad-slot"],[class*="banner-ad"],[class*="sponsor"],[class*="sponsored"],[data-ad],[data-ad-unit],[data-ad-slot]{display:none!important;}',
+                  '#nm7-reader-content{max-width:860px!important;margin:0 auto!important;padding:2px 0 38px!important;background:#101114!important;}',
+                  '#nm7-reader-content h1{font-size:28px!important;line-height:1.35!important;font-weight:700!important;color:#fff!important;margin:0 0 12px!important;}',
+                  '#nm7-reader-content .nm7-reader-meta{font-size:13px!important;color:#aeb1bb!important;margin:0 0 18px!important;}',
+                  '#nm7-reader-content .nm7-reader-summary{font-size:19px!important;font-weight:600!important;color:#f5f5f7!important;}',
+                  '#nm7-reader-content p,#nm7-reader-content li{font-size:18px!important;line-height:1.8!important;color:#e9e9ed!important;}',
+                  '#nm7-reader-content figure{margin:18px 0!important;}',
+                  '#nm7-reader-content figcaption{font-size:13px!important;color:#aeb1bb!important;}'
+                ].join('');
+                if (!document.getElementById('nm7-reader-style')) {
+                  var style = document.createElement('style');
+                  style.id = 'nm7-reader-style';
+                  style.type = 'text/css';
+                  style.appendChild(document.createTextNode(css));
+                  (document.head || document.documentElement).appendChild(style);
+                }
+
+                var titleNode = document.querySelector('h1.title-detail,h1.title,[itemprop="headline"],.article-title,h1');
+                var titleText = titleNode ? (titleNode.innerText || titleNode.textContent || '').trim() : '';
+                var bodySelectors = [
+                  '[itemprop="articleBody"]','.fck_detail','.dt-news__content',
+                  '.singular-content','.article-content','.article__body','.article-body',
+                  '.detail-content','.content-detail','.detail__content','#article-content',
+                  '.article-content-body','article','main'
+                ];
+                var articleNode = null;
+                for (var i = 0; i < bodySelectors.length; i++) {
+                  var nodes = document.querySelectorAll(bodySelectors[i]);
+                  for (var j = 0; j < nodes.length; j++) {
+                    var node = nodes[j];
+                    var text = (node.innerText || node.textContent || '').trim();
+                    var paragraphs = node.querySelectorAll('p').length;
+                    if (text.length >= 280 && paragraphs >= 2) {
+                      articleNode = node;
+                      break;
+                    }
+                  }
+                  if (articleNode) break;
+                }
+
+                if (articleNode && !document.getElementById('nm7-reader-content')) {
+                  var summaryNode = document.querySelector('.description,.sapo,.detail-sapo,[itemprop="description"],.article-summary');
+                  var summaryText = summaryNode && !articleNode.contains(summaryNode)
+                    ? (summaryNode.innerText || summaryNode.textContent || '').trim() : '';
+                  var metaNode = document.querySelector('time,.date-time,.publish-date,[itemprop="datePublished"],.author');
+                  var metaText = metaNode ? (metaNode.innerText || metaNode.textContent || '').trim() : '';
+                  var clone = articleNode.cloneNode(true);
+                  stripAds(clone);
+                  Array.prototype.forEach.call(clone.querySelectorAll(
+                    'script,style,noscript,nav,aside,form,button,[class*="related"],[id*="related"],' +
+                    '[class*="recommend"],[id*="recommend"],[class*="most-viewed"],[class*="social-share"],' +
+                    '[class*="comment"],[class*="advert"],[class*="adsense"],[class*="ad-container"],' +
+                    '[class*="banner-ad"],[class*="sponsor"],[data-ad]'
+                  ), function (node) {
+                    if (node && node.parentNode) node.parentNode.removeChild(node);
+                  });
+                  Array.prototype.forEach.call(clone.querySelectorAll('img'), function (img) {
+                    var src = img.getAttribute('src') || img.getAttribute('data-src') ||
+                      img.getAttribute('data-original') || img.getAttribute('data-lazy-src');
+                    if (src) img.setAttribute('src', src);
+                    img.removeAttribute('srcset');
+                    img.setAttribute('loading', 'eager');
+                  });
+                  Array.prototype.forEach.call(clone.querySelectorAll('iframe'), function (frame) {
+                    var src = frame.getAttribute('src') || '';
+                    if (!/youtube\.com|youtu\.be|player\.vimeo\.com/i.test(src)) {
+                      if (frame.parentNode) frame.parentNode.removeChild(frame);
+                    }
+                  });
+                  clone.removeAttribute('id');
+                  clone.className = 'nm7-reader-body';
+                  var shell = document.createElement('main');
+                  shell.id = 'nm7-reader-content';
+                  if (titleText) {
+                    var heading = document.createElement('h1');
+                    heading.textContent = titleText;
+                    shell.appendChild(heading);
+                  }
+                  if (metaText) {
+                    var meta = document.createElement('div');
+                    meta.className = 'nm7-reader-meta';
+                    meta.textContent = metaText;
+                    shell.appendChild(meta);
+                  }
+                  if (summaryText && summaryText.length < 900) {
+                    var summary = document.createElement('p');
+                    summary.className = 'nm7-reader-summary';
+                    summary.textContent = summaryText;
+                    shell.appendChild(summary);
+                  }
+                  shell.appendChild(clone);
+                  document.body.innerHTML = '';
+                  document.body.appendChild(shell);
+                  document.body.style.background = '#101114';
+                  document.documentElement.style.background = '#101114';
+                }
+                stripAds(document);
+              } catch (error) {
+                try {
+                  document.documentElement.style.background = '#101114';
+                  document.body.style.background = '#101114';
+                  document.body.style.color = '#f1f2f5';
+                } catch (ignored) {}
+              }
+            })();
+            """;
 
     private final Handler main = new Handler(Looper.getMainLooper());
     private final ExecutorService io = Executors.newFixedThreadPool(3);
@@ -182,6 +315,10 @@ public final class NewsReaderActivity extends Activity {
         setTitle("Đọc báo");
         getWindow().setStatusBarColor(BG);
         getWindow().setNavigationBarColor(BG);
+        if (Build.VERSION.SDK_INT >= 29) {
+            getWindow().setStatusBarContrastEnforced(false);
+            getWindow().setNavigationBarContrastEnforced(false);
+        }
         sourceId = getPreferencesStore().getString(KEY_SOURCE, "vnexpress");
         buildShell();
         renderFeed(true);
@@ -196,8 +333,27 @@ public final class NewsReaderActivity extends Activity {
         root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(BG);
-        root.setPadding(0, 0, 0, dp(64));
+        final int readerBarHeight = dp(64);
+        root.setPadding(0, 0, 0, readerBarHeight);
         setContentView(root);
+        // Match the YouTube activity's system-bar spacing. Target SDK 36 draws edge-to-edge,
+        // so explicitly reserve status/navigation insets in this activity's own content.
+        root.setOnApplyWindowInsetsListener((view, insets) -> {
+            int topInset;
+            int bottomInset;
+            if (Build.VERSION.SDK_INT >= 30) {
+                topInset = insets.getInsets(WindowInsets.Type.statusBars()
+                        | WindowInsets.Type.displayCutout()).top;
+                bottomInset = insets.getInsets(WindowInsets.Type.navigationBars()).bottom;
+            } else {
+                topInset = insets.getSystemWindowInsetTop();
+                bottomInset = insets.getSystemWindowInsetBottom();
+            }
+            view.setPadding(view.getPaddingLeft(), topInset, view.getPaddingRight(),
+                    readerBarHeight + bottomInset);
+            return insets;
+        });
+        root.requestApplyInsets();
 
         toolbar = new LinearLayout(this);
         toolbar.setGravity(Gravity.CENTER_VERTICAL);
@@ -483,15 +639,57 @@ public final class NewsReaderActivity extends Activity {
             @Override public boolean shouldOverrideUrlLoading(WebView view, String newUrl) {
                 if (newUrl == null) return true;
                 if (newUrl.startsWith("http://") || newUrl.startsWith("https://")) {
-                    view.loadUrl(newUrl);
                     currentArticleUrl = newUrl;
+                    view.loadUrl(newUrl);
                     return true;
                 }
                 return true;
             }
+
+            @Override public WebResourceResponse shouldInterceptRequest(
+                    WebView view, WebResourceRequest request) {
+                if (request != null && isBlockedAdRequest(request.getUrl(), request.isForMainFrame())) {
+                    return new WebResourceResponse("text/plain", "UTF-8",
+                            new ByteArrayInputStream(new byte[0]));
+                }
+                return super.shouldInterceptRequest(view, request);
+            }
+
+            @Override public void onPageFinished(WebView view, String finishedUrl) {
+                super.onPageFinished(view, finishedUrl);
+                if (view == articleWebView && mode == Mode.ARTICLE) {
+                    view.evaluateJavascript(READER_MODE_SCRIPT, null);
+                }
+            }
         });
         content.addView(articleWebView, new FrameLayout.LayoutParams(-1, -1));
         articleWebView.loadUrl(url);
+    }
+
+    private static boolean isBlockedAdRequest(Uri uri, boolean mainFrame) {
+        if (uri == null || mainFrame) return false;
+        String scheme = uri.getScheme();
+        if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) return false;
+        String host = uri.getHost() == null ? "" : uri.getHost().toLowerCase(Locale.ROOT);
+        String path = uri.getEncodedPath() == null ? "" : uri.getEncodedPath().toLowerCase(Locale.ROOT);
+        String[] adHosts = {
+                "doubleclick.net", "googlesyndication.com", "googleadservices.com",
+                "adservice.google.com", "googletagservices.com", "googletagmanager.com",
+                "google-analytics.com", "analytics.google.com", "adnxs.com", "taboola.com",
+                "outbrain.com", "criteo.com", "scorecardresearch.com", "quantserve.com",
+                "casalemedia.com", "adform.net", "pubmatic.com", "rubiconproject.com",
+                "smartadserver.com", "admicro.vn", "adnetwork.vn", "zedo.com",
+                "moatads.com", "serving-sys.com", "yieldmo.com"
+        };
+        for (String domain : adHosts) {
+            if (host.equals(domain) || host.endsWith("." + domain)) return true;
+        }
+        return path.contains("/ads/") || path.contains("/adserver/")
+                || path.contains("/advertising/") || path.contains("/advertisement/")
+                || path.contains("/quang-cao/") || path.contains("/quangcao/")
+                || path.contains("/banner-ad/") || path.contains("/tracking/")
+                || path.contains("/analytics/") || path.endsWith("/ad.js")
+                || path.endsWith("/ads.js") || path.endsWith("/pixel.gif");
     }
 
     private void closeArticleWebView() {
