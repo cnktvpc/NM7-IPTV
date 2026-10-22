@@ -1,10 +1,13 @@
-## Reader hotfix — 2026-10-23 (đang build)
+## Reader hotfix — 2026-10-23 — BUILD + UNIT TEST PASS
 
 - Mở rộng danh mục 24h lên 21 RSS feed theo danh sách RSS chính thức.
 - Sửa ảnh thân bài: lazy-load attributes, `srcset`, URL tương đối/protocol-relative, bỏ placeholder data URL và ưu tiên ảnh độ phân giải cao.
 - Sửa vuốt ngang danh mục bằng interception trước khi child click được kích hoạt; giữ nguyên cuộn dọc.
 - Cỡ chữ 80–160% với lựa chọn trực tiếp và lưu thiết lập.
-- Nhánh candidate: `port/news-reader-4fc-stable142-20261022`. Chỉ coi là ổn định sau khi CI build và unit test pass.
+- **CI:** [run 39868755558](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39868755558) — build, full unit test suite và upload artifact đều thành công.
+- **APK artifact:** [NM7-IPTV-Mobile-1.10.146-SOURCE4FC-NEWS-READER](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39868755558/artifacts/12465652077).
+- SHA-256: `af127d415b0c2b8417c9365ec1dcf148304999d7f275619fca7b13a6bcf4f42a`.
+- Nhánh candidate: `port/news-reader-4fc-stable142-20261022`; nhánh stable không bị ghi đè.
 
 # NM7 IPTV Mobile 1.10.146 — Exact 1.10.142 source + News Reader — 2026-10-22
 
