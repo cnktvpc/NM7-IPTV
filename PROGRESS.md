@@ -15,13 +15,16 @@
 - Giữ luồng RSS/Atom, fallback HTML, nội dung bài viết trong ứng dụng, bài liên quan nội bộ, vuốt chuyển category, quản lý nguồn RSS và JS provider, cùng các unit tests.
 - Chuỗi patch YouTube và các file `MobileMiniPlayer`, `MobileInlinePlayerProviderV2`, `MobileNm7Application` không được thay từ nhánh Reader khác. Vì SHA nền có `app:surface_type="texture_view"` trái với tiêu đề ảnh và test SurfaceView, chỉ sửa đúng thuộc tính XML `app/src/main/res/layout/nm7_mini_player.xml` thành `surface_view` (commit `b0a91061b8a3c9225f3c20725b4d0b6e46890d0e`).
 
-## CI gate
-- Workflow chuyên biệt: `.github/workflows/nm7-mobile-news-reader-v143.yml`.
-- Lần chạy `39804935539`: `:app:assembleMobileDebug` **PASS**, nhưng unit test có 1 lỗi trong 96 tests: `YouTubeSurfaceLayoutTest.miniUsesSurfaceAfterAllResourceMerges` vì layout còn dùng `texture_view`.
-- Đã sửa thuộc tính XML sang `surface_view` trong commit `b0a91061b8a3c9225f3c20725b4d0b6e46890d0e`, theo yêu cầu SurfaceView ghi trong ảnh. Run tiếp theo đang kiểm tra đúng commit sửa này: [run 39806147553](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39806147553).
-- Chỉ ghi PASS khi run này xác nhận build, toàn bộ unit tests, upload artifact và SHA-256. Cần thử trên thiết bị thật sau khi tải APK; CI không thể xác nhận mọi publisher đều cho trích xuất bài viết.
+## CI gate — KẾT QUẢ ĐÃ XÁC NHẬN
+- [Run 39806147553](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39806147553): **SUCCESS**.
+- `:app:assembleMobileDebug`: PASS.
+- `:app:testMobileDebugUnitTest`: PASS.
+- Artifact đã upload: [NM7-IPTV-Mobile-1.10.146-SOURCE4FC-NEWS-READER](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39806147553/artifacts/12436709882), ID `12436709882`.
+- SHA-256: `e64c700a2e16915edaaaf4624bfe17940a9e20ea6f8109b9888ec4d77cfb1458`.
+- Cần thử trên thiết bị thật trước khi promote; `stable/mobile-1.10.142` chưa bị sửa.
 
 ---
+
 
 # TIẾN ĐỘ MỚI NHẤT — NM7 IPTV MOBILE 1.10.142 — ĐÃ XÁC NHẬN — 2026-10-20
 
