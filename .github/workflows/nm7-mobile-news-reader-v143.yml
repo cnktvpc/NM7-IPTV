@@ -122,6 +122,11 @@ jobs:
           grep -q 'Cài đặt tất cả' app/src/main/java/vn/phuong/iptvplayer/NewsReaderActivity.java
           grep -q 'Xóa tất cả' app/src/main/java/vn/phuong/iptvplayer/NewsReaderActivity.java
 
+      - name: Verify Reader visual, insets and ad-filter behavior
+        run: |
+          set -euxo pipefail
+          python3 scripts/verify-mobile-news-reader-ui-v144.py
+
       - name: Verify NM7 dedicated Live feed implementation
         run: |
           set -euxo pipefail
