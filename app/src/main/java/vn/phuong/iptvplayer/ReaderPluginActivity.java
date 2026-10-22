@@ -715,7 +715,7 @@ public final class ReaderPluginActivity extends Activity {
             TextView backView = text("‹", 34, TEXT, false);
             backView.setGravity(Gravity.CENTER);
             toolbar.addView(backView, new LinearLayout.LayoutParams(dp(42), -1));
-            backView.setOnClickListener(v -> rightAction.run());
+            backView.setOnClickListener(v -> onBackPressed());
         }
         TextView titleView = text(title == null || title.isEmpty() ? typeLabel : title, 17, TEXT, true);
         titleView.setSingleLine(true);
@@ -885,6 +885,15 @@ public final class ReaderPluginActivity extends Activity {
             out.write(buffer, 0, n);
         }
         return out.toByteArray();
+    }
+
+    private String escape(String value) {
+        if (value == null) return "";
+        return value.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
     }
 
     private LinearLayout verticalContainer() {

@@ -140,8 +140,7 @@ public final class ReaderArticleExtractor {
             if (!fallbackParagraphs.isEmpty()) articleHtml = fallbackParagraphs;
         }
 
-        int scale = Math.max(85, Math.min(fontScale, 145));
-        int bodyPx = Math.round(19f * scale / 100f);
+        int bodyPx = 19; // WebView textZoom is the single source of font scaling; avoid double scaling.
         String lineHeight = "1.82";
         StringBuilder html = new StringBuilder(10000);
         html.append("<!doctype html><html lang=\"vi\"><head>")

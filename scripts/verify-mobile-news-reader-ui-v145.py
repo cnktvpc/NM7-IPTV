@@ -30,7 +30,8 @@ checks = [
      and "evaluateJavascript" not in reader),
     ("reader CSS guarantees dark background and readable high-contrast typography",
      "background:" in extractor and "#101114" in extractor
-     and "#e9e9ed" in extractor and "line-height:" in extractor),
+     and "#e9e9ed" in extractor and "line-height:" in extractor
+     and "int bodyPx = 19;" in extractor),
     ("extractor searches known Vietnamese and common article body selectors",
      '[itemprop=articleBody]' in extractor
      and '".fck_detail"' in extractor
