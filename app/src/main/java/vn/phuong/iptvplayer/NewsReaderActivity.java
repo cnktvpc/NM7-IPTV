@@ -40,10 +40,18 @@ import android.widget.ScrollView;
 import android.widget.Switch;
 import android.widget.TextView;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -80,6 +88,10 @@ public final class NewsReaderActivity extends Activity {
     private static final String KEY_INSTALLED = "installed_sources";
     private static final String KEY_ENABLED = "enabled_sources";
     private static final String KEY_SOURCE = "active_source";
+    private static final String KEY_CUSTOM_RSS = "custom_rss_news_sources";
+    private static final String KEY_PLUGIN_CATEGORY_PREFIX = "news_plugin_categories_";
+    private static final int REQUEST_NEWS_PLUGIN_FILE = 7501;
+    private static final int MAX_PLUGIN_FILE_BYTES = 512 * 1024;
     private static final Pattern IMG_SRC = Pattern.compile("(?is)<img[^>]+(?:src|data-src)\\s*=\\s*['\"]([^'\"]+)['\"]");
     private static final Pattern TAGS = Pattern.compile("(?is)<[^>]+>");
     private static final Pattern SPACE = Pattern.compile("\\s+");
@@ -1359,7 +1371,7 @@ public final class NewsReaderActivity extends Activity {
     }
 
     private List<Article> loadArticlesWithFallback(Source source, String feedUrl, String category) throws Exception {
-        if (source.jsPlugin) return parsePluginNewsSource(source, category);
+        if (source.jsPlugin) return parsePluginNewsSource(source, feedUrl);
 
         Exception rssFailure = null;
         List<Article> result = Collections.emptyList();
@@ -1653,13 +1665,6 @@ public final class NewsReaderActivity extends Activity {
         for (String value : values) if (value != null && !value.trim().isEmpty()
                 && !"null".equalsIgnoreCase(value.trim())) return value.trim();
         return "";
-    }
-
-    private static String safeError(Exception e) {
-        String message = e == null ? "" : e.getMessage();
-        return message == null || message.trim().isEmpty()
-                ? (e == null ? "Lỗi không xác định" : e.getClass().getSimpleName())
-                : message;
     }
 
     private static List<Article> parseFeed(String feedUrl, String sourceName) throws Exception {
