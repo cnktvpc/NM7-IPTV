@@ -1,8 +1,17 @@
-# NM7 IPTV Mobile — Stable 1.10.142 — Live card tap-to-play — 2026-10-20
+# NM7 IPTV Mobile 1.10.146 — Exact 1.10.142 source + News Reader — 2026-10-22
 
-> **Trạng thái: ĐÃ XÁC NHẬN TRÊN THIẾT BỊ — ổn định theo phản hồi người dùng.** Bản 1.10.142 được người dùng cài đặt và xác nhận hoạt động OK. CI build và toàn bộ unit tests đều PASS.
+> **Bản ứng viên 1.10.146 / versionCode 162:** lấy mã nguồn trực tiếp từ commit `4fc8b187db7e48591e1bcb11969436a56d27d06a` được ghi trong ảnh người dùng cung cấp, sau đó port mục Đọc báo. Không thay đổi các lớp `MobileMiniPlayer`, `MobileInlinePlayerProviderV2`, `MobileNm7Application` và chuỗi patch YouTube của source commit; `HomeTabBar` chỉ được mở rộng thêm tab Reader và xử lý navigation inset. Nhánh stable chính thức không bị sửa.
 
-## Thông tin bản phát hành
+## Bản ứng viên Reader trên đúng source commit trong ảnh
+
+- **Source commit:** [4fc8b187db7e48591e1bcb11969436a56d27d06a](https://github.com/cnktvpc/NM7-IPTV/commit/4fc8b187db7e48591e1bcb11969436a56d27d06a).
+- **Nhánh port:** `port/news-reader-4fc-stable142-20261022`.
+- **Version:** 1.10.146; **versionCode:** 162.
+- **Mục Đọc báo:** tải RSS/Atom; fallback trích xuất bài từ HTML; đọc nội dung trong app; bài liên quan vẫn mở bằng Reader; vuốt đổi chuyên mục; quản lý nguồn và plugin JS.
+- **Kiểm soát phạm vi:** chỉ thêm Reader, dependency/manifest, test và verifier. Các lớp playback YouTube của commit nền không được thay bằng bản từ nhánh Reader khác.
+- **CI:** chờ build, toàn bộ unit tests và artifact của nhánh port này; không dùng kết quả từ nhánh khác để đại diện.
+
+## Thông tin bản phát hành nền 1.10.142
 
 - **Version:** 1.10.142
 - **versionCode:** 158
