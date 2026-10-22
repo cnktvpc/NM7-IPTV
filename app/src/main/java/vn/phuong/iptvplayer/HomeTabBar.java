@@ -5,9 +5,11 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
+import android.os.Build;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowInsets;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -25,6 +27,16 @@ public final class HomeTabBar {
     private HomeTabBar() {}
 
     public static void attach(Activity activity, boolean youtubeSelected) {
+        attachInternal(activity, youtubeSelected ? 0 : 1);
+    }
+
+    /** Attach the same navigation bar with the in-app news reader selected. */
+    public static void attachReader(Activity activity) {
+        attachInternal(activity, 2);
+    }
+
+    private static void attachInternal(Activity activity, int selectedTab) {
+        boolean youtubeSelected = selectedTab == 0;
         View content = activity.findViewById(android.R.id.content);
         if (!(content instanceof FrameLayout)) return;
         FrameLayout host = (FrameLayout) content;
@@ -39,41 +51,65 @@ public final class HomeTabBar {
         bar.setElevation(dp(activity, 8));
         bar.setPadding(0, dp(activity, 4), 0, dp(activity, 4));
 
-        addItem(activity, bar, R.drawable.nm7_nav_youtube, youtubeSelected, "YouTube", () -> {
-            if (!youtubeSelected) openBrowse(activity);
+        addItem(activity, bar, R.drawable.nm7_nav_youtube, selectedTab == 0, "YouTube", () -> {
+            if (selectedTab != 0) openBrowse(activity);
         });
 
-        addItem(activity, bar, R.drawable.nm7_nav_iptv, !youtubeSelected, "IPTV", () -> {
-            if (youtubeSelected) openIptv(activity);
+        addItem(activity, bar, R.drawable.nm7_nav_iptv, selectedTab == 1, "IPTV", () -> {
+            if (selectedTab != 1) openIptv(activity);
         });
 
-        // Application settings is a top-level destination of the same bottom bar.
-        // It reuses MainActivity's existing dialog so every existing setting and behavior
-        // stays identical to the 1.10.112 implementation.
-        addItem(activity, bar, R.drawable.nm7_nav_settings, false, "Tùy chọn",
+        addItem(activity, bar, R.drawable.nm7_nav_news, selectedTab == 2, "Đọc báo", () -> {
+            if (selectedTab != 2) openNews(activity);
+        });
+
+        // Preserve the existing settings destination from source commit 4fc8b187.
+        addItem(activity, bar, R.drawable.nm7_nav_settings, selectedTab == 3, "Tùy chọn",
                 () -> openAppSettings(activity));
 
-        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, dp(activity, 64), Gravity.BOTTOM);
-        host.addView(bar, lp);
-        if (activity instanceof MainActivity) {
-            View root = activity.findViewById(R.id.mainRoot);
-            if (root != null) {
-                root.setPadding(root.getPaddingLeft(), root.getPaddingTop(), root.getPaddingRight(),
-                        root.getPaddingBottom() + dp(activity, 64));
-            }
+        final int barHeight = dp(activity, 64);
+        final int listReserve = dp(activity, 76);
+        final View mainRoot = activity instanceof MainActivity
+                ? activity.findViewById(R.id.mainRoot) : null;
+        final int mainRootBaseBottom = mainRoot == null ? 0 : mainRoot.getPaddingBottom();
+        final android.widget.ListView channelList = activity instanceof MainActivity
+                ? activity.findViewById(R.id.listChannels) instanceof android.widget.ListView
+                    ? (android.widget.ListView) activity.findViewById(R.id.listChannels) : null
+                : null;
+        final int channelListBaseBottom = channelList == null ? 0 : channelList.getPaddingBottom();
 
-            // NM7 1.10.89: the tab bar is an overlay, so reserve scrollable space
-            // inside the IPTV channel list itself. This guarantees the final channel
-            // can be scrolled completely above the YouTube/IPTV bar and tapped.
-            View channelList = activity.findViewById(R.id.listChannels);
-            if (channelList instanceof android.widget.ListView) {
-                android.widget.ListView list = (android.widget.ListView) channelList;
-                list.setClipToPadding(false);
-                list.setPadding(list.getPaddingLeft(), list.getPaddingTop(),
-                        list.getPaddingRight(), list.getPaddingBottom() + dp(activity, 76));
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, barHeight, Gravity.BOTTOM);
+        host.addView(bar, lp);
+        // Only layout/inset handling is extended for Reader; the original YouTube/IPTV
+        // activity-transition methods below remain from the exact 4fc8b187 source.
+        bar.setOnApplyWindowInsetsListener((view, insets) -> {
+            int bottomInset;
+            if (Build.VERSION.SDK_INT >= 30) {
+                bottomInset = insets.getInsets(WindowInsets.Type.navigationBars()).bottom;
+            } else {
+                bottomInset = insets.getSystemWindowInsetBottom();
             }
-        }
+            ViewGroup.LayoutParams raw = view.getLayoutParams();
+            if (raw instanceof FrameLayout.LayoutParams) {
+                FrameLayout.LayoutParams barParams = (FrameLayout.LayoutParams) raw;
+                if (barParams.bottomMargin != bottomInset) {
+                    barParams.bottomMargin = bottomInset;
+                    view.setLayoutParams(barParams);
+                }
+            }
+            if (mainRoot != null) {
+                mainRoot.setPadding(mainRoot.getPaddingLeft(), mainRoot.getPaddingTop(),
+                        mainRoot.getPaddingRight(), mainRootBaseBottom + barHeight + bottomInset);
+            }
+            if (channelList != null) {
+                channelList.setClipToPadding(false);
+                channelList.setPadding(channelList.getPaddingLeft(), channelList.getPaddingTop(),
+                        channelList.getPaddingRight(), channelListBaseBottom + listReserve + bottomInset);
+            }
+            return insets;
+        });
+        bar.requestApplyInsets();
     }
 
     public static void setVisible(Activity activity, boolean visible) {
@@ -121,6 +157,12 @@ public final class HomeTabBar {
         MobileInlinePlayerProviderV2.resumeForIptvTab(activity);
         activity.getWindow().getDecorView().post(
                 () -> MobileInlinePlayerProviderV2.resumeForIptvTab(activity));
+    }
+
+    private static void openNews(Activity activity) {
+        Intent intent = new Intent(activity, NewsReaderActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        startWithoutAnimation(activity, intent);
     }
 
     private static void openAppSettings(Activity activity) {
