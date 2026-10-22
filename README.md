@@ -1,8 +1,16 @@
-# NM7 IPTV Mobile — Stable 1.10.142 — YouTube Floating MiniPlayer / SurfaceView — 2026-10-20
+# NM7 IPTV Mobile 1.10.146 — Stable 1.10.142 YouTube MiniPlayer + News Reader — 2026-10-22
 
-> **Trạng thái cập nhật 2026-10-22:** Build APK thành công. Lưu ý: bước `:app:testMobileDebugUnitTest` trong run 39407088691 có lỗi nhưng được cấu hình `continue-on-error: true`, vì vậy workflow vẫn báo SUCCESS. Không ghi nhận unit tests là PASS cho lần build này. Cần xử lý lỗi test và kiểm thử trên thiết bị thật trước khi xác nhận riêng các thay đổi YouTube MiniPlayer là ổn định.
+> **Bản ứng viên 1.10.146 / versionCode 162:** Phần đọc báo được chuyển lên nền `stable/mobile-1.10.142` từ ảnh người dùng cung cấp. Giữ các luồng `openBrowse`, `openIptv` và `openAppSettings` của tab YouTube/IPTV trong bản nền; chỉ bổ sung tab **Đọc báo**, các hoạt động Reader và căn lề thanh tab theo vùng điều hướng Android. Xem kết quả build + kiểm thử của nhánh port ở mục bên dưới; không ghi đè nhánh stable.
 
-## Thông tin phát hành
+## Bản nền được dùng
+
+- Nền mã nguồn: `stable/mobile-1.10.142` (đầu nhánh lúc tạo port: `7500feb0a2755148e1a40ca12a1037380253bc46`).
+- Commit nguồn ghi trong bản phát hành người dùng gửi: [4fc8b187db7e48591e1bcb11969436a56d27d06a](https://github.com/cnktvpc/NM7-IPTV/commit/4fc8b187db7e48591e1bcb11969436a56d27d06a).
+- Nhánh tích hợp riêng: `port/news-reader-stable-1.10.142-20261022`.
+- Bản ứng viên: `1.10.146` / versionCode `162`.
+- CI candidate: [mở workflow build trên nhánh port](https://github.com/cnktvpc/NM7-IPTV/actions/workflows/nm7-mobile-news-reader-v143.yml).
+
+## Thông tin phát hành của bản nền 1.10.142
 
 - **Ứng dụng:** NM7 IPTV Mobile
 - **Version:** 1.10.142
