@@ -9,12 +9,12 @@
 - **Ứng viên:** version 1.10.146 / versionCode 162.
 - **Nhánh riêng:** `port/news-reader-4fc-stable142-20261022` — không sửa nhánh stable.
 - **Giữ nguyên phần lớn code YouTube/IPTV** từ source trong ảnh; bổ sung tab Reader. Layout mini-player dùng `SurfaceView` để phù hợp với bản SurfaceView được ghi trong ảnh và để test đồng nhất.
-- **Tải APK:** [NM7-IPTV-Mobile-1.10.146-SOURCE4FC-NEWS-READER](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39806147553/artifacts/12436709882).
-- **GitHub Actions:** [Run 39806147553 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39806147553).
-- **Artifact ID:** `12436709882`, dung lượng khoảng 44 MB, hết hạn dự kiến 2026-11-21.
-- **SHA-256 APK:** `e64c700a2e16915edaaaf4624bfe17940a9e20ea6f8109b9888ec4d77cfb1458`.
+- **Tải APK:** [NM7-IPTV-Mobile-1.10.146-SOURCE4FC-NEWS-READER](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39809129235/artifacts/12439107567).
+- **GitHub Actions:** [Run 39806147553 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39809129235).
+- **Artifact ID:** `12439107567`, dung lượng 44,013,392 byte (khoảng 44 MB), hết hạn dự kiến 2026-11-21.
+- **SHA-256 APK:** `6661132206d2769042d1ac31e48d830cf3f9dfbef5bad859334130e28e1fe619`.
 - **Tính năng Reader được port:** tải RSS/Atom và fallback HTML; đọc toàn bài trong app; bài liên quan mở ngay trong Reader; vuốt chuyển danh mục; quản lý nguồn RSS/JS.
-- CI pass không thay thế thử trực tiếp trên điện thoại. Cần kiểm tra YouTube tab và Reader trên thiết bị thực trước khi chuyển sang stable.
+- **Kiểm thử thiết bị:** người dùng đang tự kiểm tra APK này; chưa promote sang stable và chưa kết luận về YouTube/Reader trên máy thật cho đến khi nhận phản hồi.
 
 ---
 
@@ -25,7 +25,7 @@
 - **Version:** 1.10.146; **versionCode:** 162.
 - **Mục Đọc báo:** tải RSS/Atom; fallback trích xuất bài từ HTML; đọc nội dung trong app; bài liên quan vẫn mở bằng Reader; vuốt đổi chuyên mục; quản lý nguồn và plugin JS.
 - **Kiểm soát phạm vi:** thêm Reader/dependency/manifest/test/verifier và đúng một sửa XML cho mini-player: `texture_view` → `surface_view`, vì SHA nguồn trong ảnh còn để TextureView dù tiêu đề ghi SurfaceView. Không thay các lớp Java playback YouTube hay chuỗi patch.
-- **CI:** lần đầu build APK **PASS**, nhưng `YouTubeSurfaceLayoutTest.miniUsesSurfaceAfterAllResourceMerges` thất bại vì thuộc tính XML nêu trên. Đã sửa tại commit `b0a91061b8a3c9225f3c20725b4d0b6e46890d0e`; chờ lần chạy kế tiếp của đúng nhánh này. Chưa dùng kết quả từ nhánh khác để đại diện.
+- **Lịch sử CI:** run [39804935539](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39804935539) build APK được nhưng unit test `YouTubeSurfaceLayoutTest.miniUsesSurfaceAfterAllResourceMerges` fail vì XML còn `texture_view`; đã sửa đúng thuộc tính thành `surface_view` tại commit `b0a91061b8a3c9225f3c20725b4d0b6e46890d0e`. Sau đó run [39806147553](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39806147553) và run mới nhất [39809129235](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39809129235) đều PASS; run mới nhất là artifact được khuyến nghị dùng để test.
 
 ## Thông tin bản phát hành nền 1.10.142
 
