@@ -10,8 +10,8 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
-import android.net.Uri;
 import android.os.Bundle;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.Html;
@@ -21,7 +21,6 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.InputMethodManager;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -79,7 +78,6 @@ public final class NewsReaderActivity extends Activity {
 
     private final Handler main = new Handler(Looper.getMainLooper());
     private final ExecutorService io = Executors.newFixedThreadPool(3);
-    private final SharedPreferences prefs;
     private final List<Article> articles = new ArrayList<>();
     private LinearLayout root;
     private LinearLayout toolbar;
@@ -132,9 +130,9 @@ public final class NewsReaderActivity extends Activity {
                             "Sao Việt", "https://kenh14.vn/rss/star/sao-viet.rss",
                             "Đời sống", "https://kenh14.vn/rss/doisong.rss")),
             makeSource("thethao247", "Thể Thao 247", "Tin thể thao và bóng đá", "thethao247.vn",
-                    cats("Trang chủ", "https://thethao247.vn/rss/home.xml",
-                            "Thể thao", "https://thethao247.vn/rss/the-thao.xml",
-                            "Bóng đá", "https://thethao247.vn/rss/bong-da.xml")),
+                    cats("Trang chủ", "https://thethao247.vn/trang-chu.rss",
+                            "Thể thao", "https://thethao247.vn/the-thao-c5.rss",
+                            "Bóng đá", "https://thethao247.vn/bong-da.rss")),
             makeSource("dantri", "Dân Trí", "Tin tức Việt Nam và quốc tế", "dantri.com.vn",
                     cats("Trang chủ", "https://dantri.com.vn/rss/home.rss",
                             "Thời sự", "https://dantri.com.vn/rss/thoi-su.rss",
@@ -178,9 +176,6 @@ public final class NewsReaderActivity extends Activity {
                             "Thời sự", "https://vtv.vn/rss/thoi-su.rss"))
     ));
 
-    public NewsReaderActivity() {
-        prefs = null;
-    }
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -408,7 +403,10 @@ public final class NewsReaderActivity extends Activity {
         meta.setPadding(0, dp(6), 0, 0);
         textColumn.addView(meta, new LinearLayout.LayoutParams(-1, -2));
 
-        row.setOnClickListener(v -> openArticlePage(article.url));
+        row.setOnClickListener(v -> {
+            currentArticleTitle = article.title;
+            openArticlePage(article.url);
+        });
         articleRows.addView(row, new LinearLayout.LayoutParams(-1, -2));
 
         View divider = new View(this);
@@ -840,7 +838,7 @@ public final class NewsReaderActivity extends Activity {
     private static String cleanText(String raw) {
         if (raw == null) return "";
         String value = raw.replace("&nbsp;", " ").replace("&#39;", "'").replace("&amp;", "&");
-        value = Html.fromHtml(value, Html.FROM_HTML_MODE_COMPACT).toString();
+        value = (Build.VERSION.SDK_INT >= 24 ? Html.fromHtml(value, Html.FROM_HTML_MODE_COMPACT) : Html.fromHtml(value)).toString();
         value = SPACE.matcher(TAGS.matcher(value).replaceAll(" ")).replaceAll(" ").trim();
         return value;
     }
@@ -945,10 +943,7 @@ public final class NewsReaderActivity extends Activity {
             this.id = id; this.name = name; this.description = description; this.domain = domain;
             this.categories = categories;
         }
-        String homeUrl() {
-            String first = categories.values().iterator().next();
-            return first.replace("/rss/", "/").replace(".rss", "");
-        }
+        String homeUrl() { return "https://" + domain; }
     }
 
     private static final class Article {
