@@ -84,4 +84,4 @@ The build must still complete successfully in GitHub Actions before the APK is c
 - Normalized lazy image sources and responsive `srcset` candidates, resolved relative/protocol-relative URLs, skipped data placeholders, and eagerly loaded article images.
 - Intercepted horizontal category swipes before child click handling; vertical scrolling remains native.
 - Added persistent 80–160% font-size selection and regression tests for lazy/responsive images.
-- Build status: pending CI run on `port/news-reader-4fc-stable142-20261022`.
+- Build status: **PASS** — [CI run 39868755558](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39868755558); APK build and full Mobile unit-test suite passed. Artifact ID: `12465652077`.
