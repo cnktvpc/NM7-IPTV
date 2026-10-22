@@ -159,8 +159,8 @@ public final class NewsReaderActivity extends Activity {
                     if (node && node.parentNode) node.parentNode.removeChild(node);
                   });
                   Array.prototype.forEach.call(clone.querySelectorAll('img'), function (img) {
-                    var src = img.getAttribute('src') || img.getAttribute('data-src') ||
-                      img.getAttribute('data-original') || img.getAttribute('data-lazy-src');
+                    var src = img.getAttribute('data-src') || img.getAttribute('data-original') ||
+                      img.getAttribute('data-lazy-src') || img.getAttribute('src');
                     if (src) img.setAttribute('src', src);
                     img.removeAttribute('srcset');
                     img.setAttribute('loading', 'eager');
