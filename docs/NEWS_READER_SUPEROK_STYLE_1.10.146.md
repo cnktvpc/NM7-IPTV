@@ -76,3 +76,12 @@ The branch adds tests for:
 - HTML feed fallback, swipe-to-category wiring, and custom RSS/JS source manager paths.
 
 The build must still complete successfully in GitHub Actions before the APK is considered ready. A successful CI run does not replace testing the source feeds and reader on the actual phone.
+
+
+## Hotfix follow-up — 2026-10-23
+
+- Expanded 24h to the 21 RSS feeds published by the site.
+- Normalized lazy image sources and responsive `srcset` candidates, resolved relative/protocol-relative URLs, skipped data placeholders, and eagerly loaded article images.
+- Intercepted horizontal category swipes before child click handling; vertical scrolling remains native.
+- Added persistent 80–160% font-size selection and regression tests for lazy/responsive images.
+- Build status: pending CI run on `port/news-reader-4fc-stable142-20261022`.
