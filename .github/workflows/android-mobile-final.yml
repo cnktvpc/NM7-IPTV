@@ -9,6 +9,7 @@ name: NM7 Mobile Final Build
       - "fix/mobile-1.10.110-logo-performance"
       - "fix/mobile-1.10.112-logo-catalog"
       - "fix/mobile-1.10.112-logo-cache"
+      - "fix/mobile-news-reader-20261022"
       - "main"
   pull_request:
     branches:
@@ -87,11 +88,21 @@ jobs:
           python3 scripts/patch-mobile-v37.py
           python3 scripts/patch-mobile-v106.py
 
-      - name: Verify 1.10.112 build configuration
+      - name: Verify 1.10.143 news reader build configuration
         run: |
           set -euxo pipefail
-          test "$(grep -c 'versionName = "1.10.142"' app/build.gradle.kts)" -eq 1
-          test "$(grep -c 'versionCode = 158' app/build.gradle.kts)" -eq 1
+          test "$(grep -c 'versionName = "1.10.143"' app/build.gradle.kts)" -eq 1
+          test "$(grep -c 'versionCode = 159' app/build.gradle.kts)" -eq 1
+
+      - name: Check Mobile Reader wiring
+        run: |
+          set -euxo pipefail
+          test -f app/src/main/java/vn/phuong/iptvplayer/NewsReaderActivity.java
+          grep -q 'attachReader' app/src/main/java/vn/phuong/iptvplayer/HomeTabBar.java
+          grep -q 'NewsReaderActivity' app/src/main/AndroidManifest.xml
+          grep -q 'XmlPullParser' app/src/main/java/vn/phuong/iptvplayer/NewsReaderActivity.java
+          grep -q 'Cài đặt tất cả' app/src/main/java/vn/phuong/iptvplayer/NewsReaderActivity.java
+          grep -q 'Xóa tất cả' app/src/main/java/vn/phuong/iptvplayer/NewsReaderActivity.java
 
       - name: Check Mobile lifecycle regression guards
         run: |
