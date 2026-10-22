@@ -1,3 +1,29 @@
+# CẬP NHẬT TIẾN ĐỘ — PORT NEWS READER LÊN NỀN STABLE 1.10.142 — 2026-10-22
+
+## Mục tiêu và nguyên tắc
+- Repository: `cnktvpc/NM7-IPTV`.
+- Nhánh nền: `stable/mobile-1.10.142`; không sửa hoặc ghi đè nhánh này.
+- Nhánh port: `port/news-reader-stable-1.10.142-20261022`.
+- Nền trong ảnh người dùng: source commit [`4fc8b187db7e48591e1bcb11969436a56d27d06a`](https://github.com/cnktvpc/NM7-IPTV/commit/4fc8b187db7e48591e1bcb11969436a56d27d06a); đầu nhánh stable tại lúc tạo port là `7500feb0a2755148e1a40ca12a1037380253bc46`.
+- Bản ứng viên: `1.10.146`, versionCode `162`.
+- Phải giữ hành vi mở/chuyển tab YouTube, IPTV và settings từ nền stable; chỉ thêm đích **Đọc báo** và xử lý vùng an toàn của hàng tab. Không port những chỉnh sửa playback khác từ nhánh Reader trước.
+
+## Đã chuyển sang nhánh port
+- `NewsReaderActivity`, `ReaderArticleExtractor`, `ReaderPluginActivity`, `ReaderPluginRuntime`, `ReaderPluginStore`.
+- Icon `nm7_nav_news.xml`, đăng ký Activity trong manifest, dependency Jsoup/Rhino.
+- Unit tests cho bộ trích xuất bài và runtime plugin.
+- Tab Đọc báo được thêm vào `HomeTabBar`; giữ các thân hàm mở YouTube/IPTV/settings từ bản nền. Thanh tab và danh sách kênh nhận phần đệm theo navigation inset, không cộng lặp padding.
+- RSS/Atom và fallback HTML, đọc bài trong ứng dụng, bài liên quan trong Reader, quản lý nguồn tùy chỉnh và nguồn JS.
+- Regression verifier cho Reader; Live checks được cho phép versionCode 162 nhưng không đổi logic Live.
+- Stable branch giữ nguyên.
+
+## CI
+- Trạng thái khởi tạo: đang chuẩn bị workflow và chờ build candidate.
+- Điều kiện hoàn thành: các verifier không liên quan được chạy với kết quả rõ ràng; `:app:assembleMobileDebug` và `:app:testMobileDebugUnitTest` phải đạt; artifact APK phải được upload và SHA-256 ghi lại.
+- Lưu ý: CI xanh không thay thế thử nghiệm trên điện thoại thật. Chưa xác nhận hoạt động của tất cả website tin bên ngoài cho đến khi kiểm thử trên máy.
+
+---
+
 # CẬP NHẬT TIẾN ĐỘ — BUILD YOUTUBE MINIPLAYER 1.10.142 — 2026-10-22
 
 ## Kết quả kiểm tra
