@@ -135,14 +135,14 @@ public final class ReaderArticleExtractor {
             clone.select(REMOVE_SELECTOR).remove();
             for (Element image : clone.select("img")) {
                 String src = firstHttpUrl(baseUrl,
+                        firstSrcsetUrl(image.attr("data-srcset")),
+                        firstSrcsetUrl(image.attr("srcset")),
                         image.attr("data-src"),
                         image.attr("data-original"),
                         image.attr("data-lazy-src"),
                         image.attr("data-original-src"),
                         image.attr("data-actualsrc"),
                         image.attr("data-echo"),
-                        firstSrcsetUrl(image.attr("data-srcset")),
-                        firstSrcsetUrl(image.attr("srcset")),
                         image.attr("src"));
                 if (src.isEmpty()) {
                     Element picture = image.parent();
@@ -182,7 +182,7 @@ public final class ReaderArticleExtractor {
                     .addTags("figure", "figcaption", "picture", "source", "video",
                             "audio", "h2", "h3", "h4", "blockquote", "table", "thead",
                             "tbody", "tr", "th", "td", "hr", "br")
-                    .addAttributes("img", "src", "alt", "title")
+                    .addAttributes("img", "src", "alt", "title", "loading", "decoding")
                     .addAttributes("a", "href", "title")
                     .addAttributes("source", "src", "srcset", "type")
                     .addAttributes("video", "src", "poster", "controls")
