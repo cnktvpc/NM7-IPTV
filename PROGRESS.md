@@ -1,3 +1,12 @@
+## 2026-10-23 — Reader hotfix sau khi đối chiếu Super OK [2.5].apk
+
+- Candidate branch: `port/news-reader-4fc-stable142-20261022` (không sửa nhánh stable).
+- 24h: bổ sung 21 RSS category theo danh sách RSS chính thức, thay vì chỉ 5 tab.
+- Ảnh bài báo: ưu tiên data-src/data-original/data-lazy-src/data-actualsrc, chọn biến thể độ phân giải cao từ `srcset`, giải quyết URL tương đối/protocol-relative, bỏ placeholder `data:` và bật tải ảnh eager.
+- Vuốt danh mục: intercept cử chỉ ngang trước khi child xử lý click; vuốt dọc vẫn giữ cuộn, tránh mở nhầm bài khi vuốt.
+- Cỡ chữ: nút Aᴀ mở lựa chọn 80–160%, lưu tùy chọn và áp dụng cho WebView.
+- Đã bổ sung unit test ảnh lazy/srcset. Chờ CI xác nhận build + toàn bộ test trước khi giao APK.
+
 # CẬP NHẬT TIẾN ĐỘ — READER TRÊN ĐÚNG SOURCE COMMIT 4fc8b187 — 2026-10-22
 
 ## Mục tiêu và khóa nền
