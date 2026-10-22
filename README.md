@@ -9,6 +9,7 @@
 - **CI:** [Run 39755662838 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39755662838)
 - **Artifact:** [NM7-IPTV-Mobile-1.10.143-NEWS-READER](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39755662838/artifacts/12416400323)
 - **APK SHA-256:** `1ac35fe96e8f492f00d3054f18a76387f8a2f58ac194aab6ba5c6b80d833479b`
+- **Nghiên cứu cơ chế và ghi chú triển khai:** [docs/NEWS_READER_IMPLEMENTATION_1.10.143.md](docs/NEWS_READER_IMPLEMENTATION_1.10.143.md)
 - Thêm tab **Đọc báo** vào thanh điều hướng Mobile; giữ nguyên các tab YouTube, IPTV và Tùy chọn.
 - Reader dùng RSS để lấy danh sách bài; nhóm chuyên mục ngang, thẻ ảnh/tiêu đề/nguồn/thời gian, tìm trong danh sách, điều chỉnh cỡ chữ, làm mới và mở toàn bài trong WebView của nhà xuất bản.
 - VnExpress là nguồn tích hợp sẵn. Quản lý nguồn có thao tác cài tất cả, gỡ tất cả, cài riêng, bật/tắt hoặc gỡ nguồn. Danh mục hiện gồm Kênh14, Thể Thao 247, Dân Trí, GenK, VnReview, 24h, Báo Mới, Tuổi Trẻ, Thanh Niên, Tin Mới và VTV.
