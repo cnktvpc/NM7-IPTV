@@ -1,15 +1,21 @@
 # NM7 IPTV Mobile 1.10.143 — Reader tab candidate — 2026-10-22
 
-> **Trạng thái: candidate; chưa coi là bản ổn định.** Nhánh tính năng được tách từ `stable/mobile-1.10.142`; nhánh stable 1.10.142 không bị sửa. CI build và thử nghiệm trên thiết bị vẫn là điều kiện để chốt bản mới.
+> **Trạng thái: CI PASS; chưa gắn nhãn stable trước khi thử trực tiếp trên thiết bị.** Nhánh tính năng được tách từ `stable/mobile-1.10.142`; nhánh stable 1.10.142 không bị sửa. GitHub Actions đã build APK thành công và hoàn tất toàn bộ unit-test suite.
 
 - **Version candidate:** 1.10.143 / versionCode 159
 - **Feature branch:** `fix/mobile-news-reader-20261022`
+- **Build source commit:** `2598a0869a19590eb028cc8daa5a546f99d587bc`
 - **Baseline:** `stable/mobile-1.10.142` (1.10.142 / versionCode 158)
+- **CI:** [Run 39755662838 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39755662838)
+- **Artifact:** [NM7-IPTV-Mobile-1.10.143-NEWS-READER](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39755662838/artifacts/12416400323)
+- **APK SHA-256:** `1ac35fe96e8f492f00d3054f18a76387f8a2f58ac194aab6ba5c6b80d833479b`
 - Thêm tab **Đọc báo** vào thanh điều hướng Mobile; giữ nguyên các tab YouTube, IPTV và Tùy chọn.
-- Reader dùng RSS để lấy danh sách bài; nhóm chuyên mục ngang, thẻ ảnh/tiêu đề/nguồn/thời gian, tìm trong danh sách, điều chỉnh cỡ chữ, làm mới và mở toàn bài bằng WebView của nhà xuất bản.
-- VnExpress là nguồn tích hợp sẵn. Quản lý nguồn có các thao tác cài tất cả, gỡ tất cả, cài riêng, bật/tắt hoặc gỡ nguồn. Danh mục hiện gồm Kênh14, Thể Thao 247, Dân Trí, GenK, VnReview, 24h, Báo Mới, Tuổi Trẻ, Thanh Niên, Tin Mới và VTV.
-- Trình đọc không phụ thuộc catalog JS mã hóa của Super OK. Danh mục Truyện chữ/Truyện tranh chỉ là khung giao diện, chưa được triển khai trong candidate này; phạm vi bản này là tab đọc báo.
-- **Kiểm tra hiện tại:** source và manifest đã được ghi vào branch. Chưa đánh dấu build PASS trước khi GitHub Actions trả kết quả; sau build cần cài và kiểm tra thực tế trên điện thoại.
+- Reader dùng RSS để lấy danh sách bài; nhóm chuyên mục ngang, thẻ ảnh/tiêu đề/nguồn/thời gian, tìm trong danh sách, điều chỉnh cỡ chữ, làm mới và mở toàn bài trong WebView của nhà xuất bản.
+- VnExpress là nguồn tích hợp sẵn. Quản lý nguồn có thao tác cài tất cả, gỡ tất cả, cài riêng, bật/tắt hoặc gỡ nguồn. Danh mục hiện gồm Kênh14, Thể Thao 247, Dân Trí, GenK, VnReview, 24h, Báo Mới, Tuổi Trẻ, Thanh Niên, Tin Mới và VTV.
+- Trình đọc không phụ thuộc catalog JS mã hóa của Super OK. Danh mục Truyện chữ/Truyện tranh hiện là giao diện placeholder, chưa được triển khai trong candidate này; phạm vi bản này là tab đọc báo.
+- **Kiểm thử:** các bước kiểm tra wiring/version, 30 kiểm tra tĩnh Live feed, kiểm tra fullscreen Live, Gradle assemble và full Mobile unit tests đều PASS. Chưa thực hiện cài đặt và thao tác UI trên điện thoại thật trong phiên làm việc này; cần thử mở từng nguồn RSS/ảnh/bài viết trước khi chốt stable.
+
+---
 
 ---
 
