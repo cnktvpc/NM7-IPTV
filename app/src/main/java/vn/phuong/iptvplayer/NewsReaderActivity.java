@@ -1371,7 +1371,7 @@ public final class NewsReaderActivity extends Activity {
     }
 
     private List<Article> loadArticlesWithFallback(Source source, String feedUrl, String category) throws Exception {
-        if (source.jsPlugin) return parsePluginNewsSource(source, feedUrl);
+        if (source.jsPlugin) return parsePluginNewsSource(source, category);
 
         Exception rssFailure = null;
         List<Article> result = Collections.emptyList();
