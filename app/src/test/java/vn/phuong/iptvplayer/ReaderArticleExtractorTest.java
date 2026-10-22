@@ -34,7 +34,10 @@ public class ReaderArticleExtractorTest {
     @Test public void resolvesLazyImagesAndPrefersHighResolutionSrcset() {
         String html = "<article><p>Đoạn tin này mô tả đầy đủ thông tin của bài báo để trình trích xuất "
                 + "xác định đúng vùng nội dung chính. Nội dung bao gồm nhiều câu, ngữ cảnh và chi tiết cần thiết "
-                + "để vượt qua ngưỡng lọc bài viết, đồng thời bảo đảm ảnh bên trong được kiểm tra thực sự.</p>"
+                + "để vượt qua ngưỡng lọc bài viết, đồng thời bảo đảm ảnh bên trong được kiểm tra thực sự. "
+                + "Đoạn văn bổ sung mô tả bối cảnh của bản tin và các thông tin liên quan để vùng nội dung dài "
+                + "hơn mức tối thiểu mà trình trích xuất yêu cầu, tránh nhầm lẫn giữa phần tiêu đề, phần tóm tắt "
+                + "và nội dung chính. Đây là dữ liệu kiểm thử cố ý đủ dài để bài viết được nhận diện hợp lệ.</p>"
                 + "<figure><img src='data:image/gif;base64,AAAA' data-src='/img/low.jpg' "
                 + "srcset='/img/small.jpg 320w, /img/large.jpg 1280w'></figure>"
                 + "<img data-original='//cdn.news.example/story.jpg' src='/blank.gif'>"
