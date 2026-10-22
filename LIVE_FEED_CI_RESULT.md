@@ -1,8 +1,8 @@
 # NM7 IPTV Mobile 1.10.146 — CI result
 
-- Status: **FAILED**
+- Status: **RUNNING**
 - Branch: `port/news-reader-4fc-stable142-20261022`
-- Source commit: `1d0b4d8caa76a7b86d60ad69b266a1b27bf2561b`
-- Workflow run: https://github.com/cnktvpc/NM7-IPTV/actions/runs/39804935539
+- Source commit: `b0a91061b8a3c9225f3c20725b4d0b6e46890d0e`
+- Workflow run: https://github.com/cnktvpc/NM7-IPTV/actions/runs/39806147553
 
-Check this run for the failing build or unit-test step.
+Build and full unit tests are in progress.
