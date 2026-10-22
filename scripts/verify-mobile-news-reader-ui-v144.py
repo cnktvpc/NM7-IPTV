@@ -33,7 +33,7 @@ checks = [
     ("reader mode removes ad placements and common recommendation blocks",
      "stripAds(document)" in reader
      and "[class*=\\"advert\\"]" in reader
-     and "[data-ad-slot]" in reader
+     and '[data-ad-slot]' in reader
      and "[class*=\\"related\\"]" in reader),
     ("ad/tracker hosts are blocked before WebView resources are loaded",
      "shouldInterceptRequest" in reader
