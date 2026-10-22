@@ -2,7 +2,7 @@
 
 - Status: **RUNNING**
 - Branch: `fix/mobile-news-reader-20261022`
-- Source commit: `c6060ba78f72d2e70c5f7848b6321afa8f3f8fbe`
-- Workflow run: https://github.com/cnktvpc/NM7-IPTV/actions/runs/39765445685
+- Source commit: `1eb5769ac6faa5d3054901f94cf75dee26467f35`
+- Workflow run: https://github.com/cnktvpc/NM7-IPTV/actions/runs/39765597412
 
 Build and full unit tests are in progress.
