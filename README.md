@@ -1,3 +1,11 @@
+## Reader hotfix — 2026-10-23 (đang build)
+
+- Mở rộng danh mục 24h lên 21 RSS feed theo danh sách RSS chính thức.
+- Sửa ảnh thân bài: lazy-load attributes, `srcset`, URL tương đối/protocol-relative, bỏ placeholder data URL và ưu tiên ảnh độ phân giải cao.
+- Sửa vuốt ngang danh mục bằng interception trước khi child click được kích hoạt; giữ nguyên cuộn dọc.
+- Cỡ chữ 80–160% với lựa chọn trực tiếp và lưu thiết lập.
+- Nhánh candidate: `port/news-reader-4fc-stable142-20261022`. Chỉ coi là ổn định sau khi CI build và unit test pass.
+
 # NM7 IPTV Mobile 1.10.146 — Exact 1.10.142 source + News Reader — 2026-10-22
 
 > **Bản ứng viên 1.10.146 / versionCode 162:** lấy mã nguồn trực tiếp từ commit `4fc8b187db7e48591e1bcb11969436a56d27d06a` được ghi trong ảnh người dùng cung cấp, sau đó port mục Đọc báo. Giữ nguyên các lớp `MobileMiniPlayer`, `MobileInlinePlayerProviderV2`, `MobileNm7Application` và chuỗi patch YouTube của source commit; `HomeTabBar` chỉ được mở rộng thêm tab Reader và xử lý navigation inset. Có một sửa đổi XML có chủ đích để khớp chính tiêu đề ảnh: `nm7_mini_player.xml` chuyển `texture_view` → `surface_view`. Nhánh stable chính thức không bị sửa.
