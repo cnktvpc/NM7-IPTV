@@ -2,6 +2,22 @@
 
 > **Bản ứng viên 1.10.146 / versionCode 162:** lấy mã nguồn trực tiếp từ commit `4fc8b187db7e48591e1bcb11969436a56d27d06a` được ghi trong ảnh người dùng cung cấp, sau đó port mục Đọc báo. Giữ nguyên các lớp `MobileMiniPlayer`, `MobileInlinePlayerProviderV2`, `MobileNm7Application` và chuỗi patch YouTube của source commit; `HomeTabBar` chỉ được mở rộng thêm tab Reader và xử lý navigation inset. Có một sửa đổi XML có chủ đích để khớp chính tiêu đề ảnh: `nm7_mini_player.xml` chuyển `texture_view` → `surface_view`. Nhánh stable chính thức không bị sửa.
 
+## Ứng viên đã build — NM7 IPTV Mobile 1.10.146 + Đọc báo
+
+- **Kết quả:** APK build thành công; bước build và toàn bộ unit-test suite đều PASS.
+- **Đúng nền YouTube trong ảnh:** source commit `4fc8b187db7e48591e1bcb11969436a56d27d06a`, version gốc 1.10.142 / code 158.
+- **Ứng viên:** version 1.10.146 / versionCode 162.
+- **Nhánh riêng:** `port/news-reader-4fc-stable142-20261022` — không sửa nhánh stable.
+- **Giữ nguyên phần lớn code YouTube/IPTV** từ source trong ảnh; bổ sung tab Reader. Layout mini-player dùng `SurfaceView` để phù hợp với bản SurfaceView được ghi trong ảnh và để test đồng nhất.
+- **Tải APK:** [NM7-IPTV-Mobile-1.10.146-SOURCE4FC-NEWS-READER](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39806147553/artifacts/12436709882).
+- **GitHub Actions:** [Run 39806147553 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39806147553).
+- **Artifact ID:** `12436709882`, dung lượng khoảng 44 MB, hết hạn dự kiến 2026-11-21.
+- **SHA-256 APK:** `e64c700a2e16915edaaaf4624bfe17940a9e20ea6f8109b9888ec4d77cfb1458`.
+- **Tính năng Reader được port:** tải RSS/Atom và fallback HTML; đọc toàn bài trong app; bài liên quan mở ngay trong Reader; vuốt chuyển danh mục; quản lý nguồn RSS/JS.
+- CI pass không thay thế thử trực tiếp trên điện thoại. Cần kiểm tra YouTube tab và Reader trên thiết bị thực trước khi chuyển sang stable.
+
+---
+
 ## Bản ứng viên Reader trên đúng source commit trong ảnh
 
 - **Source commit:** [4fc8b187db7e48591e1bcb11969436a56d27d06a](https://github.com/cnktvpc/NM7-IPTV/commit/4fc8b187db7e48591e1bcb11969436a56d27d06a).
