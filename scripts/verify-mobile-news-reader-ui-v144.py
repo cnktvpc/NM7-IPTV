@@ -34,7 +34,7 @@ checks = [
      "stripAds(document)" in reader
      and '[class*="advert"]' in reader
      and '[data-ad-slot]' in reader
-     and '[class*="related"]' in reader
+     and '[class*="related"]' in reader),
     ("ad/tracker hosts are blocked before WebView resources are loaded",
      "shouldInterceptRequest" in reader
      and "isBlockedAdRequest(request.getUrl(), request.isForMainFrame())" in reader
