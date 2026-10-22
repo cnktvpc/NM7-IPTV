@@ -124,7 +124,7 @@ public final class ReaderArticleExtractor {
         String date = firstNonBlank(publishedDate,
                 meta(document, "article:published_time"),
                 textOf(document, "time,.date-time,.publish-date,[itemprop=datePublished]"));
-        String hero = firstNonBlank(requestedImage,
+        String hero = firstHttpUrl(baseUrl, requestedImage,
                 meta(document, "og:image"),
                 meta(document, "twitter:image"));
 
@@ -134,20 +134,40 @@ public final class ReaderArticleExtractor {
             Element clone = article.clone();
             clone.select(REMOVE_SELECTOR).remove();
             for (Element image : clone.select("img")) {
-                String src = firstNonBlank(
-                        image.absUrl("data-src"), image.absUrl("data-original"),
-                        image.absUrl("data-lazy-src"), image.absUrl("data-original-src"),
-                        image.absUrl("src"));
+                String src = firstHttpUrl(baseUrl,
+                        image.attr("data-src"),
+                        image.attr("data-original"),
+                        image.attr("data-lazy-src"),
+                        image.attr("data-original-src"),
+                        image.attr("data-actualsrc"),
+                        image.attr("data-echo"),
+                        firstSrcsetUrl(image.attr("data-srcset")),
+                        firstSrcsetUrl(image.attr("srcset")),
+                        image.attr("src"));
+                if (src.isEmpty()) {
+                    Element picture = image.parent();
+                    if (picture != null && "picture".equalsIgnoreCase(picture.tagName())) {
+                        for (Element source : picture.select("source[srcset]")) {
+                            src = firstHttpUrl(baseUrl, firstSrcsetUrl(source.attr("srcset")));
+                            if (!src.isEmpty()) break;
+                        }
+                    }
+                }
                 if (src.isEmpty()) {
                     image.remove();
                     continue;
                 }
                 image.attr("src", src);
+                image.attr("loading", "eager");
+                image.attr("decoding", "async");
                 image.removeAttr("srcset");
                 image.removeAttr("data-srcset");
                 image.removeAttr("data-src");
                 image.removeAttr("data-original");
                 image.removeAttr("data-lazy-src");
+                image.removeAttr("data-original-src");
+                image.removeAttr("data-actualsrc");
+                image.removeAttr("data-echo");
                 image.removeAttr("width");
                 image.removeAttr("height");
             }
@@ -327,6 +347,43 @@ public final class ReaderArticleExtractor {
         if (values == null) return "";
         for (String value : values) if (value != null && !value.trim().isEmpty()) return value.trim();
         return "";
+    }
+
+    private static String firstHttpUrl(String baseUrl, String... candidates) {
+        if (candidates == null) return "";
+        for (String candidate : candidates) {
+            if (candidate == null) continue;
+            String value = candidate.trim().replace("&amp;", "&");
+            if (value.isEmpty() || value.startsWith("data:") || value.startsWith("blob:")) continue;
+            if (value.startsWith("//")) value = "https:" + value;
+            try {
+                java.net.URL resolved = new java.net.URL(new java.net.URL(baseUrl), value);
+                String protocol = resolved.getProtocol();
+                if (("http".equalsIgnoreCase(protocol) || "https".equalsIgnoreCase(protocol))
+                        && resolved.getHost() != null && !resolved.getHost().isEmpty()) return resolved.toExternalForm();
+            } catch (Exception ignored) { }
+        }
+        return "";
+    }
+
+    private static String firstSrcsetUrl(String srcset) {
+        if (srcset == null || srcset.trim().isEmpty()) return "";
+        String best = "";
+        long bestWidth = -1;
+        for (String entry : srcset.split(",")) {
+            String[] parts = entry.trim().split("\\s+");
+            if (parts.length == 0 || parts[0].trim().isEmpty()) continue;
+            long width = 0;
+            if (parts.length > 1) {
+                String descriptor = parts[1].trim().toLowerCase(Locale.ROOT);
+                try {
+                    if (descriptor.endsWith("w")) width = Long.parseLong(descriptor.substring(0, descriptor.length() - 1));
+                    else if (descriptor.endsWith("x")) width = Math.round(Double.parseDouble(descriptor.substring(0, descriptor.length() - 1)) * 1000);
+                } catch (Exception ignored) { }
+            }
+            if (width >= bestWidth) { bestWidth = width; best = parts[0].trim(); }
+        }
+        return best;
     }
 
     private static String joinMeta(String source, String date) {
