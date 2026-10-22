@@ -10,8 +10,8 @@ android {
         applicationId = "vn.phuong.iptvplayer"
         minSdk = 23
         targetSdk = 36
-        versionCode = 158
-        versionName = "1.10.142"
+        versionCode = 162
+        versionName = "1.10.146"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         manifestPlaceholders["applicationClass"] = "vn.phuong.iptvplayer.MobileNm7Application"
@@ -82,6 +82,10 @@ dependencies {
     implementation("androidx.media3:media3-ui:$media3Version")
     implementation("androidx.media3:media3-datasource-okhttp:$media3Version")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    // DOM extraction/sanitization for Reader articles and source plugins.
+    implementation("org.jsoup:jsoup:1.23.2")
+    // Sandboxed JavaScript provider runtime.
+    implementation("org.mozilla:rhino:1.7.15.1")
 
     // SmartTube's DroidApplication extends AndroidX MultiDexApplication.
     // Keep the dependency direct so the Mobile app compiler can resolve that superclass.
