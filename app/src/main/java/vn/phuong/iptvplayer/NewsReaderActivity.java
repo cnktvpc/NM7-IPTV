@@ -1284,7 +1284,7 @@ public final class NewsReaderActivity extends Activity {
             main.post(() -> {
                 pluginCategoriesLoading.remove(source.pluginId);
                 getPreferencesStore().edit().putString(prefKey, categories.toString()).apply();
-                if (!categories.isEmpty() && mode == Mode.FEED && sourceId.equals(source.id)) {
+                if (categories.length() > 0 && mode == Mode.FEED && sourceId.equals(source.id)) {
                     LinkedHashMap<String, String> loaded = pluginCategoriesFor(source.pluginId);
                     source.categories.clear();
                     source.categories.putAll(loaded);
