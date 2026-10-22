@@ -10,7 +10,7 @@
 - **Nhánh riêng:** `port/news-reader-4fc-stable142-20261022` — không sửa nhánh stable.
 - **Giữ nguyên phần lớn code YouTube/IPTV** từ source trong ảnh; bổ sung tab Reader. Layout mini-player dùng `SurfaceView` để phù hợp với bản SurfaceView được ghi trong ảnh và để test đồng nhất.
 - **Tải APK:** [NM7-IPTV-Mobile-1.10.146-SOURCE4FC-NEWS-READER](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39809129235/artifacts/12439107567).
-- **GitHub Actions:** [Run 39806147553 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39809129235).
+- **GitHub Actions mới nhất:** [Run 39809129235 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39809129235).
 - **Artifact ID:** `12439107567`, dung lượng 44,013,392 byte (khoảng 44 MB), hết hạn dự kiến 2026-11-21.
 - **SHA-256 APK:** `6661132206d2769042d1ac31e48d830cf3f9dfbef5bad859334130e28e1fe619`.
 - **Tính năng Reader được port:** tải RSS/Atom và fallback HTML; đọc toàn bài trong app; bài liên quan mở ngay trong Reader; vuốt chuyển danh mục; quản lý nguồn RSS/JS.
