@@ -1,6 +1,6 @@
 # NM7 IPTV Mobile 1.10.146 — Exact 1.10.142 source + News Reader — 2026-10-22
 
-> **Bản ứng viên 1.10.146 / versionCode 162:** lấy mã nguồn trực tiếp từ commit `4fc8b187db7e48591e1bcb11969436a56d27d06a` được ghi trong ảnh người dùng cung cấp, sau đó port mục Đọc báo. Không thay đổi các lớp `MobileMiniPlayer`, `MobileInlinePlayerProviderV2`, `MobileNm7Application` và chuỗi patch YouTube của source commit; `HomeTabBar` chỉ được mở rộng thêm tab Reader và xử lý navigation inset. Nhánh stable chính thức không bị sửa.
+> **Bản ứng viên 1.10.146 / versionCode 162:** lấy mã nguồn trực tiếp từ commit `4fc8b187db7e48591e1bcb11969436a56d27d06a` được ghi trong ảnh người dùng cung cấp, sau đó port mục Đọc báo. Giữ nguyên các lớp `MobileMiniPlayer`, `MobileInlinePlayerProviderV2`, `MobileNm7Application` và chuỗi patch YouTube của source commit; `HomeTabBar` chỉ được mở rộng thêm tab Reader và xử lý navigation inset. Có một sửa đổi XML có chủ đích để khớp chính tiêu đề ảnh: `nm7_mini_player.xml` chuyển `texture_view` → `surface_view`. Nhánh stable chính thức không bị sửa.
 
 ## Bản ứng viên Reader trên đúng source commit trong ảnh
 
@@ -8,8 +8,8 @@
 - **Nhánh port:** `port/news-reader-4fc-stable142-20261022`.
 - **Version:** 1.10.146; **versionCode:** 162.
 - **Mục Đọc báo:** tải RSS/Atom; fallback trích xuất bài từ HTML; đọc nội dung trong app; bài liên quan vẫn mở bằng Reader; vuốt đổi chuyên mục; quản lý nguồn và plugin JS.
-- **Kiểm soát phạm vi:** chỉ thêm Reader, dependency/manifest, test và verifier. Các lớp playback YouTube của commit nền không được thay bằng bản từ nhánh Reader khác.
-- **CI:** chờ build, toàn bộ unit tests và artifact của nhánh port này; không dùng kết quả từ nhánh khác để đại diện.
+- **Kiểm soát phạm vi:** thêm Reader/dependency/manifest/test/verifier và đúng một sửa XML cho mini-player: `texture_view` → `surface_view`, vì SHA nguồn trong ảnh còn để TextureView dù tiêu đề ghi SurfaceView. Không thay các lớp Java playback YouTube hay chuỗi patch.
+- **CI:** lần đầu build APK **PASS**, nhưng `YouTubeSurfaceLayoutTest.miniUsesSurfaceAfterAllResourceMerges` thất bại vì thuộc tính XML nêu trên. Đã sửa tại commit `b0a91061b8a3c9225f3c20725b4d0b6e46890d0e`; chờ lần chạy kế tiếp của đúng nhánh này. Chưa dùng kết quả từ nhánh khác để đại diện.
 
 ## Thông tin bản phát hành nền 1.10.142
 
