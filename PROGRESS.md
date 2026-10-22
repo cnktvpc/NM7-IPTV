@@ -1,3 +1,27 @@
+# CẬP NHẬT TIẾN ĐỘ — READER TRÊN ĐÚNG SOURCE COMMIT 4fc8b187 — 2026-10-22
+
+## Mục tiêu và khóa nền
+- Repository: `cnktvpc/NM7-IPTV`.
+- **Base chính xác từ ảnh:** `4fc8b187db7e48591e1bcb11969436a56d27d06a`.
+- Bản nền: NM7 IPTV Mobile `1.10.142`, versionCode `158`.
+- Nhánh ứng viên tách biệt: `port/news-reader-4fc-stable142-20261022`.
+- Bản port Reader: `1.10.146`, versionCode `162`.
+- Không sửa nhánh `stable/mobile-1.10.142`.
+
+## Nội dung tích hợp
+- Port 5 lớp: `NewsReaderActivity`, `ReaderArticleExtractor`, `ReaderPluginActivity`, `ReaderPluginRuntime`, `ReaderPluginStore`.
+- Bổ sung icon Reader, đăng ký Activity và dependency Jsoup/Rhino.
+- Thêm tab **Đọc báo** vào `HomeTabBar`; giữ các phương thức YouTube/IPTV từ commit `4fc8b187`. Thêm xử lý navigation inset để không che hàng tab và tránh padding bị cộng lặp.
+- Giữ luồng RSS/Atom, fallback HTML, nội dung bài viết trong ứng dụng, bài liên quan nội bộ, vuốt chuyển category, quản lý nguồn RSS và JS provider, cùng các unit tests.
+- Chuỗi patch YouTube và các file `MobileMiniPlayer`, `MobileInlinePlayerProviderV2`, `MobileNm7Application` không được thay từ nhánh Reader khác.
+
+## CI gate
+- Workflow chuyên biệt: `.github/workflows/nm7-mobile-news-reader-v143.yml`.
+- Chờ `:app:assembleMobileDebug`, `:app:testMobileDebugUnitTest`, upload artifact và SHA-256. Chỉ ghi PASS khi các bước đó được xác nhận ở cùng run của nhánh port.
+- Cần thử trên thiết bị thật sau khi tải APK; CI không thể xác nhận mọi publisher đều cho trích xuất bài viết.
+
+---
+
 # TIẾN ĐỘ MỚI NHẤT — NM7 IPTV MOBILE 1.10.142 — ĐÃ XÁC NHẬN — 2026-10-20
 
 ## Trạng thái phát hành
