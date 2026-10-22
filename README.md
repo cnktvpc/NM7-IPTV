@@ -1,3 +1,18 @@
+# NM7 IPTV Mobile 1.10.143 — Reader tab candidate — 2026-10-22
+
+> **Trạng thái: candidate; chưa coi là bản ổn định.** Nhánh tính năng được tách từ `stable/mobile-1.10.142`; nhánh stable 1.10.142 không bị sửa. CI build và thử nghiệm trên thiết bị vẫn là điều kiện để chốt bản mới.
+
+- **Version candidate:** 1.10.143 / versionCode 159
+- **Feature branch:** `fix/mobile-news-reader-20261022`
+- **Baseline:** `stable/mobile-1.10.142` (1.10.142 / versionCode 158)
+- Thêm tab **Đọc báo** vào thanh điều hướng Mobile; giữ nguyên các tab YouTube, IPTV và Tùy chọn.
+- Reader dùng RSS để lấy danh sách bài; nhóm chuyên mục ngang, thẻ ảnh/tiêu đề/nguồn/thời gian, tìm trong danh sách, điều chỉnh cỡ chữ, làm mới và mở toàn bài bằng WebView của nhà xuất bản.
+- VnExpress là nguồn tích hợp sẵn. Quản lý nguồn có các thao tác cài tất cả, gỡ tất cả, cài riêng, bật/tắt hoặc gỡ nguồn. Danh mục hiện gồm Kênh14, Thể Thao 247, Dân Trí, GenK, VnReview, 24h, Báo Mới, Tuổi Trẻ, Thanh Niên, Tin Mới và VTV.
+- Trình đọc không phụ thuộc catalog JS mã hóa của Super OK. Danh mục Truyện chữ/Truyện tranh chỉ là khung giao diện, chưa được triển khai trong candidate này; phạm vi bản này là tab đọc báo.
+- **Kiểm tra hiện tại:** source và manifest đã được ghi vào branch. Chưa đánh dấu build PASS trước khi GitHub Actions trả kết quả; sau build cần cài và kiểm tra thực tế trên điện thoại.
+
+---
+
 # NM7 IPTV Mobile — Stable 1.10.142 — YouTube Floating MiniPlayer / SurfaceView — 2026-10-20
 
 > **Trạng thái:** CI build và unit tests đã hoàn tất thành công. APK được tạo từ mã nguồn mới nhất trên nhánh `build/youtube-miniplayer-20261020`, sau đó checksum được đối chiếu với `SHA256SUMS.txt` trong artifact. Cần tiếp tục kiểm thử trên thiết bị thật để xác nhận chuyển đổi SurfaceView và đồng bộ hình/tiếng; CI không thay thế runtime test.
