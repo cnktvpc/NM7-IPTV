@@ -1,11 +1,14 @@
-## 2026-10-23 — Reader hotfix sau khi đối chiếu Super OK [2.5].apk
+## 2026-10-23 — Reader hotfix sau khi đối chiếu Super OK [2.5].apk — BUILD + UNIT TEST PASS
 
-- Candidate branch: `port/news-reader-4fc-stable142-20261022` (không sửa nhánh stable).
+- Candidate branch: `port/news-reader-4fc-stable142-20261022` (nhánh stable không bị ghi đè).
 - 24h: bổ sung 21 RSS category theo danh sách RSS chính thức, thay vì chỉ 5 tab.
-- Ảnh bài báo: ưu tiên data-src/data-original/data-lazy-src/data-actualsrc, chọn biến thể độ phân giải cao từ `srcset`, giải quyết URL tương đối/protocol-relative, bỏ placeholder `data:` và bật tải ảnh eager.
-- Vuốt danh mục: intercept cử chỉ ngang trước khi child xử lý click; vuốt dọc vẫn giữ cuộn, tránh mở nhầm bài khi vuốt.
+- Ảnh bài báo: ưu tiên lazy image attributes, chọn biến thể độ phân giải cao từ `srcset`, giải quyết URL tương đối/protocol-relative, bỏ placeholder `data:` và bật tải ảnh eager.
+- Vuốt danh mục: intercept cử chỉ ngang trước khi child xử lý click; vuốt dọc vẫn giữ cuộn, tránh mở nhầm bài.
 - Cỡ chữ: nút Aᴀ mở lựa chọn 80–160%, lưu tùy chọn và áp dụng cho WebView.
-- Đã bổ sung unit test ảnh lazy/srcset. Chờ CI xác nhận build + toàn bộ test trước khi giao APK.
+- CI run: https://github.com/cnktvpc/NM7-IPTV/actions/runs/39868755558 — APK build **PASS**, full Mobile unit-test suite **PASS**, upload artifact **PASS**.
+- Artifact: `NM7-IPTV-Mobile-1.10.146-SOURCE4FC-NEWS-READER`, ID `12465652077`.
+- SHA-256 APK: `af127d415b0c2b8417c9365ec1dcf148304999d7f275619fca7b13a6bcf4f42a`.
+- Đây là candidate để người dùng kiểm tra trên thiết bị thật; CI không thay thế việc thử giao diện/ảnh/gesture trên máy thực.
 
 # CẬP NHẬT TIẾN ĐỘ — READER TRÊN ĐÚNG SOURCE COMMIT 4fc8b187 — 2026-10-22
 
