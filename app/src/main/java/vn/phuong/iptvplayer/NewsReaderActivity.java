@@ -177,8 +177,24 @@ public final class NewsReaderActivity extends Activity {
                     cats("Trang chủ", "https://www.24h.com.vn/upload/rss/trangchu24h.rss",
                             "Tin tức", "https://www.24h.com.vn/upload/rss/tintuctrongngay.rss",
                             "Bóng đá", "https://www.24h.com.vn/upload/rss/bongda.rss",
+                            "An ninh - Hình sự", "https://www.24h.com.vn/upload/rss/anninhhinhsu.rss",
+                            "Thời trang", "https://www.24h.com.vn/upload/rss/thoitrang.rss",
+                            "Thời trang Hi-tech", "https://www.24h.com.vn/upload/rss/thoitranghitech.rss",
+                            "Tài chính - Bất động sản", "https://www.24h.com.vn/upload/rss/taichinhbatdongsan.rss",
+                            "Ẩm thực", "https://www.24h.com.vn/upload/rss/amthuc.rss",
+                            "Làm đẹp", "https://www.24h.com.vn/upload/rss/lamdep.rss",
+                            "Phim", "https://www.24h.com.vn/upload/rss/phim.rss",
+                            "Giáo dục - du học", "https://www.24h.com.vn/upload/rss/giaoducduhoc.rss",
+                            "Bạn trẻ - Cuộc sống", "https://www.24h.com.vn/upload/rss/bantrecuocsong.rss",
+                            "Ca nhạc - MTV", "https://www.24h.com.vn/upload/rss/canhacmtv.rss",
                             "Thể thao", "https://www.24h.com.vn/upload/rss/thethao.rss",
-                            "Công nghệ", "https://www.24h.com.vn/upload/rss/congnghethongtin.rss")),
+                            "Phi thường - kỳ quặc", "https://www.24h.com.vn/upload/rss/phithuongkyquac.rss",
+                            "Công nghệ", "https://www.24h.com.vn/upload/rss/congnghethongtin.rss",
+                            "Ô tô", "https://www.24h.com.vn/upload/rss/oto.rss",
+                            "Thị trường - Tiêu dùng", "https://www.24h.com.vn/upload/rss/thitruongtieudung.rss",
+                            "Du lịch", "https://www.24h.com.vn/upload/rss/dulich.rss",
+                            "Sức khỏe đời sống", "https://www.24h.com.vn/upload/rss/suckhoedoisong.rss",
+                            "Cười 24h", "https://www.24h.com.vn/upload/rss/cuoi24h.rss")),
             makeSource("baomoi", "Báo Mới", "Tổng hợp tin từ nhiều báo", "baomoi.com",
                     cats("Trang chủ", "https://baomoi.com/rss/home.rss")),
             makeSource("tuoitre", "Tuổi Trẻ", "Tin tức trong nước và quốc tế", "tuoitre.vn",
@@ -211,6 +227,7 @@ public final class NewsReaderActivity extends Activity {
             getWindow().setNavigationBarContrastEnforced(false);
         }
         sourceId = getPreferencesStore().getString(KEY_SOURCE, "vnexpress");
+        textScale = Math.max(80, Math.min(160, getPreferencesStore().getInt("reader_text_scale", 100)));
         buildShell();
         renderFeed(true);
         HomeTabBar.attachReader(this);
@@ -361,28 +378,54 @@ public final class NewsReaderActivity extends Activity {
     private final class FeedScrollView extends ScrollView {
         private float downX;
         private float downY;
+        private boolean horizontalSwipe;
+        private boolean categorySwipeDispatched;
+        private int swipeDirection;
+
         FeedScrollView(Context context) { super(context); }
-        @Override public boolean dispatchTouchEvent(MotionEvent event) {
-            boolean horizontalSwipe = false;
-            int direction = 0;
-            if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
-                downX = event.getX();
-                downY = event.getY();
-            } else if (event.getActionMasked() == MotionEvent.ACTION_UP) {
-                float dx = event.getX() - downX;
-                float dy = event.getY() - downY;
-                float threshold = dp(72);
-                if (Math.abs(dx) >= threshold && Math.abs(dx) > Math.abs(dy) * 1.3f) {
-                    horizontalSwipe = true;
-                    direction = dx < 0 ? 1 : -1;
+
+        @Override public boolean onInterceptTouchEvent(MotionEvent event) {
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    downX = event.getX();
+                    downY = event.getY();
+                    horizontalSwipe = false;
+                    categorySwipeDispatched = false;
+                    swipeDirection = 0;
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    float dx = event.getX() - downX;
+                    float dy = event.getY() - downY;
+                    if (Math.abs(dx) >= dp(28) && Math.abs(dx) > Math.abs(dy) * 1.25f) {
+                        horizontalSwipe = true;
+                        swipeDirection = dx < 0 ? 1 : -1;
+                        return true;
+                    }
+                    break;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    if (horizontalSwipe) return true;
+                    break;
+            }
+            return super.onInterceptTouchEvent(event);
+        }
+
+        @Override public boolean onTouchEvent(MotionEvent event) {
+            if (event.getActionMasked() == MotionEvent.ACTION_UP) {
+                if (horizontalSwipe && !categorySwipeDispatched && swipeDirection != 0) {
+                    categorySwipeDispatched = true;
+                    final int move = swipeDirection;
+                    post(() -> stepCategoryBySwipe(move));
                 }
+                horizontalSwipe = false;
+                return true;
             }
-            boolean handled = super.dispatchTouchEvent(event);
-            if (horizontalSwipe) {
-                final int move = direction;
-                post(() -> stepCategoryBySwipe(move));
+            if (event.getActionMasked() == MotionEvent.ACTION_CANCEL) {
+                horizontalSwipe = false;
+                return true;
             }
-            return handled;
+            if (horizontalSwipe) return true;
+            return super.onTouchEvent(event);
         }
     }
 
@@ -587,9 +630,24 @@ public final class NewsReaderActivity extends Activity {
         font.setContentDescription("Đổi cỡ chữ bài viết");
         toolbar.addView(font, new LinearLayout.LayoutParams(dp(38), -1));
         font.setOnClickListener(v -> {
-            textScale = textScale >= 130 ? 90 : textScale + 10;
-            if (articleWebView != null) articleWebView.getSettings().setTextZoom(textScale);
-            toast("Cỡ chữ " + textScale + "%");
+            final int[] scales = {80, 90, 100, 110, 120, 130, 140, 150, 160};
+            String[] labels = new String[scales.length];
+            int selected = 2;
+            for (int i = 0; i < scales.length; i++) {
+                labels[i] = scales[i] + "%";
+                if (scales[i] == textScale) selected = i;
+            }
+            new AlertDialog.Builder(NewsReaderActivity.this)
+                    .setTitle("Cỡ chữ bài viết")
+                    .setSingleChoiceItems(labels, selected, (dialog, which) -> {
+                        textScale = scales[which];
+                        getPreferencesStore().edit().putInt("reader_text_scale", textScale).apply();
+                        if (articleWebView != null) articleWebView.getSettings().setTextZoom(textScale);
+                        toast("Cỡ chữ " + textScale + "%");
+                        dialog.dismiss();
+                    })
+                    .setNegativeButton("Đóng", null)
+                    .show();
         });
 
         TextView original = text("↗", 22, ORANGE, true);
