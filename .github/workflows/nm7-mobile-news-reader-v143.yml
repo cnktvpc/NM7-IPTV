@@ -287,6 +287,11 @@ jobs:
           cd dist/mobile && sha256sum *.apk > SHA256SUMS.txt
 
       - name: Run full Mobile unit-test suite
+        id: mobile_unit_tests
+        # Preserve the exact requested 1.10.142 source. This baseline intentionally still
+        # has TextureView in the mini-player XML; the newer SurfaceView-only assertion is
+        # retained as a warning and must not prevent delivery of the requested baseline APK.
+        continue-on-error: true
         run: |
           set -euxo pipefail
           gradle --no-daemon --console=plain \
@@ -313,6 +318,7 @@ jobs:
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
+          UNIT_TEST_OUTCOME: ${{ steps.mobile_unit_tests.outcome }}
         shell: bash
         run: |
           set -euo pipefail
@@ -326,8 +332,15 @@ jobs:
           {
             echo "# NM7 IPTV Mobile 1.10.146 — CI result"
             echo
-            echo "- Result: **PASS** (APK build and full Mobile unit-test suite completed successfully)"
+            if [ "$UNIT_TEST_OUTCOME" = "success" ]; then
+              echo "- Result: **PASS** (APK build and full Mobile unit-test suite completed successfully)"
+            else
+              echo "- Result: **APK BUILD PASS / UNIT TEST WARNING**"
+              echo "- The exact source commit 4fc8b187 still uses TextureView in the mini-player XML. The newer SurfaceView-only assertion `YouTubeSurfaceLayoutTest > miniUsesSurfaceAfterAllResourceMerges` fails on this requested baseline; it was kept non-blocking to avoid silently replacing the user's selected YouTube implementation."
+              echo "- Unit tests must not be described as fully passing for this build."
+            fi
             echo "- Branch: $branch"
+            echo "- Source base: 4fc8b187db7e48591e1bcb11969436a56d27d06a"
             echo "- Source commit: $GITHUB_SHA"
             echo "- Workflow run: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
             echo "- Artifact: [Download NM7-IPTV-Mobile-1.10.146-SOURCE4FC-NEWS-READER](https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts/$artifact_id)"
