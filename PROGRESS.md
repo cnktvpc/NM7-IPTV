@@ -13,7 +13,7 @@
 - Bổ sung icon Reader, đăng ký Activity và dependency Jsoup/Rhino.
 - Thêm tab **Đọc báo** vào `HomeTabBar`; giữ các phương thức YouTube/IPTV từ commit `4fc8b187`. Thêm xử lý navigation inset để không che hàng tab và tránh padding bị cộng lặp.
 - Giữ luồng RSS/Atom, fallback HTML, nội dung bài viết trong ứng dụng, bài liên quan nội bộ, vuốt chuyển category, quản lý nguồn RSS và JS provider, cùng các unit tests.
-- Chuỗi patch YouTube và các file `MobileMiniPlayer`, `MobileInlinePlayerProviderV2`, `MobileNm7Application` không được thay từ nhánh Reader khác.
+- Chuỗi patch YouTube và các file `MobileMiniPlayer`, `MobileInlinePlayerProviderV2`, `MobileNm7Application` không được thay từ nhánh Reader khác. Vì SHA nền có `app:surface_type="texture_view"` trái với tiêu đề ảnh và test SurfaceView, chỉ sửa đúng thuộc tính XML `app/src/main/res/layout/nm7_mini_player.xml` thành `surface_view` (commit `b0a91061b8a3c9225f3c20725b4d0b6e46890d0e`).
 
 ## CI gate
 - Workflow chuyên biệt: `.github/workflows/nm7-mobile-news-reader-v143.yml`.
