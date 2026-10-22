@@ -76,6 +76,7 @@ public final class HomeTabBar {
                 ? activity.findViewById(R.id.listChannels) instanceof android.widget.ListView
                     ? (android.widget.ListView) activity.findViewById(R.id.listChannels) : null
                 : null;
+        final int channelListBaseBottom = channelList == null ? 0 : channelList.getPaddingBottom();
 
         FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, barHeight, Gravity.BOTTOM);
@@ -105,7 +106,7 @@ public final class HomeTabBar {
             if (channelList != null) {
                 channelList.setClipToPadding(false);
                 channelList.setPadding(channelList.getPaddingLeft(), channelList.getPaddingTop(),
-                        channelList.getPaddingRight(), channelList.getPaddingBottom() + listReserve + bottomInset);
+                        channelList.getPaddingRight(), channelListBaseBottom + listReserve + bottomInset);
             }
             return insets;
         });
