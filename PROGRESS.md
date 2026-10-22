@@ -1,20 +1,32 @@
-# NM7 IPTV Mobile 1.10.143 — Reader tab candidate — 2026-10-22
+# NM7 IPTV Mobile 1.10.144 — Reader visual and navigation refinement — 2026-10-22
 
-> **Trạng thái: CI PASS; chưa gắn nhãn stable trước khi thử trực tiếp trên thiết bị.** Nhánh tính năng được tách từ `stable/mobile-1.10.142`; nhánh stable 1.10.142 không bị sửa. GitHub Actions đã build APK thành công và hoàn tất toàn bộ unit-test suite.
+> **CI PASS; candidate chưa được nâng lên stable trước khi thử trên điện thoại thật.** Bản này tiếp tục phát triển từ nhánh tính năng tách riêng trên baseline `stable/mobile-1.10.142`; nhánh stable 1.10.142 vẫn nguyên trạng.
 
-- **Version candidate:** 1.10.143 / versionCode 159
+- **Version:** 1.10.144 / versionCode 160
 - **Feature branch:** `fix/mobile-news-reader-20261022`
-- **Build source commit:** `2598a0869a19590eb028cc8daa5a546f99d587bc`
-- **Baseline:** `stable/mobile-1.10.142` (1.10.142 / versionCode 158)
-- **CI:** [Run 39755662838 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39755662838)
-- **Artifact:** [NM7-IPTV-Mobile-1.10.143-NEWS-READER](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39755662838/artifacts/12416400323)
-- **APK SHA-256:** `1ac35fe96e8f492f00d3054f18a76387f8a2f58ac194aab6ba5c6b80d833479b`
-- **Nghiên cứu cơ chế và ghi chú triển khai:** [docs/NEWS_READER_IMPLEMENTATION_1.10.143.md](docs/NEWS_READER_IMPLEMENTATION_1.10.143.md)
-- Thêm tab **Đọc báo** vào thanh điều hướng Mobile; giữ nguyên các tab YouTube, IPTV và Tùy chọn.
-- Reader dùng RSS để lấy danh sách bài; nhóm chuyên mục ngang, thẻ ảnh/tiêu đề/nguồn/thời gian, tìm trong danh sách, điều chỉnh cỡ chữ, làm mới và mở toàn bài trong WebView của nhà xuất bản.
-- VnExpress là nguồn tích hợp sẵn. Quản lý nguồn có thao tác cài tất cả, gỡ tất cả, cài riêng, bật/tắt hoặc gỡ nguồn. Danh mục hiện gồm Kênh14, Thể Thao 247, Dân Trí, GenK, VnReview, 24h, Báo Mới, Tuổi Trẻ, Thanh Niên, Tin Mới và VTV.
-- Trình đọc không phụ thuộc catalog JS mã hóa của Super OK. Danh mục Truyện chữ/Truyện tranh hiện là giao diện placeholder, chưa được triển khai trong candidate này; phạm vi bản này là tab đọc báo.
-- **Kiểm thử:** các bước kiểm tra wiring/version, 30 kiểm tra tĩnh Live feed, kiểm tra fullscreen Live, Gradle assemble và full Mobile unit tests đều PASS. Chưa thực hiện cài đặt và thao tác UI trên điện thoại thật trong phiên làm việc này; cần thử mở từng nguồn RSS/ảnh/bài viết trước khi chốt stable.
+- **Build source commit:** `1eb5769ac6faa5d3054901f94cf75dee26467f35`
+- **CI:** [Run 39765597412 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39765597412)
+- **Artifact:** [NM7-IPTV-Mobile-1.10.144-NEWS-READER](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39765597412/artifacts/12419494923)
+- **APK SHA-256:** `47e0447854ec92aa28a3598b394eec7faa1bcba8a3282403c4800a07c9ac6b11`
+- **Nghiên cứu và ghi chú cập nhật:** [docs/NEWS_READER_REFINEMENT_1.10.144.md](docs/NEWS_READER_REFINEMENT_1.10.144.md)
+
+## Những lỗi được xử lý
+
+- Tab **Đọc báo** dành khoảng trống status bar/display cutout ở trên cùng, tránh chữ nguồn chồng lên giờ/trạng thái hệ thống.
+- Thanh tab dưới dùng chung được đặt theo system navigation/gesture inset; phần nội dung IPTV cũng dự trữ đúng vùng cuộn, để vị trí thanh tab đồng nhất hơn giữa YouTube, IPTV và Đọc báo.
+- Trang bài chuyển sang chế độ đọc nền tối `#101114`, chữ sáng, cỡ chữ/dòng dễ đọc; cố gắng trích riêng tiêu đề, mô tả và phần nội dung bài thay vì giữ nguyên toàn bộ giao diện website.
+- WebView lọc các host quảng cáo/tracker phổ biến, chặn một số đường dẫn quảng cáo và loại bỏ các khối quảng cáo/đề xuất thường gặp trong DOM; ảnh lazy-load được ưu tiên giữ lại khi dựng phần nội dung sạch.
+
+## Kiểm thử
+
+- Kiểm tra cấu hình/version và Reader wiring: PASS.
+- 11 kiểm tra tự động bổ sung cho insets, dark mode, trích xuất nội dung và lọc quảng cáo: PASS.
+- 30 kiểm tra Live feed, kiểm tra fullscreen Live và regression guards: PASS.
+- Gradle `:app:assembleMobileDebug`: PASS.
+- Full Mobile unit-test suite: PASS.
+- APK đã được tải về, kiểm tra tính toàn vẹn ZIP và đối chiếu checksum bên trong artifact: PASS.
+
+**Giới hạn kiểm thử:** trong phiên này chưa có thao tác cài APK lên điện thoại thật để quay/chụp UI. Bộ lọc chặn các host và cấu trúc quảng cáo đã biết nhưng không thể cam kết loại tuyệt đối mọi quảng cáo nếu nhà xuất bản nhúng quảng cáo như nội dung first-party hoặc thay đổi HTML. Cần thử trực tiếp các nguồn VnExpress, Dân Trí và các nguồn báo khác trước khi nâng candidate lên stable.
 
 ---
 
