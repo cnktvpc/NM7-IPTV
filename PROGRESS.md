@@ -17,8 +17,9 @@
 
 ## CI gate
 - Workflow chuyên biệt: `.github/workflows/nm7-mobile-news-reader-v143.yml`.
-- Chờ `:app:assembleMobileDebug`, `:app:testMobileDebugUnitTest`, upload artifact và SHA-256. Chỉ ghi PASS khi các bước đó được xác nhận ở cùng run của nhánh port.
-- Cần thử trên thiết bị thật sau khi tải APK; CI không thể xác nhận mọi publisher đều cho trích xuất bài viết.
+- Lần chạy `39804935539`: `:app:assembleMobileDebug` **PASS**, nhưng unit test có 1 lỗi trong 96 tests: `YouTubeSurfaceLayoutTest.miniUsesSurfaceAfterAllResourceMerges` vì layout còn dùng `texture_view`.
+- Đã sửa thuộc tính XML sang `surface_view` trong commit `b0a91061b8a3c9225f3c20725b4d0b6e46890d0e`, theo yêu cầu SurfaceView ghi trong ảnh. Run tiếp theo đang kiểm tra đúng commit sửa này: [run 39806147553](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39806147553).
+- Chỉ ghi PASS khi run này xác nhận build, toàn bộ unit tests, upload artifact và SHA-256. Cần thử trên thiết bị thật sau khi tải APK; CI không thể xác nhận mọi publisher đều cho trích xuất bài viết.
 
 ---
 
