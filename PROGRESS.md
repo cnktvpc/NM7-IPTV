@@ -1,33 +1,37 @@
 # TIẾN ĐỘ MỚI NHẤT — NM7 IPTV MOBILE 1.10.149 — FIX IPTV/READER RETURN — 2026-10-23
 
-## Phạm vi sửa lỗi trên Build #16
+## Trạng thái hiện tại
+- **Phản hồi kiểm thử thiết bị mới nhất:** người dùng báo “Tạm thời ok rồi, cần test thêm”.
+- **Kết luận:** hai lỗi IPTV → Đọc báo → IPTV và vuốt quay lại chuyên mục Đọc báo đang **tạm thời có vẻ đã ổn**, nhưng chưa coi là xác nhận cuối cùng. Tiếp tục theo dõi trong quá trình dùng thực tế.
+- **Phát hành:** vẫn là candidate 1.10.149 / versionCode 165. **Không merge/promote sang nhánh stable** cho đến khi người dùng xác nhận đã test đủ.
+- **Nhánh riêng:** `rebuild/reader-only-from-stable-142-20261023`.
+- **Bản stable được bảo vệ:** `stable/mobile-1.10.142` — không sửa nhánh này.
+
+## Build và bản nền
 - **Bản nền giữ nguyên:** source commit `4fc8b187db7e48591e1bcb11969436a56d27d06a` — NM7 Mobile 1.10.142, versionCode 158, bản nền YouTube Floating MiniPlayer / SurfaceView đã được xác nhận.
-- **Candidate:** NM7 Mobile 1.10.149 / versionCode 165; nhánh `rebuild/reader-only-from-stable-142-20261023`.
-- **Commit sửa code cuối:** [`317825a`](https://github.com/cnktvpc/NM7-IPTV/commit/317825a58d651671071440ffcf38ec1fc6f6b8c8).
-- **CI chính thức:** [Run 39918903288 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39918903288).
-- **APK artifact của đúng commit:** [NM7-IPTV-Mobile-1.10.149-READER-BASELINE142](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39918903288/artifacts/12485724456), ID `12485724456`, 44,019,483 bytes; hết hạn dự kiến 2026-11-22.
+- **Commit sửa code:** [`317825a`](https://github.com/cnktvpc/NM7-IPTV/commit/317825a58d651671071440ffcf38ec1fc6f6b8c8).
+- **CI:** [Run 39918903288 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39918903288).
+- **APK artifact:** [NM7-IPTV-Mobile-1.10.149-READER-BASELINE142](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39918903288/artifacts/12485724456), ID `12485724456`, 44,019,483 bytes; hết hạn dự kiến 2026-11-22.
 
-## Nguyên nhân và thay đổi
-1. Quay về tab IPTV gọi `playInline()` lần nữa dù ExoPlayer cũ vẫn còn phiên phát đã chuẩn bị/phát. Việc đặt lại MediaItem/decoder có thể làm hình bị khựng. Sửa bằng cách giữ player còn sống và để lifecycle hiện có tiếp tục phát; chỉ phục hồi stream theo nhánh cũ khi player không còn hợp lệ/đã về IDLE.
-2. Tab Đọc báo có thể tạo Activity mới do intent không dùng `FLAG_ACTIVITY_REORDER_TO_FRONT`. Sửa để đưa Reader Activity đã có lên trước, giữ trạng thái tab nội dung.
-3. Mỗi lần vuốt lại chuyên mục trước đều gọi RSS/HTML fetch mới. Thêm cache theo nguồn + feed URL trong vòng đời Reader Activity, nhớ/khôi phục vị trí cuộn theo nguồn + chuyên mục, và giữ nút Làm mới/Thử lại ở chế độ force-refresh.
-4. Thêm regression checks cho tái sử dụng Reader Activity, cache/vị trí cuộn và bảo vệ phiên ExoPlayer.
+## Hai lỗi và thay đổi
+1. Quay về tab IPTV có thể gọi `playInline()` lần nữa khi ExoPlayer cũ vẫn còn phiên phát, gây đặt lại MediaItem/decoder và khựng hình. Đã thêm guard để giữ player hợp lệ đang chạy.
+2. Tab Đọc báo có thể tạo Activity mới, mất trạng thái. Đã thêm `FLAG_ACTIVITY_REORDER_TO_FRONT` để đưa Reader Activity cũ lên trước.
+3. Vuốt về chuyên mục đã xem trước đây gọi tải feed mới. Đã thêm cache theo nguồn + feed URL, nhớ/khôi phục vị trí cuộn theo nguồn/chuyên mục. Nút Làm mới/Thử lại vẫn force-refresh.
+4. Thêm regression guards cho tái sử dụng Reader Activity, cache/vị trí cuộn và bảo vệ phiên ExoPlayer.
 
-## Xác minh
+## Kiểm tra CI
 - Reader-only integration / YouTube baseline guard: **PASS**.
 - Reader-focused unit tests: **PASS**.
 - Build APK 1.10.149: **PASS**.
-- Toàn bộ Mobile unit-test suite trong workflow này: **PASS**.
+- Toàn bộ Mobile unit-test suite trong workflow: **PASS**.
 - Upload artifact: **PASS**.
-- Chuỗi patch YouTube/SmartTube và source baseline được giữ nguyên; `openBrowse` / `openIptv` không nằm trong diff.
-- **Chưa xác nhận trên thiết bị thật:** cần thử đang phát IPTV → Đọc báo → IPTV và vuốt qua lại các chuyên mục đã xem. Đây vẫn là candidate; chưa được gắn nhãn stable trước khi kiểm thử thực tế.
+- Các kiểm thử tự động không thay thế hoàn toàn việc theo dõi trên thiết bị thật; giữ candidate để người dùng tiếp tục test.
 
-## Phạm vi file
+## Phạm vi code đã sửa
 - `app/src/main/java/vn/phuong/iptvplayer/HomeTabBar.java`
 - `app/src/main/java/vn/phuong/iptvplayer/NewsReaderActivity.java`
 - `app/src/main/java/vn/phuong/iptvplayer/MobileInlinePlayerProviderV2.java`
 - `scripts/verify-reader-only-port-v149.py`
-
 
 
 ---
