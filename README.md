@@ -1,3 +1,15 @@
+# NM7 IPTV Mobile 1.10.149 — Reader-only port on stable YouTube 1.10.142 — 2026-10-23
+
+> **Rebuild scope:** this candidate starts from `stable/mobile-1.10.142` (head `7500feb0a2755148e1a40ca12a1037380253bc46`) and ports only the Reader feature. The YouTube/Playback source chain and SmartTube source pin are inherited from the stable branch. The YouTube Back/miniplayer changes from the later 1.10.147–1.10.148 candidate are explicitly excluded.
+
+- Candidate branch: `rebuild/news-reader-stable142-20261023`
+- Candidate version: `1.10.149`, versionCode `165`
+- Reader includes the article feed/catalog, native in-app article extraction, source/plugin manager for RSS/HTML/JavaScript news sources, and comic/novel providers.
+- Reader integration consists of its Activity registrations, two pinned dependencies (Jsoup/Rhino), Reader tab/icon and Reader-specific inset handling. Existing YouTube/IPTV/settings tab routing and the stable mini-player XML remain from the baseline.
+- **Status:** CI pending; no change is made to `stable/mobile-1.10.142`.
+
+---
+
 # NM7 IPTV Mobile — Stable 1.10.142 — YouTube Floating MiniPlayer / SurfaceView — 2026-10-20
 
 > **Trạng thái cập nhật 2026-10-22:** Build APK thành công. Lưu ý: bước `:app:testMobileDebugUnitTest` trong run 39407088691 có lỗi nhưng được cấu hình `continue-on-error: true`, vì vậy workflow vẫn báo SUCCESS. Không ghi nhận unit tests là PASS cho lần build này. Cần xử lý lỗi test và kiểm thử trên thiết bị thật trước khi xác nhận riêng các thay đổi YouTube MiniPlayer là ổn định.

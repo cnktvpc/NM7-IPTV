@@ -1,3 +1,16 @@
+# 2026-10-23 — Rebuild Reader from stable/mobile-1.10.142, exclude YouTube hotfixes
+
+- **Baseline:** `stable/mobile-1.10.142`, head `7500feb0a2755148e1a40ca12a1037380253bc46`; original release source commit `4fc8b187db7e48591e1bcb11969436a56d27d06a`.
+- **Candidate branch:** `rebuild/news-reader-stable142-20261023`.
+- **Target version:** NM7 IPTV Mobile `1.10.149`, versionCode `165`.
+- **Scope:** port Reader Java classes, Reader/plugin unit tests, Reader icon, Reader manifest entries, Jsoup/Rhino dependencies, and Reader tab integration into the baseline HomeTabBar.
+- **Explicit exclusions:** do not transplant any YouTube/Playback/Back/miniplayer patch scripts, SmartTube source upgrades, `Nm7FeedAdapter` changes, or `nm7_mini_player.xml` changes from the previous Reader candidate. `openBrowse()` and `openIptv()` remain inherited from stable 1.10.142.
+- **Layout isolation:** existing IPTV main-root/list padding retains the baseline behavior; navigation inset margin is applied to the Reader tab only. The baseline mini-player resource and original SmartTube source pin remain unchanged.
+- **CI status:** pending the Reader candidate run. The stable 1.10.142 baseline has a known SurfaceView-focused assertion that disagrees with its original mini-player resource; do not change that resource merely to force that unrelated test green. Reader-specific guards and Reader unit tests are blocking.
+- **Stable branch:** not modified or promoted.
+
+---
+
 # CẬP NHẬT TIẾN ĐỘ — BUILD YOUTUBE MINIPLAYER 1.10.142 — 2026-10-22
 
 ## Kết quả kiểm tra

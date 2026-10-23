@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
+import android.os.Build;
+import android.view.WindowInsets;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,6 +27,16 @@ public final class HomeTabBar {
     private HomeTabBar() {}
 
     public static void attach(Activity activity, boolean youtubeSelected) {
+        attachInternal(activity, youtubeSelected ? 0 : 1);
+    }
+
+    /** Attach the same navigation row while the in-app Reader is visible. */
+    public static void attachReader(Activity activity) {
+        attachInternal(activity, 2);
+    }
+
+    private static void attachInternal(Activity activity, int selectedTab) {
+        boolean youtubeSelected = selectedTab == 0;
         View content = activity.findViewById(android.R.id.content);
         if (!(content instanceof FrameLayout)) return;
         FrameLayout host = (FrameLayout) content;
@@ -39,12 +51,16 @@ public final class HomeTabBar {
         bar.setElevation(dp(activity, 8));
         bar.setPadding(0, dp(activity, 4), 0, dp(activity, 4));
 
-        addItem(activity, bar, R.drawable.nm7_nav_youtube, youtubeSelected, "YouTube", () -> {
-            if (!youtubeSelected) openBrowse(activity);
+        addItem(activity, bar, R.drawable.nm7_nav_youtube, selectedTab == 0, "YouTube", () -> {
+            if (selectedTab != 0) openBrowse(activity);
         });
 
-        addItem(activity, bar, R.drawable.nm7_nav_iptv, !youtubeSelected, "IPTV", () -> {
-            if (youtubeSelected) openIptv(activity);
+        addItem(activity, bar, R.drawable.nm7_nav_iptv, selectedTab == 1, "IPTV", () -> {
+            if (selectedTab != 1) openIptv(activity);
+        });
+
+        addItem(activity, bar, R.drawable.nm7_nav_news, selectedTab == 2, "Đọc báo", () -> {
+            if (selectedTab != 2) openNews(activity);
         });
 
         // Application settings is a top-level destination of the same bottom bar.
@@ -53,14 +69,37 @@ public final class HomeTabBar {
         addItem(activity, bar, R.drawable.nm7_nav_settings, false, "Tùy chọn",
                 () -> openAppSettings(activity));
 
+        final int barHeight = dp(activity, 64);
         FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, dp(activity, 64), Gravity.BOTTOM);
+                ViewGroup.LayoutParams.MATCH_PARENT, barHeight, Gravity.BOTTOM);
         host.addView(bar, lp);
+        // Apply edge-to-edge navigation inset only for Reader. The original YouTube,
+        // IPTV and settings bar placement remains exactly as on stable 1.10.142.
+        if (selectedTab == 2) {
+            bar.setOnApplyWindowInsetsListener((view, insets) -> {
+                int bottomInset;
+                if (Build.VERSION.SDK_INT >= 30) {
+                    bottomInset = insets.getInsets(WindowInsets.Type.navigationBars()).bottom;
+                } else {
+                    bottomInset = insets.getSystemWindowInsetBottom();
+                }
+                ViewGroup.LayoutParams raw = view.getLayoutParams();
+                if (raw instanceof FrameLayout.LayoutParams) {
+                    FrameLayout.LayoutParams barParams = (FrameLayout.LayoutParams) raw;
+                    if (barParams.bottomMargin != bottomInset) {
+                        barParams.bottomMargin = bottomInset;
+                        view.setLayoutParams(barParams);
+                    }
+                }
+                return insets;
+            });
+            bar.requestApplyInsets();
+        }
         if (activity instanceof MainActivity) {
             View root = activity.findViewById(R.id.mainRoot);
             if (root != null) {
                 root.setPadding(root.getPaddingLeft(), root.getPaddingTop(), root.getPaddingRight(),
-                        root.getPaddingBottom() + dp(activity, 64));
+                        root.getPaddingBottom() + barHeight);
             }
 
             // NM7 1.10.89: the tab bar is an overlay, so reserve scrollable space
@@ -74,6 +113,12 @@ public final class HomeTabBar {
                         list.getPaddingRight(), list.getPaddingBottom() + dp(activity, 76));
             }
         }
+    }
+
+    private static void openNews(Activity activity) {
+        Intent intent = new Intent(activity, NewsReaderActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        startWithoutAnimation(activity, intent);
     }
 
     public static void setVisible(Activity activity, boolean visible) {
