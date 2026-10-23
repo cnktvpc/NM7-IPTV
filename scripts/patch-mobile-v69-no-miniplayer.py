@@ -16,7 +16,15 @@ t = p.read_text(encoding="utf-8")
 t = method(t, "public void onBackPressed()", """        if (onDetailsBack()) return;
         if (mPlayer == null || mNm7Stopped) { super.onBackPressed(); return; }
         if (mNm7LeavingForMini) {
-            consumeNm7BrowseBack();
+            if (consumeNm7BrowseBack()) return;
+            // Defensive fallback: never swallow Back while the same PlaybackActivity still
+            // owns a live session after the first Back transition began.
+            if (sNm7Active == this && mPlayer != null && !mNm7Stopped) {
+                android.util.Log.w("NM7Playback", "back=close-mini fallback");
+                stopForNm7Iptv();
+                return;
+            }
+            super.onBackPressed();
             return;
         }
         mNm7LeavingForMini = true;
@@ -24,6 +32,7 @@ t = method(t, "public void onBackPressed()", """        if (onDetailsBack()) ret
         mIsBackPressed = true;
         sNm7RestorePending = false;
         sNm7Mini = true;
+        android.util.Log.i("NM7Playback", "back=minimize-playback");
         syncNm7KeepAlive();
         blockEngine(false);
         if (mPanel != null && !isLandscape()) {
