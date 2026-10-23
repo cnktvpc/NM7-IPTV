@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Static regression guards for NM7 Mobile 1.10.147 native article reader."""
+"""Static regression guards for NM7 Mobile 1.10.148 native article reader."""
 from pathlib import Path
 
 read = lambda p: Path(p).read_text(encoding="utf-8")
@@ -12,7 +12,7 @@ workflow = read(".github/workflows/nm7-mobile-news-reader-v143.yml")
 
 checks = [
     ("candidate version is 1.10.146 / code 162",
-     'versionName = "1.10.147"' in gradle and "versionCode = 163" in gradle),
+     'versionName = "1.10.148"' in gradle and "versionCode = 164" in gradle),
     ("Reader applies status-bar and display-cutout top insets",
      "WindowInsets.Type.statusBars()" in reader
      and "WindowInsets.Type.displayCutout()" in reader
