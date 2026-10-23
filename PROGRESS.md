@@ -1,3 +1,29 @@
+## 2026-10-23 — Hotfix 1.10.148: lỗi Back 2 lần trong YouTube — CI PASS
+
+### Kết quả build
+- Candidate: `port/news-reader-4fc-stable142-20261022`.
+- Source commit được build: `caa9080245839117a72ead69815d9b38dc9bdd3c`.
+- GitHub Actions: https://github.com/cnktvpc/NM7-IPTV/actions/runs/39891013369 — **SUCCESS**.
+- APK assemble: PASS.
+- Full Mobile unit-test suite: PASS.
+- Upload artifact: PASS.
+- Artifact: `NM7-IPTV-Mobile-1.10.148-YOUTUBE-BACK-FIX-NEWS-FONT`, ID `12475320363`.
+- APK SHA-256: `ae97e2e69e89170ffb1e0a057581c2a36f85ccff2b7e530940e1495ac10f5b65`.
+- ZIP SHA-256: `0139195f84e7f692edd843b611ff26704d59b726d741e77537bedbe6e4ef0232`.
+
+### Phân tích nguồn lỗi và thay đổi
+1. **Callback Back trùng trên Android 13+:** chuỗi vá Mobile đã tự đăng ký callback gọi trực tiếp `PlaybackActivity.onBackPressed()`; `MobileNm7Application` cũng có xử lý Back riêng cho Browse/Search và ghi chú rõ PlaybackActivity phải dùng native dispatch. Đã bỏ callback trùng khỏi PlaybackActivity để không cạnh tranh với framework/PIP path.
+2. **Race khi chuyển fullscreen → mini → Browse:** `onResume` trước đó xóa `mNm7LeavingForMini` và tiếp tục `completeNm7RestoreOnResume()` mà không phân biệt resume phát sinh khi Android đang reorder Activity. Đã giữ cờ chuyển tiếp mini và không chuyển surface trở lại fullscreen khi chưa có restore request rõ ràng.
+3. **Back thứ hai bị nuốt khi trạng thái mini lệch:** nhánh trước đây gọi `consumeNm7BrowseBack()` rồi trả về vô điều kiện; consumer chỉ nhận `isNm7MiniPlayerActive()`. Đã cho consumer nhận diện transition pending và thêm đường đóng dự phòng thay vì nuốt Back.
+4. **Dọn player:** thao tác đóng mini gọi dừng thật PlaybackActivity, bỏ mini surface, gỡ observer, giải phóng player/service và xóa trạng thái YouTube nền để ngăn launcher tự đưa playback trở lại.
+
+### Regression guards
+- Thêm `scripts/verify-mobile-youtube-back-navigation-v148.py` vào CI; guard xác nhận không có callback Playback riêng, first Back vẫn đưa video xuống mini, second Back không bị nuốt, mini close giải phóng owner, resume bất chợt không giành lại surface.
+- Run cuối cùng đi qua toàn bộ guard, build, full unit tests và upload artifact.
+- **Lưu ý:** CI kiểm chứng build và logic cấu trúc; cần người dùng thử thao tác Back 2 lần trên điện thoại thật trước khi promote stable. Nhánh stable vẫn nguyên vẹn.
+
+---
+
 ## 2026-10-23 — Hotfix 1.10.147: YouTube HTTP 403 + đồng nhất font Reader — CI PASS
 
 ### Kết quả
