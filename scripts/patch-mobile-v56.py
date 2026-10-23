@@ -93,9 +93,9 @@ s = once(s, '    private boolean handleNm7MinimizeGesture(MotionEvent event) {',
             return true;
         }''')
 s = once(s, '                onBackPressed();\n                return true;', '                mNm7DragConsumed = true;\n                onBackPressed();\n                return true;')
-s = once(s, '        sNm7Active = this;\n        if (VERSION.SDK_INT', '''        sNm7Active = this;
-        overridePendingTransition(R.anim.nm7_watch_enter, R.anim.nm7_watch_stay);
-        if (VERSION.SDK_INT''')
+s = once(s, '        sNm7Active = this;', '''        sNm7Active = this;
+        // Use platform-native predictive Back dispatch; do not add a Playback callback here.
+        overridePendingTransition(R.anim.nm7_watch_enter, R.anim.nm7_watch_stay);''')
 s = once(s, '        startActivity(intent);', '''        startActivity(intent);
         overridePendingTransition(R.anim.nm7_watch_stay, R.anim.nm7_watch_exit);''')
 # On first-frame/surface restoration the overlay must not retain a released engine binding.
