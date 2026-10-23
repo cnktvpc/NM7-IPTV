@@ -688,3 +688,28 @@ Bản ứng viên riêng, xây trên baseline Mobile 1.10.142 (commit `4fc8b187d
 - SHA-256 APK: `782208b53a225d7f6c95f342b77896131084ca7a6157645f6cd28d8581f9775b`
 
 CI không thay thế kiểm thử thực tế trên máy. Cần test lại vuốt/cuộn dọc, các mức chữ nhỏ hơn 80% và ảnh tại nhiều trang báo trước khi promote bản stable.
+
+
+# 1.10.146 — Sửa lỗi lọc tin theo chuyên mục 24h — 2026-10-23
+
+## Triệu chứng và nguyên nhân
+- Khi bấm **Bóng đá**, **An ninh - Hình sự**, **Thời trang**, **Phim** và một số mục khác, Reader có thể trộn tin của trang chủ/nhóm khác vào danh sách.
+- RSS trước đây được hiển thị ngay khi trả về bài mà không xác minh URL có thuộc chuyên mục đang chọn.
+- Đường dự phòng HTML của 24h chỉ định tuyến một số nhóm; các nhóm khác rơi về trang chủ.
+
+## Cách sửa
+- Thêm `ReaderFeedCategoryRouter` để định tuyến trang HTML riêng cho từng nhóm 24h và kiểm tra link bài theo host/path/category ID.
+- Lọc cả dữ liệu RSS và HTML trước khi vẽ danh sách; Bóng đá không nhận tin An ninh hoặc Tin tức, và Thời trang không nhận bài Thời trang Hi-tech.
+- Khi RSS quá ngắn hoặc có bài sai nhóm, thử trang HTML của đúng nhóm, gộp kết quả hợp lệ và loại URL trùng.
+- Nếu không có route đúng nhóm, không fallback về trang chủ để tránh hiển thị tin sai.
+- Các nguồn ngoài 24h không đổi logic.
+
+## Kiểm chứng
+- Workflow: [Run 39883516420](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39883516420) — **SUCCESS**.
+- Build APK, full Mobile unit-test suite và upload artifact: **SUCCESS**.
+- Commit nguồn build: `6e5cca4c764ef65a952ab83419c2498d906d807f`.
+- Regression test mới: `ReaderFeedCategoryRouterTest`.
+- Artifact: [NM7-IPTV-Mobile-1.10.146-SOURCE4FC-NEWS-READER](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39883516420/artifacts/12471562855).
+- SHA-256 APK: `587f945e7e9d713e79090e80fd922eaa745cc634a8209f06718eb3e46275d07f`.
+
+Đây là candidate trên nhánh riêng `port/news-reader-4fc-stable142-20261022`; chưa promote sang stable trước khi xác nhận nhóm tin trên thiết bị thật.
