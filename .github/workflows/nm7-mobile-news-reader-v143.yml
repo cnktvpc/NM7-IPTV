@@ -110,7 +110,7 @@ jobs:
         run: |
           set -euxo pipefail
           test "$(grep -c 'versionName = "1.10.147"' app/build.gradle.kts)" -eq 1
-          test "$(grep -c 'versionCode = 162' app/build.gradle.kts)" -eq 1
+          test "$(grep -c 'versionCode = 163' app/build.gradle.kts)" -eq 1
 
       - name: Verify NM7 Reader wiring
         run: |
