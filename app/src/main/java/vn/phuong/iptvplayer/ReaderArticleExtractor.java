@@ -28,7 +28,7 @@ public final class ReaderArticleExtractor {
             ".detail-content", ".content-detail", ".detail__content", "#article-content",
             ".article-content-body", ".post-content", ".entry-content", ".news-content",
             ".story-content", ".article__content", ".content-news", ".content_article",
-            ".main-content article", "article", "main"
+            ".main-content .article-content", ".main-content .detail-content"
     };
 
     private static final String REMOVE_SELECTOR =
@@ -115,20 +115,24 @@ public final class ReaderArticleExtractor {
                                  List<RelatedArticle> related, int fontScale, String fallbackMessage) {
         if (document == null) document = Jsoup.parse("", baseUrl);
 
-        String title = firstNonBlank(requestedTitle, meta(document, "og:title"),
+        String pageTitle = firstNonBlank(meta(document, "og:title"),
                 textOf(document, "h1.title-detail,h1.title,[itemprop=headline],.article-title,h1"),
                 document.title());
-        String summary = firstNonBlank(requestedSummary, meta(document, "og:description"),
+        String title = firstNonBlank(pageTitle, requestedTitle);
+        // Page metadata belongs to the fetched article URL. RSS/card summaries are only a
+        // last resort because some publishers' listing cards contain adjacent-story text.
+        String summary = firstNonBlank(meta(document, "og:description"),
                 meta(document, "description"),
-                textOf(document, ".description,.sapo,.detail-sapo,[itemprop=description],.article-summary"));
+                textOf(document, ".description,.sapo,.detail-sapo,[itemprop=description],.article-summary"),
+                requestedSummary);
         String date = firstNonBlank(publishedDate,
                 meta(document, "article:published_time"),
                 textOf(document, "time,.date-time,.publish-date,[itemprop=datePublished]"));
-        String hero = firstHttpUrl(baseUrl, requestedImage,
-                meta(document, "og:image"),
-                meta(document, "twitter:image"));
+        // Prefer the article page's own image metadata over a thumbnail scraped from a feed card.
+        String hero = firstHttpUrl(baseUrl, meta(document, "og:image"),
+                meta(document, "twitter:image"), requestedImage);
 
-        Element article = findArticleBody(document);
+        Element article = findArticleBody(document, pageTitle, summary);
         String articleHtml = "";
         if (article != null) {
             Element clone = article.clone();
@@ -202,8 +206,8 @@ public final class ReaderArticleExtractor {
         }
 
         if (articleHtml.trim().isEmpty()) {
-            String fallbackParagraphs = extractParagraphFallback(document);
-            if (!fallbackParagraphs.isEmpty()) articleHtml = fallbackParagraphs;
+            // Do not scrape arbitrary body paragraphs: on publisher pages this can mix
+            // headlines/snippets from neighboring stories into the current article.
         }
 
         int bodyPx = 19; // WebView textZoom is the single source of font scaling; avoid double scaling.
@@ -282,29 +286,90 @@ public final class ReaderArticleExtractor {
         html.append("</section>");
     }
 
-    private static Element findArticleBody(Document document) {
+    private static Element findArticleBody(Document document, String pageTitle, String requestedSummary) {
+        // First use publisher-specific editorial containers. Generic <article>/<main>
+        // elements are deliberately excluded here because many sites reuse them for
+        // recommendation cards and mixed-content feeds.
         for (String selector : ARTICLE_SELECTORS) {
             Element node = document.selectFirst(selector);
-            if (usable(node)) return node;
+            if (usable(node) && !hasExcludedAncestor(node)) return node;
         }
 
+        // Anchor generic fallback to the actual article heading. Walk outward from the
+        // matching H1 and choose the smallest ancestor that contains a real body.
+        Element heading = document.selectFirst("h1.title-detail,h1.title,[itemprop=headline],.article-title,h1");
+        if (heading != null && titleMatches(heading.text(), pageTitle)) {
+            Element parent = heading;
+            for (int depth = 0; parent != null && depth < 7; depth++, parent = parent.parent()) {
+                if (hasExcludedAncestor(parent)) continue;
+                int length = parent.text().length();
+                int paragraphs = parent.select("p").size();
+                if (length >= 260 && length <= 50000 && paragraphs >= 2
+                        && !containsManyLinks(parent, paragraphs)) {
+                    return parent;
+                }
+            }
+        }
+
+        // Last-resort scoring is allowed only for candidates whose text is demonstrably
+        // related to the page title or summary. Never choose the longest arbitrary div.
         Element best = null;
         int bestScore = 0;
+        String title = normalizeForMatch(pageTitle);
+        String summary = normalizeForMatch(requestedSummary);
         for (Element node : document.select("article,main,section,div")) {
             if (hasExcludedAncestor(node)) continue;
-            String text = node.text();
-            int length = text.length();
+            String text = normalizeForMatch(node.text());
+            int length = node.text().length();
             int paragraphs = node.select("p").size();
             if (length < 260 || paragraphs < 2 || length > 50000) continue;
-            String descriptor = (node.className() + " " + node.id()).toLowerCase(Locale.ROOT);
-            if (descriptor.matches(".*(sidebar|related|recommend|comment|header|footer|menu|nav|hot-news|popular).*")) continue;
-            int score = Math.min(length, 9000) + Math.min(paragraphs, 30) * 110;
-            if (descriptor.matches(".*(article|content|detail|body|story|fck|news|post).*")) score += 1000;
-            if (node.select("img").size() > 0) score += 120;
-            if (node.select("a").size() > paragraphs * 3) score -= 900;
+            boolean titleHit = !title.isEmpty() && (text.contains(title) || titleMatches(node.text(), pageTitle));
+            boolean summaryHit = !summary.isEmpty() && overlapRatio(text, summary) >= 0.28;
+            if (!titleHit && !summaryHit) continue;
+            int score = Math.min(length, 9000) + Math.min(paragraphs, 30) * 80;
+            if (titleHit) score += 5000;
+            if (summaryHit) score += 1200;
+            if (containsManyLinks(node, paragraphs)) score -= 1000;
             if (score > bestScore) { best = node; bestScore = score; }
         }
         return usable(best) ? best : null;
+    }
+
+    private static boolean containsManyLinks(Element node, int paragraphs) {
+        return node.select("a").size() > Math.max(8, paragraphs * 3);
+    }
+
+    private static boolean titleMatches(String candidate, String expected) {
+        String a = normalizeForMatch(candidate);
+        String b = normalizeForMatch(expected);
+        if (a.isEmpty() || b.isEmpty()) return false;
+        if (a.contains(b) || b.contains(a)) return true;
+        String[] words = b.split(" ");
+        int meaningful = 0, matched = 0;
+        for (String word : words) {
+            if (word.length() < 3) continue;
+            meaningful++;
+            if (a.contains(word)) matched++;
+        }
+        return meaningful > 0 && ((double) matched / meaningful) >= 0.55;
+    }
+
+    private static double overlapRatio(String candidate, String expected) {
+        if (candidate.isEmpty() || expected.isEmpty()) return 0;
+        String[] words = expected.split(" ");
+        int meaningful = 0, matched = 0;
+        for (String word : words) {
+            if (word.length() < 4) continue;
+            meaningful++;
+            if (candidate.contains(word)) matched++;
+        }
+        return meaningful == 0 ? 0 : (double) matched / meaningful;
+    }
+
+    private static String normalizeForMatch(String value) {
+        if (value == null) return "";
+        return value.toLowerCase(Locale.ROOT).replaceAll("[^\\p{L}\\p{N}]+", " ").trim()
+                .replaceAll("\\s+", " ");
     }
 
     private static boolean usable(Element element) {
