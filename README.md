@@ -1,3 +1,14 @@
+# NM7 IPTV Mobile 1.10.149 — Reader-only rebuild from stable YouTube baseline (2026-10-23)
+
+- Base branch: `stable/mobile-1.10.142`.
+- Transferred: native Reader screen, article extractor, category router, plugin runtime/store, Reader tab icon/navigation, manifest entries, required libraries and Reader tests.
+- YouTube/Back patch scripts, IPTV player lifecycle, and YouTube/IPTV tab-transition methods are retained from the stable baseline. No 1.10.148 YouTube Back changes are included.
+- Version: `1.10.149`, versionCode `165`.
+- Build recipe uses SmartTube source pin `4825d6aa8b6f1d3181927f9e96c7d89cab13d510` and stable patch chain v37 + v106.
+- CI and real-device tests are pending; build success alone does not prove runtime Back behavior.
+
+---
+
 # NM7 IPTV Mobile — Stable 1.10.142 — YouTube Floating MiniPlayer / SurfaceView — 2026-10-20
 
 > **Trạng thái cập nhật 2026-10-22:** Build APK thành công. Lưu ý: bước `:app:testMobileDebugUnitTest` trong run 39407088691 có lỗi nhưng được cấu hình `continue-on-error: true`, vì vậy workflow vẫn báo SUCCESS. Không ghi nhận unit tests là PASS cho lần build này. Cần xử lý lỗi test và kiểm thử trên thiết bị thật trước khi xác nhận riêng các thay đổi YouTube MiniPlayer là ổn định.
