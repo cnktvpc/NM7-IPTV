@@ -66,6 +66,20 @@ public class ReaderArticleExtractorTest {
         assertFalse(result.contains("data-ks-lazyload"));
     }
 
+    @Test public void normalizesMixedInlineFormattingInsideArticleParagraphs() {
+        String html = "<article><p>Đoạn mở đầu bình thường đủ dài cho bộ trích xuất nhận ra bài báo. "
+                + "<strong>Phần in đậm</strong> <b>phần đậm khác</b> "
+                + "<em>phần nghiêng</em> <span style='font-size:32px;font-weight:700'>phần phóng lớn</span> "
+                + "và phần cuối đoạn vẫn cần có cùng cỡ chữ, kiểu chữ và độ đậm.</p></article>";
+        String result = ReaderArticleExtractor.renderForTest(html, "https://news.example/a/typography",
+                "Bài thử font", "", "", "Nguồn", "", 100);
+
+        assertTrue(result.contains("Phần in đậm"));
+        assertTrue(result.contains("phần phóng lớn"));
+        assertTrue(result.contains(".body p,.body li,.body blockquote,.body td{font-family:Roboto,'Noto Sans',Arial,sans-serif;font-size:19px;font-weight:400;font-style:normal;line-height:1.82;}"));
+        assertTrue(result.contains(".body p *,.body li *,.body blockquote *,.body td *{font-family:inherit!important;font-size:inherit!important;font-weight:400!important;font-style:normal!important;line-height:inherit!important;}"));
+    }
+
     @Test public void appendsRelatedStoriesInsideReaderInsteadOfOpeningPublisherHome() {
         java.util.List<ReaderArticleExtractor.RelatedArticle> related = java.util.Arrays.asList(
                 new ReaderArticleExtractor.RelatedArticle("Bài báo liên quan", "https://news.example/story/2",
