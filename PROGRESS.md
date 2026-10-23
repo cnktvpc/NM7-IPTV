@@ -1,3 +1,24 @@
+# TIẾN ĐỘ MỚI NHẤT — NM7 IPTV MOBILE 1.10.149 — CI ĐÃ PASS — 2026-10-23
+
+## Trạng thái
+- **Nhánh thử nghiệm:** `rebuild/reader-only-from-stable-142-20261023`.
+- **Candidate:** 1.10.149 / versionCode 165; dựng từ đúng source baseline 1.10.142 commit `4fc8b187db7e48591e1bcb11969436a56d27d06a`.
+- **Code sửa extraction mới nhất:** [`dc01ba47011e5f9e9c0ffe12c1ce187d5a95e8ac`](https://github.com/cnktvpc/NM7-IPTV/commit/dc01ba47011e5f9e9c0ffe12c1ce187d5a95e8ac).
+- **GitHub Actions:** [Run 39936793798 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39936793798). Reader-focused unit tests, APK build, full Mobile unit-test suite và upload artifact đều PASS.
+- **APK:** [NM7-IPTV-Mobile-1.10.149-READER-BASELINE142](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39936793798/artifacts/12494138308), artifact ID `12494138308`, 44,021,005 bytes, hết hạn 2026-11-22. SHA-256 archive digest: `60b9c29a074b051558ac137daa52fa30490a3bfdc85b4e2660bbb74095096e10`.
+- **Lỗi CI đã xử lý:** run `39936098214` fail 3 bài test ReaderArticleExtractor vì bộ trích xuất từ chối trang có một thẻ `<article>` hợp lệ khi metadata tiêu đề bị thiếu. Đã bổ sung fallback dùng tiêu đề yêu cầu/RSS làm khóa đối chiếu dự phòng; chỉ chấp nhận một thẻ `<article>` duy nhất khi có nội dung thực chất và không quá nhiều liên kết. Trang có nhiều bài vẫn phải đối chiếu tiêu đề/tóm tắt để tránh lấy nhầm bài kế bên.
+- **Phạm vi được bảo vệ:** không sửa logic YouTube/SmartTube ngoài chuỗi baseline, không đổi nguồn playlist mặc định, không thay đổi chức năng ngoài Reader và hai lỗi điều hướng Reader/IPTV đã xác định.
+- **Stable branch:** `stable/mobile-1.10.142` vẫn nguyên SHA `7500feb0a2755148e1a40ca12a1037380253bc46`; không merge/promote candidate khi chưa có xác nhận test thiết bị.
+- **Ghi chú workflow:** `android-mobile-final.yml` riêng biệt vẫn thất bại tức thời không có jobs; workflow này không tạo APK candidate. Kết quả build thật là workflow Reader-only run `39936793798`.
+- **Cần xác nhận trên thiết bị:** mở lại đúng bài CafeF trong video, kiểm tra tiêu đề, tóm tắt, ảnh đầu bài, nội dung và thứ tự đoạn; sau đó kiểm tra lại YouTube Back/mini-player. CI PASS không thay thế kiểm thử runtime với nguồn bài báo thật.
+
+## Liên kết liên quan
+- [README mới nhất](https://github.com/cnktvpc/NM7-IPTV/blob/rebuild/reader-only-from-stable-142-20261023/README.md)
+- [Workflow build/test](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39936793798)
+- [Nhánh thử nghiệm](https://github.com/cnktvpc/NM7-IPTV/tree/rebuild/reader-only-from-stable-142-20261023)
+
+---
+
 # TIẾN ĐỘ MỚI NHẤT — NM7 IPTV MOBILE 1.10.149 — FIX IPTV/READER RETURN — 2026-10-23
 
 ## Trạng thái hiện tại
