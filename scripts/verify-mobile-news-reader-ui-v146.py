@@ -22,8 +22,9 @@ checks = [
     ("shared navigation row sits above navigation/gesture inset",
      "barParams.bottomMargin = bottomInset" in tabs
      and "WindowInsets.Type.navigationBars()" in tabs),
-    ("IPTV list reserves shared tab height and system inset",
-     "channelListBaseBottom + listReserve + bottomInset" in tabs),
+    ("IPTV list keeps stable 1.10.142 padding behavior",
+     "root.getPaddingBottom() + dp(activity, 64)" in tabs
+     and "list.getPaddingBottom() + dp(activity, 76)" in tabs),
     ("article uses a native extraction pipeline, not an injected website rewrite",
      "ReaderArticleExtractor.fetchAndRender" in reader
      and "loadDataWithBaseURL(baseUrl, html, " in reader
