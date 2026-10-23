@@ -19,6 +19,10 @@ name: NM7 Mobile 1.10.149 Reader-only Build
 
 permissions: { contents: write }
 
+concurrency:
+  group: nm7-mobile-reader-only-v149
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-24.04
