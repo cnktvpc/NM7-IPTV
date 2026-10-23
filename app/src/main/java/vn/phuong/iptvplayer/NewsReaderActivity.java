@@ -289,7 +289,6 @@ public final class NewsReaderActivity extends Activity {
     }
 
     private void renderFeed(boolean refresh) {
-        rememberFeedScrollPosition();
         mode = Mode.FEED;
         closeArticleWebView();
         categoryScroller.setVisibility(View.VISIBLE);
@@ -650,6 +649,7 @@ public final class NewsReaderActivity extends Activity {
         textColumn.addView(meta, new LinearLayout.LayoutParams(-1, -2));
 
         row.setOnClickListener(v -> {
+            rememberFeedScrollPosition();
             currentArticleTitle = article.title;
             currentArticleSummary = article.summary;
             currentArticleImageUrl = article.imageUrl;
@@ -871,6 +871,7 @@ public final class NewsReaderActivity extends Activity {
         for (int i = 0; i < choices.size(); i++) labels[i] = choices.get(i).name;
         new AlertDialog.Builder(this).setTitle("Chọn nguồn đọc")
                 .setItems(labels, (dialog, which) -> {
+                    rememberFeedScrollPosition();
                     sourceId = choices.get(which).id;
                     categoryName = choices.get(which).categories.keySet().iterator().next();
                     searchQuery = "";
@@ -899,6 +900,7 @@ public final class NewsReaderActivity extends Activity {
     }
 
     private void renderManager() {
+        rememberFeedScrollPosition();
         mode = Mode.MANAGER;
         ++requestToken;
         closeArticleWebView();
