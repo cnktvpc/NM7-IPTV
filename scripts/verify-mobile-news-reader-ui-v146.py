@@ -8,11 +8,11 @@ router = read("app/src/main/java/vn/phuong/iptvplayer/ReaderFeedCategoryRouter.j
 extractor = read("app/src/main/java/vn/phuong/iptvplayer/ReaderArticleExtractor.java")
 tabs = read("app/src/main/java/vn/phuong/iptvplayer/HomeTabBar.java")
 gradle = read("app/build.gradle.kts")
-workflow = read(".github/workflows/nm7-mobile-news-reader-v143.yml")
+workflow = read(".github/workflows/nm7-mobile-reader-only-v149.yml")
 
 checks = [
-    ("candidate version is 1.10.146 / code 162",
-     'versionName = "1.10.148"' in gradle and "versionCode = 164" in gradle),
+    ("candidate version is 1.10.149 / code 165",
+     'versionName = "1.10.149"' in gradle and "versionCode = 165" in gradle),
     ("Reader applies status-bar and display-cutout top insets",
      "WindowInsets.Type.statusBars()" in reader
      and "WindowInsets.Type.displayCutout()" in reader
@@ -40,8 +40,8 @@ checks = [
      and 'font-weight:400!important' in extractor
      and 'font-size:inherit!important' in extractor),
     ("YouTube source pin includes SmartTube-droid 32.68 playback-error fixes",
-     'checkout --detach 95cb207ceb4dbd2b8af9ddae1c89f65611900e8a' in workflow
-     and 'checkout --detach 4825d6aa8b6f1d3181927f9e96c7d89cab13d510' not in workflow),
+     'checkout --detach 4825d6aa8b6f1d3181927f9e96c7d89cab13d510' in workflow
+     and 'checkout --detach 95cb207ceb4dbd2b8af9ddae1c89f65611900e8a' not in workflow),
     ("extractor searches known Vietnamese and common article body selectors",
      '[itemprop=articleBody]' in extractor
      and '".fck_detail"' in extractor
