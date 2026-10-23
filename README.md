@@ -669,3 +669,22 @@ Source 1.10.103 đã được đưa vào build chain. **Chưa đánh dấu PASS*
 1. thời gian mở video YouTube;
 2. vuốt/chuyển tab Browse liên tục;
 3. video 4K trong cùng điều kiện như video test đã gửi.
+
+
+# 1.10.146 — NM7 Reader hotfix vòng 2 — 2026-10-23
+
+Bản ứng viên riêng, xây trên baseline Mobile 1.10.142 (commit `4fc8b187db7e48591e1bcb11969436a56d27d06a`). Không ghi đè nhánh stable.
+
+## Sửa lỗi Reader
+- Cuộn dọc trả sự kiện chạm về native Android `ScrollView`, để hệ thống tính vận tốc và thực hiện fling; gesture ngang vẫn dùng để chuyển danh mục.
+- Bộ chọn cỡ chữ dùng chung cho danh sách và bài viết, có mức 50%–160%, lưu lựa chọn qua các phiên.
+- Bộ trích xuất nội dung hỗ trợ thêm `data-lazy-srcset`, `data-ks-lazyload`, `data-fallback-src` và các thuộc tính URL/lazy-load khác; chọn nguồn ảnh độ phân giải cao và tải ảnh trong bài ở chế độ eager.
+
+## Xác minh CI
+- Workflow: [Run 39880611757](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39880611757)
+- Commit nguồn build: `805ec4e4d5080a5c8dd6062150d71de9352e786e`
+- Kết quả: build APK **SUCCESS**, full Mobile unit-test suite **SUCCESS**, upload artifact **SUCCESS**.
+- Artifact GitHub: [NM7-IPTV-Mobile-1.10.146-SOURCE4FC-NEWS-READER](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39880611757/artifacts/12470343408)
+- SHA-256 APK: `782208b53a225d7f6c95f342b77896131084ca7a6157645f6cd28d8581f9775b`
+
+CI không thay thế kiểm thử thực tế trên máy. Cần test lại vuốt/cuộn dọc, các mức chữ nhỏ hơn 80% và ảnh tại nhiều trang báo trước khi promote bản stable.
