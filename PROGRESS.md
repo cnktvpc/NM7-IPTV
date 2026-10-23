@@ -1,15 +1,34 @@
-# TIẾN ĐỘ MỚI NHẤT — NM7 IPTV MOBILE 1.10.149 — READER-ONLY — 2026-10-23
+# TIẾN ĐỘ MỚI NHẤT — NM7 IPTV MOBILE 1.10.149 — FIX IPTV/READER RETURN — 2026-10-23
 
-## Kết quả triển khai
-- **Bản nền đúng theo ảnh:** commit nguồn `4fc8b187db7e48591e1bcb11969436a56d27d06a`, bản 1.10.142 YouTube Floating MiniPlayer / SurfaceView.
-- **Nhánh làm lại:** [`rebuild/reader-only-from-stable-142-20261023`](https://github.com/cnktvpc/NM7-IPTV/tree/rebuild/reader-only-from-stable-142-20261023).
-- **Phiên bản build:** 1.10.149 / versionCode 165.
-- **GitHub Actions:** [Run 39901196671 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39901196671).
-- **APK artifact:** [NM7-IPTV-Mobile-1.10.149-READER-BASELINE142](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39901196671/artifacts/12478897237), ID `12478897237`, hết hạn dự kiến 2026-11-22.
-- **Đã qua:** restore đúng SmartTube source; chuỗi vá YouTube gốc v37/v106/v114/v119/v120/v121/v122/v123/v128/v130; kiểm tra Reader-only integration và bảo vệ file YouTube; Reader-focused unit tests; APK assembly; upload artifact.
-- **Phạm vi ghép:** chỉ thêm các lớp/tài nguyên/test của Đọc báo, dependencies Jsoup/Rhino, đăng ký Activity và mục tab Đọc báo. Hai hàm `openBrowse` và `openIptv` trong HomeTabBar được đối chiếu giống nguyên văn commit nền. Các file patch YouTube/SmartTube cốt lõi và `Nm7FeedAdapter.java` không đổi.
-- **Lưu ý kiểm thử:** full Mobile unit-test step đang giữ chính sách non-blocking theo workflow gốc; không dùng nhãn SUCCESS của bước này làm khẳng định mọi test đều là gate bắt buộc. Bản 1.10.149 chưa được xác nhận trên thiết bị; cần cài thử để xác minh thao tác Back từ YouTube mini-player và chuyển qua lại tab Đọc báo trước khi promote stable.
-- **SHA-256 artifact ZIP do GitHub báo:** `fb9b6d5ae34694fcbb7cdc9349cf8641e055e4d59ccfb64d05d5320272f40150` (checksum ZIP artifact, không phải checksum APK bên trong).
+## Phạm vi sửa lỗi trên Build #16
+- **Bản nền giữ nguyên:** source commit `4fc8b187db7e48591e1bcb11969436a56d27d06a` — NM7 Mobile 1.10.142, versionCode 158, bản nền YouTube Floating MiniPlayer / SurfaceView đã được xác nhận.
+- **Candidate:** NM7 Mobile 1.10.149 / versionCode 165; nhánh `rebuild/reader-only-from-stable-142-20261023`.
+- **Commit sửa code cuối:** [`317825a`](https://github.com/cnktvpc/NM7-IPTV/commit/317825a58d651671071440ffcf38ec1fc6f6b8c8).
+- **CI chính thức:** [Run 39918903288 — SUCCESS](`https://github.com/cnktvpc/NM7-IPTV/actions/runs/39918903288`).
+- **APK artifact của đúng commit:** [NM7-IPTV-Mobile-1.10.149-READER-BASELINE142](`https://github.com/cnktvpc/NM7-IPTV/actions/runs/39918903288/artifacts/12485724456`), ID `12485724456`, 44,019,483 bytes; hết hạn dự kiến 2026-11-22.
+
+## Nguyên nhân và thay đổi
+1. Quay về tab IPTV gọi `playInline()` lần nữa dù ExoPlayer cũ vẫn còn phiên phát đã chuẩn bị/phát. Việc đặt lại MediaItem/decoder có thể làm hình bị khựng. Sửa bằng cách giữ player còn sống và để lifecycle hiện có tiếp tục phát; chỉ phục hồi stream theo nhánh cũ khi player không còn hợp lệ/đã về IDLE.
+2. Tab Đọc báo có thể tạo Activity mới do intent không dùng `FLAG_ACTIVITY_REORDER_TO_FRONT`. Sửa để đưa Reader Activity đã có lên trước, giữ trạng thái tab nội dung.
+3. Mỗi lần vuốt lại chuyên mục trước đều gọi RSS/HTML fetch mới. Thêm cache theo nguồn + feed URL trong vòng đời Reader Activity, nhớ/khôi phục vị trí cuộn theo nguồn + chuyên mục, và giữ nút Làm mới/Thử lại ở chế độ force-refresh.
+4. Thêm regression checks cho tái sử dụng Reader Activity, cache/vị trí cuộn và bảo vệ phiên ExoPlayer.
+
+## Xác minh
+- Reader-only integration / YouTube baseline guard: **PASS**.
+- Reader-focused unit tests: **PASS**.
+- Build APK 1.10.149: **PASS**.
+- Toàn bộ Mobile unit-test suite trong workflow này: **PASS**.
+- Upload artifact: **PASS**.
+- Chuỗi patch YouTube/SmartTube và source baseline được giữ nguyên; `openBrowse` / `openIptv` không nằm trong diff.
+- **Chưa xác nhận trên thiết bị thật:** cần thử đang phát IPTV → Đọc báo → IPTV và vuốt qua lại các chuyên mục đã xem. Đây vẫn là candidate; chưa được gắn nhãn stable trước khi kiểm thử thực tế.
+
+## Phạm vi file
+- `app/src/main/java/vn/phuong/iptvplayer/HomeTabBar.java`
+- `app/src/main/java/vn/phuong/iptvplayer/NewsReaderActivity.java`
+- `app/src/main/java/vn/phuong/iptvplayer/MobileInlinePlayerProviderV2.java`
+- `scripts/verify-reader-only-port-v149.py`
+
+
 
 ---
 

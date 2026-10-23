@@ -1,12 +1,29 @@
-# NM7 IPTV Mobile 1.10.149 — Reader-only rebuild from verified 1.10.142 YouTube baseline
+# NM7 IPTV Mobile 1.10.149 — Reader/IPTV return fix on verified 1.10.142 baseline
 
-> **Build status: GitHub Actions PASS** (run [39901196671](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39901196671)). This is a test candidate, not yet device-verified. The source baseline is exactly `4fc8b187db7e48591e1bcb11969436a56d27d06a`, the source commit recorded for the 1.10.142 YouTube Floating MiniPlayer / SurfaceView build. Release version: `1.10.149`, versionCode `165`.
+> **Build status: SUCCESS.** Final code commit: [`317825a`](https://github.com/cnktvpc/NM7-IPTV/commit/317825a58d651671071440ffcf38ec1fc6f6b8c8). GitHub Actions [run 39918903288](`https://github.com/cnktvpc/NM7-IPTV/actions/runs/39918903288`) passed the Reader-focused unit tests, APK build, full Mobile unit-test suite and artifact upload.
 
 - **Branch:** [`rebuild/reader-only-from-stable-142-20261023`](https://github.com/cnktvpc/NM7-IPTV/tree/rebuild/reader-only-from-stable-142-20261023)
-- **APK artifact:** [`NM7-IPTV-Mobile-1.10.149-READER-BASELINE142`](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39901196671/artifacts/12478897237) (Artifact ID `12478897237`, available until 2026-11-22).
-- **Validation:** Reader-specific unit tests PASS; APK assembly PASS; artifact upload PASS; original YouTube patch-chain/base guard PASS. The full Mobile unit-test step follows the original workflow's non-blocking policy, so this does not claim all tests as blocking release gates.
-- **Change scope:** Reader screens, article extraction/category routing, optional JS source plugins, tab entry, manifest entries, and Jsoup/Rhino dependencies. The protected YouTube/SmartTube patch scripts and `Nm7FeedAdapter.java` are unchanged from the pinned source. HomeTabBar's original YouTube and IPTV handoff methods were verified identical to the baseline.
-- **Next check:** install and test Back behavior between YouTube playback / floating mini-player and the Reader tab on a device before promoting this branch to stable.
+- **Source baseline:** `4fc8b187db7e48591e1bcb11969436a56d27d06a` (verified NM7 Mobile 1.10.142 YouTube Floating MiniPlayer / SurfaceView source).
+- **Candidate version:** `1.10.149`, versionCode `165`; not yet promoted to stable.
+- **APK artifact:** [NM7-IPTV-Mobile-1.10.149-READER-BASELINE142](`https://github.com/cnktvpc/NM7-IPTV/actions/runs/39918903288/artifacts/12485724456`) (Artifact ID `12485724456`, 44,019,483 bytes, available until 2026-11-22).
+
+## Focused fixes
+
+1. **IPTV player stutters when returning from Reader:** the tab-return hook could call `playInline()` a second time despite a surviving ExoPlayer session, resetting the current MediaItem/decoder. The new guard preserves a valid non-IDLE IPTV player and relies on the existing Activity lifecycle to resume playback.
+2. **Reader categories reload when swiping back:** reuse the existing `NewsReaderActivity` with `FLAG_ACTIVITY_REORDER_TO_FRONT`; cache successful feed results by source/feed URL for the lifetime of that Activity; preserve scroll position per source/category. Manual refresh and retry still force a network reload.
+3. Added regression guards covering Activity reuse, the Reader feed cache/scroll restoration and surviving IPTV-player preservation.
+
+## Validation and boundaries
+
+- Reader integration and protected YouTube-baseline verification: **PASS**.
+- Reader-focused unit tests: **PASS**.
+- APK build: **PASS**.
+- Full Mobile unit-test suite: **PASS**.
+- Artifact upload: **PASS**.
+- Scope is limited to `HomeTabBar.java`, `NewsReaderActivity.java`, `MobileInlinePlayerProviderV2.java` and `scripts/verify-reader-only-port-v149.py`. The YouTube/SmartTube patch chain, default IPTV source, other tabs/features and exact source baseline are unchanged.
+- **On-device verification is still required.** Test IPTV playback → Reader → IPTV and swipe away/back across previously visited Reader categories before promoting this candidate to stable.
+
+
 
 ---
 
