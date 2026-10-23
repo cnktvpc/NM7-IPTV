@@ -93,7 +93,7 @@ s = once(s, '    private boolean handleNm7MinimizeGesture(MotionEvent event) {',
             return true;
         }''')
 s = once(s, '                onBackPressed();\n                return true;', '                mNm7DragConsumed = true;\n                onBackPressed();\n                return true;')
-s = once(s, '        super.onCreate(savedInstanceState);\\n        sNm7Active = this;', '''        super.onCreate(savedInstanceState);
+s = once(s, '        super.onCreate(savedInstanceState);\n        sNm7Active = this;', '''        super.onCreate(savedInstanceState);
         sNm7Active = this;
         // Use platform-native predictive Back dispatch; do not add a Playback callback here.
         overridePendingTransition(R.anim.nm7_watch_enter, R.anim.nm7_watch_stay);''')
