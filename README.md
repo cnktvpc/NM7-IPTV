@@ -1,3 +1,15 @@
+# NM7 IPTV Mobile — latest Reader candidate status (2026-10-23)
+
+- **Candidate:** 1.10.149 / versionCode 165; isolated branch `rebuild/reader-only-from-stable-142-20261023`.
+- **Latest code commit:** [`dc01ba47011e5f9e9c0ffe12c1ce187d5a95e8ac`](https://github.com/cnktvpc/NM7-IPTV/commit/dc01ba47011e5f9e9c0ffe12c1ce187d5a95e8ac).
+- **GitHub Actions:** [run 39936793798 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39936793798). Reader-focused tests, APK build, full Mobile unit-test suite and artifact upload all passed.
+- **APK artifact:** [NM7-IPTV-Mobile-1.10.149-READER-BASELINE142](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39936793798/artifacts/12494138308), artifact ID `12494138308`, 44,021,005 bytes, expires 2026-11-22. SHA-256 archive digest: `60b9c29a074b051558ac137daa52fa30490a3bfdc85b4e2660bbb74095096e10`.
+- **Extraction regression resolved in CI:** the requested/feed headline is a fallback matching key; a sole semantic `<article>` is accepted only when it has substantive content and is not link-heavy. Multi-article pages still require matching to avoid neighboring-story contamination.
+- **Remaining release gate:** manually verify the exact CafeF article (title, summary, hero image, paragraphs and order) on device and retest YouTube Back/mini-player behavior. Keep this candidate isolated until the user confirms.
+- **Stable protected:** `stable/mobile-1.10.142` remains unchanged. The legacy `android-mobile-final.yml` still fails immediately with no jobs; it is separate from the successful Reader-only build.
+
+---
+
 # NM7 IPTV Mobile 1.10.149 — IPTV/Reader return fix on verified 1.10.142 baseline
 
 > **Current status: temporarily OK on device; more testing required.** User feedback on 2026-10-23: “Tạm thời ok rồi, cần test thêm.” Keep this as a candidate; do not promote it to stable until the user confirms extended testing.
@@ -683,7 +695,7 @@ Source 1.10.103 đã được đưa vào build chain. **Chưa đánh dấu PASS*
 - **Rebuild branch:** `rebuild/reader-only-from-stable-142-20261023`.
 - **Scope:** port native News Reader, article extraction, feed category routing, JS plugin screens/runtime/store, Reader tests, dependencies, manifest registrations and the Reader navigation entry only. Keep baseline YouTube/SmartTube playback and Back/mini-player patch chain unchanged; do not port the 1.10.148 hotfix workflow or its YouTube changes.
 - **Candidate version:** 1.10.149, versionCode 165.
-- **Validation status:** source port and Reader static guards are committed. GitHub Actions build/test result and APK artifact are pending; do not treat the candidate as verified until the workflow completes and the YouTube Back/miniplayer behavior is tested on-device.
+- **Validation status:** GitHub Actions run [39936793798 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39936793798). Reader-focused tests, APK build, full Mobile unit-test suite and artifact upload all passed. This is CI validation, not a substitute for the final on-device test of the exact CafeF article and YouTube Back/mini-player behavior.
 
 
 ## 2026-10-23 — Reader article extraction correctness follow-up
