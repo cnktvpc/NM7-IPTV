@@ -320,4 +320,39 @@ runpy.run_path("scripts/patch-mobile-v105.py")
 
 
 # NM7 1.10.106: preserve YouTube player across HOME/background and add measured 4K recovery.
+
 runpy.run_path("scripts/patch-mobile-v106.py")
+
+# Compatibility bridge for the upstream SmartTube-droid 32.68 APIs used by the
+# current playback core. Earlier NM7 patches wrote the inherited back-state field
+# directly; current MotherActivity makes it private and exposes state accessors.
+mother_activity = ROOT / "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/misc/MotherActivity.java"
+mother_text = mother_activity.read_text(encoding="utf-8")
+setter_anchor = "    protected final void resetBackState() {"
+if setter_anchor not in mother_text:
+    raise SystemExit("Mobile compatibility: MotherActivity resetBackState anchor missing")
+if "setBackPressedState(boolean pressed)" not in mother_text:
+    setter = """    protected final void setBackPressedState(boolean pressed) {
+        mIsBackPressed = pressed;
+    }
+
+"""
+    mother_text = mother_text.replace(setter_anchor, setter + setter_anchor, 1)
+    mother_activity.write_text(mother_text, encoding="utf-8")
+
+playback_activity = phone / "playback/PlaybackActivity.java"
+playback_text = playback_activity.read_text(encoding="utf-8")
+playback_text = playback_text.replace("mIsBackPressed = false;", "resetBackState();")
+playback_text = playback_text.replace("mIsBackPressed = true;", "setBackPressedState(true);")
+old_scroll = "        mSuggestionsAdapter.scrollToVideo(video.getGroup().getId(), video);"
+new_scroll = """        int nm7SuggestedPosition = mSuggestionsAdapter.positionOfVideo(video.getGroup().getId(), video);
+        if (nm7SuggestedPosition >= 0 && mSuggestionsView != null) {
+            mSuggestionsView.scrollToPosition(nm7SuggestedPosition);
+        }"""
+if old_scroll in playback_text:
+    playback_text = playback_text.replace(old_scroll, new_scroll, 1)
+elif "mSuggestionsAdapter.positionOfVideo(video.getGroup().getId(), video)" not in playback_text:
+    raise SystemExit("Mobile compatibility: suggestion scroll call anchor missing")
+playback_activity.write_text(playback_text, encoding="utf-8")
+print("SmartTube 32.68 compatibility: back state and suggestion scrolling applied")
+
