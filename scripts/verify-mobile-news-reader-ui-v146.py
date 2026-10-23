@@ -62,7 +62,7 @@ checks = [
     ("font scale offers 50–160% and persists across Reader sessions",
      '"reader_text_scale"' in reader and "setSingleChoiceItems(labels, selected" in reader
      and "final int minScale = 50;" in reader and "final int maxScale = 160;" in reader
-     and "putInt(\\"reader_text_scale\\", textScale)" in reader),
+     and 'putInt("reader_text_scale", textScale)' in reader),
     ("image extractor handles additional lazy attributes and high-resolution variants",
      'image.attr("data-lazy-srcset")' in extractor
      and 'image.attr("data-ks-lazyload")' in extractor
