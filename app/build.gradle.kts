@@ -72,10 +72,6 @@ android {
 }
 
 dependencies {
-    // Reader article DOM extraction and source plugin runtime.
-    implementation("org.jsoup:jsoup:1.23.2")
-    implementation("org.mozilla:rhino:1.7.15.1")
-
     val media3Version = "1.11.0"
     implementation("androidx.media3:media3-exoplayer:$media3Version")
     implementation("androidx.media3:media3-exoplayer-hls:$media3Version")
@@ -94,6 +90,9 @@ dependencies {
     // SmartTube is the only additional runtime for this Mobile product.
     // Keep TV/VLC implementation completely out of the Mobile dependency graph.
     add("mobileImplementation", project(":smarttube"))
+
+    implementation("org.jsoup:jsoup:1.23.2")
+    implementation("org.mozilla:rhino:1.7.15.1")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.robolectric:robolectric:4.14.1")

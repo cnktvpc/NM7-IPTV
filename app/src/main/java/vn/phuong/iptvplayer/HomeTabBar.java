@@ -28,7 +28,6 @@ public final class HomeTabBar {
         attachInternal(activity, youtubeSelected ? 0 : 1);
     }
 
-    /** Show the Reader destination without changing the original YouTube/IPTV handoff logic. */
     public static void attachReader(Activity activity) {
         attachInternal(activity, 2);
     }
@@ -139,7 +138,9 @@ public final class HomeTabBar {
 
     private static void openNews(Activity activity) {
         Intent intent = new Intent(activity, NewsReaderActivity.class);
-        startWithoutAnimation(activity, intent);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION | Intent.FLAG_ACTIVITY_NO_USER_ACTION);
+        activity.startActivity(intent);
+        activity.overridePendingTransition(0, 0);
     }
 
     private static void openAppSettings(Activity activity) {
