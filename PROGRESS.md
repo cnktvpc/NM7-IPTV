@@ -1,12 +1,26 @@
-## 2026-10-23 — Reader hotfix vòng 2 — ĐANG CHỜ CI
+## 2026-10-23 — Hotfix 1.10.147: YouTube HTTP 403 + đồng nhất font Reader — CI PASS
 
-- Người dùng báo lỗi thực tế: cuộn dọc lag/đơ, font bài viết không đồng nhất, ảnh tải thiếu. Không dùng run trước làm bằng chứng các lỗi runtime đã hết.
-- Sửa `FeedScrollView.onTouchEvent`: thao tác dọc không còn bị nuốt `ACTION_UP/ACTION_CANCEL`, cho phép `ScrollView` tự tính vận tốc và cuộn quán tính.
-- Bộ chọn cỡ chữ dùng chung cho danh sách/bài viết, từ 50% đến 160%, lưu `reader_text_scale`; áp dụng WebView text zoom ngay khi đang đọc.
-- Mở rộng nhận dạng ảnh lazy-load: `data-lazy-srcset`, `data-ks-lazyload`, `data-fallback-src`, `data-image`, `data-url` và các thuộc tính hiện có; thêm unit test.
-- Đã cập nhật regression guard cho cuộn dọc, dải font và lazy image.
-- Commits trên candidate: `15f0c6c68d346c393fcd47dc0eaa8acc074b8e5d` (scroll/font), `a11b30409c7ee3022b1f81848808e299b0b4c453` (image extraction), `3230be6c18bd148bdaa32054214d3cbce7b7c799` (image tests), `504301ab0a5659e8941b15812d935ff81b99ec66` (regression guards).
-- **Trạng thái hiện tại: chưa tuyên bố hoàn tất; cần CI build/test và APK mới.** Chưa sửa/promote nhánh stable.
+### Kết quả
+- Bản build ứng viên: **NM7 IPTV Mobile 1.10.147 / versionCode 163**.
+- GitHub Actions run: https://github.com/cnktvpc/NM7-IPTV/actions/runs/39887820795 — **SUCCESS**.
+- `:app:assembleMobileDebug`: PASS.
+- Full Mobile unit-test suite: PASS (release gate, không cho qua nếu test thất bại).
+- Upload APK + publish result: PASS.
+- Artifact: `NM7-IPTV-Mobile-1.10.147-YOUTUBE-403-NEWS-FONT-FIX`, ID `12473821053`.
+- APK SHA-256: `6e272bc50565c8a12a09713d914844b13a0a1e5557c4c979d6582c85ce708107`.
+- ZIP SHA-256: `116ceabd13aa5c1150826c4755a86781cf7768f030fd91a468b63bbdf48d13f6`.
+
+### Sửa lỗi theo hai video người dùng gửi
+1. **YouTube HTTP 403:** chuỗi nguồn SmartTube-droid trong workflow đã bị ghim ở commit tháng 9. Đã nâng sang commit `95cb207ceb4dbd2b8af9ddae1c89f65611900e8a` của dòng 32.68 có các sửa lỗi phát video upstream. Bổ sung lớp tương thích cho API back-state và focus video gợi ý bị đổi trong nguồn mới. Đây là bản ứng viên để xử lý lỗi phát; CI không thể thay thế xác nhận playback trên điện thoại thật.
+2. **Font bài báo không đồng nhất:** CSS trong `ReaderArticleExtractor` hiện đặt font-family, cỡ chữ, line-height, font-weight và font-style thống nhất cho văn bản thân bài; các thẻ inline lồng trong đoạn được kế thừa style chung để `strong`, `b`, `em` hoặc style do báo nhúng không làm một số từ lệch đậm/cỡ chữ. Bổ sung unit test hồi quy cho markup hỗn hợp.
+
+### Trạng thái nhánh
+- Repo: `cnktvpc/NM7-IPTV`.
+- Candidate: `port/news-reader-4fc-stable142-20261022`.
+- Stable chưa bị ghi đè hay promote.
+- Giữ nguyên scope ngoài lỗi YouTube/Reader; cần cài APK và xác minh playback 403 cùng kiểu chữ trên thiết bị trước khi promote stable.
+
+---
 
 ## 2026-10-23 — Reader hotfix sau khi đối chiếu Super OK [2.5].apk — BUILD + UNIT TEST PASS
 
