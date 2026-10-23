@@ -4,6 +4,27 @@ name: NM7 IPTV Mobile 1.10.149 — Reader-only from exact 1.10.142 source
   push:
     branches:
       - "rebuild/reader-only-from-stable-142-20261023"
+    paths:
+      - "app/**"
+      - "scripts/patch-mobile-v37.py"
+      - "scripts/patch-mobile-v106.py"
+      - "scripts/patch-mobile-v114-youtube-ui.py"
+      - "scripts/patch-mobile-v119-youtube-chrome-final.py"
+      - "scripts/patch-mobile-v120-youtube-statusbar-final.py"
+      - "scripts/patch-mobile-v121-native-statusbar.py"
+      - "scripts/patch-mobile-v122-youtube-overdraw-final.py"
+      - "scripts/patch-mobile-v123-youtube-wordmark-final.py"
+      - "scripts/patch-mobile-v128-youtube-wordmark-exact.py"
+      - "scripts/patch-mobile-v130-pull-refresh.py"
+      - "scripts/verify-mobile-pull-refresh.py"
+      - "scripts/verify-reader-only-port-v149.py"
+      - "scripts/verify-mobile-news-reader-plugin-v146.py"
+      - "scripts/verify-mobile-lifecycle.py"
+      - ".github/workflows/nm7-mobile-reader-only-v149.yml"
+      - "build.gradle.kts"
+      - "settings.gradle.kts"
+      - "gradle/**"
+      - "gradle.properties"
   workflow_dispatch:
 
 permissions:
