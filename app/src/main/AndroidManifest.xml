@@ -36,5 +36,7 @@
         <activity android:name=".MainActivity" android:launchMode="standard" android:alwaysRetainTaskState="true" android:configChanges="keyboardHidden|orientation|screenSize" android:windowSoftInputMode="stateAlwaysHidden|adjustPan" android:exported="true">
             <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
         </activity>
+            <activity android:name=".ReaderPluginActivity" android:exported="false" android:configChanges="keyboardHidden|orientation|screenSize" />
+        <activity android:name=".NewsReaderActivity" android:exported="false" android:configChanges="keyboardHidden|orientation|screenSize" />
     </application>
 </manifest>
