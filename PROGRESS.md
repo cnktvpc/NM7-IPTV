@@ -4879,3 +4879,27 @@ Các run 741–745 đều dừng ở bước **Patch SmartTube Mobile UI and pla
 - **Scope:** port native News Reader, article extraction, feed category routing, JS plugin screens/runtime/store, Reader tests, dependencies, manifest registrations and the Reader navigation entry only. Keep baseline YouTube/SmartTube playback and Back/mini-player patch chain unchanged; do not port the 1.10.148 hotfix workflow or its YouTube changes.
 - **Candidate version:** 1.10.149, versionCode 165.
 - **Validation status:** source port and Reader static guards are committed. GitHub Actions build/test result and APK artifact are pending; do not treat the candidate as verified until the workflow completes and the YouTube Back/miniplayer behavior is tested on-device.
+
+
+# 2026-10-23 — Reader article content mismatch investigation
+
+## Evidence from user video
+
+- Compared the visible article title with the body shown by NM7.
+- The current extractor used broad selectors and a longest-text heuristic, without checking that a generic article/main candidate belonged to the article headline being opened.
+- The rendered article also preferred RSS/card summary and thumbnail over metadata from the fetched article URL. If the feed card parser had captured adjacent-story text or image, that unrelated material could appear at the top of the reader even when the article URL was correct.
+
+## Fix committed to the test branch
+
+- ReaderArticleExtractor now prioritizes metadata from the fetched article page.
+- Removed generic article and main from the immediate selector list.
+- Generic fallback is anchored to the matching page headline and chooses the smallest suitable ancestor containing the story paragraphs; scoring fallback requires title/summary overlap.
+- Removed the unsafe fallback that harvested arbitrary paragraphs from the whole page when no body was confidently identified.
+- Added regression tests for two adjacent stories in one page and contaminated RSS title/summary/image metadata.
+
+## Validation status
+
+- Branch: rebuild/reader-only-from-stable-142-20261023.
+- Candidate: 1.10.149, versionCode 165.
+- Stable branch stable/mobile-1.10.142 remains untouched.
+- Code and tests are committed; wait for GitHub Actions and then retest the exact article on device. CI success alone does not prove all publishers extract correctly.
