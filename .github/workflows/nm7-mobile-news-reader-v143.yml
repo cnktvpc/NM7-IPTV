@@ -1,4 +1,5 @@
 name: NM7 IPTV Mobile 1.10.148 YouTube playback + Reader typography fix — Build
+# 1.10.148 back fix: preserve native PlaybackActivity dispatch and fail closed on stale mini state.
 ## Builds 1.10.148 from stable 1.10.142 with the new native RSS news reader.
 # Keep stable 1.10.142 intact; build the news-reader candidate on a separate branch.
 # Build is gated on baseline playback checks, Reader wiring checks, and full unit tests.
