@@ -675,3 +675,14 @@ Source 1.10.103 đã được đưa vào build chain. **Chưa đánh dấu PASS*
 - **Scope:** port native News Reader, article extraction, feed category routing, JS plugin screens/runtime/store, Reader tests, dependencies, manifest registrations and the Reader navigation entry only. Keep baseline YouTube/SmartTube playback and Back/mini-player patch chain unchanged; do not port the 1.10.148 hotfix workflow or its YouTube changes.
 - **Candidate version:** 1.10.149, versionCode 165.
 - **Validation status:** source port and Reader static guards are committed. GitHub Actions build/test result and APK artifact are pending; do not treat the candidate as verified until the workflow completes and the YouTube Back/miniplayer behavior is tested on-device.
+
+
+## 2026-10-23 — Reader article extraction correctness follow-up
+
+- Fixed article-body selection so generic page containers are no longer selected solely because they contain the most text.
+- The fallback extractor anchors itself to the page headline and chooses the smallest suitable parent containing the article paragraphs.
+- Metadata from the fetched article URL (og:title, og:description, og:image) takes precedence over RSS/list-card title, summary and thumbnail. RSS metadata is only a fallback.
+- If a confident article body cannot be identified, the reader no longer appends arbitrary paragraphs from the page that could belong to adjacent stories.
+- Added regression tests for adjacent article cards and mismatched RSS summary/image metadata.
+- Branch: rebuild/reader-only-from-stable-142-20261023. Stable branch stable/mobile-1.10.142 is not modified.
+- Candidate remains 1.10.149 / versionCode 165. CI build/test and device retest are required before calling this fixed.
