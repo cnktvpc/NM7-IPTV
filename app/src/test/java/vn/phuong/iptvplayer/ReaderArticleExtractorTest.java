@@ -95,6 +95,45 @@ public class ReaderArticleExtractorTest {
         assertFalse(result.contains("target=\"_blank\""));
     }
 
+    @Test public void genericArticleFallbackSelectsTheArticleMatchingTheRequestedHeadline() {
+        String html = "<html><head><meta property='og:title' content='Bài cần đọc'></head><body>"
+                + "<main><article><h2>Tin khác không được lấy</h2>"
+                + "<p>Đây là phần mô tả dài của một tin khác không liên quan đến bài cần đọc. "
+                + "Tin này có đủ câu chữ để đánh lừa cách chọn phần tử article lớn nhất.</p>"
+                + "<p>Đoạn thứ hai của tin khác cũng có nhiều chữ và không được xuất hiện trong bài.</p></article>"
+                + "<article><h1>Bài cần đọc</h1><div><p>Nội dung chính xác của bài cần đọc, có thông tin về sự kiện "
+                + "và các chi tiết liên quan để xác minh bộ trích xuất chọn đúng bài.</p>"
+                + "<p>Đoạn thứ hai của đúng bài báo cần hiển thị, không được trộn với tin khác.</p></div></article></main>"
+                + "</body></html>";
+        String result = ReaderArticleExtractor.renderForTest(html, "https://news.example/story",
+                "Bài cần đọc", "Tóm tắt chính xác", "", "Nguồn", "", 100);
+
+        assertTrue(result.contains("Nội dung chính xác của bài cần đọc"));
+        assertTrue(result.contains("Đoạn thứ hai của đúng bài báo"));
+        assertFalse(result.contains("Tin khác không được lấy"));
+        assertFalse(result.contains("Đoạn thứ hai của tin khác"));
+    }
+
+    @Test public void publisherPageMetadataOverridesPotentiallyContaminatedFeedCardMetadata() {
+        String html = "<html><head>"
+                + "<meta property='og:title' content='Tiêu đề trang gốc'>"
+                + "<meta property='og:description' content='Tóm tắt đúng của bài gốc'>"
+                + "<meta property='og:image' content='/article.jpg'>"
+                + "</head><body><article class='article-content'>"
+                + "<p>Nội dung bài gốc đủ dài để được trích xuất thành phần đọc riêng.</p>"
+                + "<p>Đoạn tiếp theo xác nhận đây là nội dung của URL bài gốc.</p>"
+                + "</article></body></html>";
+        String result = ReaderArticleExtractor.renderForTest(html, "https://news.example/story",
+                "Tiêu đề từ thẻ RSS", "Tóm tắt của tin lân cận", "/wrong-card.jpg",
+                "Nguồn", "", 100);
+
+        assertTrue(result.contains("Tiêu đề trang gốc"));
+        assertTrue(result.contains("Tóm tắt đúng của bài gốc"));
+        assertTrue(result.contains("https://news.example/article.jpg"));
+        assertFalse(result.contains("Tóm tắt của tin lân cận"));
+        assertFalse(result.contains("wrong-card.jpg"));
+    }
+
     @Test public void givesAReadableFallbackWithoutReturningRawPublisherMarkup() {
         String result = ReaderArticleExtractor.fallback("https://news.example/a",
                 "Tiêu đề", "Tóm tắt bài viết", "", "VnExpress", "22/10/2026", 100,
