@@ -12,7 +12,6 @@
     private long mNm7TargetRestoreStarted;
     private com.google.android.exoplayer2.ui.PlayerView mNm7VideoTarget;
     private boolean mNm7OwnsPlayback;
-    private Object mNm7BackCallback;
     private com.google.android.exoplayer2.SimpleExoPlayer mNm7ObservedPlayer;
     private com.google.android.exoplayer2.Player.EventListener mNm7PlaybackObserver;
     private com.google.android.exoplayer2.video.VideoListener mNm7FrameObserver;
@@ -457,23 +456,6 @@
                 if (VERSION.SDK_INT >= 26) startForegroundService(service); else startService(service);
             } catch (RuntimeException error) {
                 android.util.Log.e("NM7Playback", "Background service failed", error);
-            }
-        }
-    }
-
-    // API 33 types isolated from class loading on Android 6-12.
-    private static final class Nm7BackApi {
-        static void register(PlaybackActivity activity) {
-            android.window.OnBackInvokedCallback callback = activity::onBackPressed;
-            activity.mNm7BackCallback = callback;
-            activity.getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
-                    android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT, callback);
-        }
-        static void unregister(PlaybackActivity activity) {
-            if (activity.mNm7BackCallback != null) {
-                activity.getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback(
-                        (android.window.OnBackInvokedCallback) activity.mNm7BackCallback);
-                activity.mNm7BackCallback = null;
             }
         }
     }
