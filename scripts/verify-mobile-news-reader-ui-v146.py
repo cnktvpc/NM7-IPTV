@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Static regression guards for NM7 Mobile 1.10.148 native article reader."""
+"""Static regression guards for NM7 Mobile 1.10.149 Reader-only port."""
 from pathlib import Path
 
 read = lambda p: Path(p).read_text(encoding="utf-8")
@@ -8,22 +8,20 @@ router = read("app/src/main/java/vn/phuong/iptvplayer/ReaderFeedCategoryRouter.j
 extractor = read("app/src/main/java/vn/phuong/iptvplayer/ReaderArticleExtractor.java")
 tabs = read("app/src/main/java/vn/phuong/iptvplayer/HomeTabBar.java")
 gradle = read("app/build.gradle.kts")
-workflow = read(".github/workflows/nm7-mobile-news-reader-v143.yml")
+workflow = read(".github/workflows/nm7-mobile-reader-only-v149.yml")
 
 checks = [
-    ("candidate version is 1.10.146 / code 162",
-     'versionName = "1.10.148"' in gradle and "versionCode = 164" in gradle),
+    ("Reader-only candidate version is 1.10.149 / code 165",
+     'versionName = "1.10.149"' in gradle and "versionCode = 165" in gradle),
     ("Reader applies status-bar and display-cutout top insets",
      "WindowInsets.Type.statusBars()" in reader
      and "WindowInsets.Type.displayCutout()" in reader
      and "view.setPadding(view.getPaddingLeft(), topInset" in reader),
-    ("Reader reserves bottom navigation insets plus shared tab-row height",
-     "readerBarHeight + bottomInset" in reader),
-    ("shared navigation row sits above navigation/gesture inset",
-     "barParams.bottomMargin = bottomInset" in tabs
-     and "WindowInsets.Type.navigationBars()" in tabs),
-    ("IPTV list reserves shared tab height and system inset",
-     "channelListBaseBottom + listReserve + bottomInset" in tabs),
+    
+    ("Reader tab is added without removing the original YouTube session restoration path",
+     "attachReader(Activity activity)" in tabs and "restoreNm7Player" in tabs
+     and "private static void openNews(Activity activity)" in tabs),
+    
     ("article uses a native extraction pipeline, not an injected website rewrite",
      "ReaderArticleExtractor.fetchAndRender" in reader
      and "loadDataWithBaseURL(baseUrl, html, " in reader
@@ -39,9 +37,10 @@ checks = [
      and '.body p *,.body li *,.body blockquote *,.body td *' in extractor
      and 'font-weight:400!important' in extractor
      and 'font-size:inherit!important' in extractor),
-    ("YouTube source pin includes SmartTube-droid 32.68 playback-error fixes",
-     'checkout --detach 95cb207ceb4dbd2b8af9ddae1c89f65611900e8a' in workflow
-     and 'checkout --detach 4825d6aa8b6f1d3181927f9e96c7d89cab13d510' not in workflow),
+    ("build workflow uses the clean rebuild branch and stable SmartTube pin",
+     "rebuild/reader-only-from-stable-142-20261023" in workflow
+     and "4825d6aa8b6f1d3181927f9e96c7d89cab13d510" in workflow
+     and "patch-mobile-v75.py" not in workflow),
     ("extractor searches known Vietnamese and common article body selectors",
      '[itemprop=articleBody]' in extractor
      and '".fck_detail"' in extractor
