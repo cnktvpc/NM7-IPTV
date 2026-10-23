@@ -1441,29 +1441,47 @@ public final class NewsReaderActivity extends Activity {
     private List<Article> loadArticlesWithFallback(Source source, String feedUrl, String category) throws Exception {
         if (source.jsPlugin) return parsePluginNewsSource(source, category);
 
+        final boolean strict24hCategory = "24h".equals(source.id) && !"Trang chủ".equals(category);
         Exception rssFailure = null;
-        List<Article> result = Collections.emptyList();
+        List<Article> rssArticles = Collections.emptyList();
         try {
-            result = parseFeed(feedUrl, source.name);
+            rssArticles = filterArticlesForCategory(source, category, parseFeed(feedUrl, source.name));
         } catch (Exception e) {
             rssFailure = e;
         }
-        if (!result.isEmpty()) return result;
+
+        // Never trust a non-empty RSS response blindly for a 24h category. Some RSS
+        // responses may contain homepage/trending entries; keep only links whose
+        // publisher route belongs to the selected category.
+        if (!rssArticles.isEmpty() && (!strict24hCategory || rssArticles.size() >= 8)) {
+            return rssArticles;
+        }
 
         String pageUrl = htmlUrlFor(source, category);
         Exception pageFailure = null;
+        List<Article> pageArticles = Collections.emptyList();
         if (isWebUrl(pageUrl)) {
             try {
-                result = parseHtmlFeed(pageUrl, source);
-                if (!result.isEmpty()) return result;
+                pageArticles = filterArticlesForCategory(source, category, parseHtmlFeed(pageUrl, source));
+                if (!pageArticles.isEmpty()) {
+                    return strict24hCategory ? mergeArticles(rssArticles, pageArticles) : pageArticles;
+                }
             } catch (Exception e) {
                 pageFailure = e;
             }
         }
+
+        // If the category page was unavailable but RSS returned some correctly
+        // categorized stories, return those stories—not the previous tab's list.
+        if (!rssArticles.isEmpty()) return rssArticles;
+
+        // This final fallback remains for existing sources, but for 24h it is also
+        // filtered by route, so an RSS URL can never turn into a generic homepage list.
         if (isWebUrl(feedUrl) && !feedUrl.equals(pageUrl)) {
             try {
-                result = parseHtmlFeed(feedUrl, source);
-                if (!result.isEmpty()) return result;
+                List<Article> feedPage = filterArticlesForCategory(source, category, parseHtmlFeed(feedUrl, source));
+                if (!feedPage.isEmpty()) return strict24hCategory
+                        ? mergeArticles(rssArticles, feedPage) : feedPage;
             } catch (Exception e) {
                 if (pageFailure == null) pageFailure = e;
             }
@@ -1471,15 +1489,50 @@ public final class NewsReaderActivity extends Activity {
 
         if (pageFailure != null) throw new java.io.IOException("RSS và trang tin đều không tải được: "
                 + safeError(pageFailure), pageFailure);
-        if (rssFailure != null) throw new java.io.IOException("RSS không dùng được và trang tin không có bài: "
+        if (rssFailure != null) throw new java.io.IOException("RSS không dùng được và trang tin không có bài đúng chuyên mục: "
                 + safeError(rssFailure), rssFailure);
-        return result;
+        return Collections.emptyList();
+    }
+
+    private List<Article> filterArticlesForCategory(Source source, String category, List<Article> input) {
+        if (!"24h".equals(source.id) || "Trang chủ".equals(category)) return input;
+        List<Article> filtered = new ArrayList<>();
+        if (input == null) return filtered;
+        for (Article article : input) {
+            if (article != null && ReaderFeedCategoryRouter.matchesArticle(source.id, category, article.url)) {
+                filtered.add(article);
+            }
+        }
+        return filtered;
+    }
+
+    private List<Article> mergeArticles(List<Article> first, List<Article> second) {
+        LinkedHashMap<String, Article> merged = new LinkedHashMap<>();
+        if (first != null) {
+            for (Article article : first) addUniqueArticle(merged, article);
+        }
+        if (second != null) {
+            for (Article article : second) addUniqueArticle(merged, article);
+        }
+        return new ArrayList<>(merged.values());
+    }
+
+    private void addUniqueArticle(LinkedHashMap<String, Article> merged, Article article) {
+        if (article == null || TextUtils.isEmpty(article.url)) return;
+        String key = canonicalArticleUrl(article.url);
+        if (TextUtils.isEmpty(key)) key = article.url.trim();
+        if (!merged.containsKey(key)) merged.put(key, article);
     }
 
     private static String htmlUrlFor(Source source, String category) {
         String id = source.id;
         if (source.jsPlugin) return source.homeUrl();
         if (source.customRss) return source.homeUrl();
+        if ("24h".equals(id)) {
+            // For a 24h tab with no specific fallback URL, return empty instead of
+            // silently parsing the homepage and showing unrelated headlines.
+            return ReaderFeedCategoryRouter.htmlPageUrl(id, category, source.homeUrl());
+        }
 
         if ("vnexpress".equals(id)) {
             switch (category) {
@@ -1502,15 +1555,6 @@ public final class NewsReaderActivity extends Activity {
                 case "Thư giãn": return "https://vnexpress.net/thu-gian";
                 case "Tin xem nhiều": return "https://vnexpress.net/tin-xem-nhieu";
                 default: return "https://vnexpress.net/";
-            }
-        }
-        if ("24h".equals(id)) {
-            switch (category) {
-                case "Tin tức": return "https://www.24h.com.vn/tin-tuc-trong-ngay-c46.html";
-                case "Bóng đá": return "https://www.24h.com.vn/bong-da-c48.html";
-                case "Thể thao": return "https://www.24h.com.vn/the-thao-c101.html";
-                case "Công nghệ": return "https://www.24h.com.vn/cong-nghe-thong-tin-c55.html";
-                default: return "https://www.24h.com.vn/";
             }
         }
         if ("dantri".equals(id)) {
