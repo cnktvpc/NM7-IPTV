@@ -10,6 +10,7 @@ name: NM7 IPTV Mobile 1.10.149 Reader-only stable baseline — Build
     paths:
       - "app/**"
       - "scripts/verify-mobile-news-reader-only.py"
+      - ".github/workflows/nm7-mobile-reader-only-stable142.yml"
       - "scripts/verify-mobile-live-feed-v134.py"
       - "scripts/verify-mobile-live-feed-v138.py"
       - "scripts/verify-mobile-live-fullscreen-server-v138.py"
