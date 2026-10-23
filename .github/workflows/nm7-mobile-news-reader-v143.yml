@@ -1,5 +1,5 @@
-name: NM7 IPTV Mobile 1.10.146 exact source 4fc8 + News Reader — Build
-## Builds 1.10.146 from stable 1.10.142 with the new native RSS news reader.
+name: NM7 IPTV Mobile 1.10.147 YouTube playback + Reader typography fix — Build
+## Builds 1.10.147 from stable 1.10.142 with the new native RSS news reader.
 # Keep stable 1.10.142 intact; build the news-reader candidate on a separate branch.
 # Build is gated on baseline playback checks, Reader wiring checks, and full unit tests.
 
@@ -54,7 +54,7 @@ jobs:
           report_dir="$(mktemp -d)"
           git clone --quiet --depth 1 --branch "$branch" "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git" "$report_dir"
           cd "$report_dir"
-          printf '# NM7 IPTV Mobile 1.10.146 — CI result\n\n- Status: **RUNNING**\n- Branch: `%s`\n- Source commit: `%s`\n- Workflow run: https://github.com/%s/actions/runs/%s\n\nBuild and full unit tests are in progress.\n' "$branch" "$GITHUB_SHA" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > LIVE_FEED_CI_RESULT.md
+          printf '# NM7 IPTV Mobile 1.10.147 — CI result\n\n- Status: **RUNNING**\n- Branch: `%s`\n- Source commit: `%s`\n- Workflow run: https://github.com/%s/actions/runs/%s\n\nBuild and full unit tests are in progress.\n' "$branch" "$GITHUB_SHA" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > LIVE_FEED_CI_RESULT.md
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add LIVE_FEED_CI_RESULT.md
@@ -65,7 +65,7 @@ jobs:
         run: |
           set -euxo pipefail
           git clone --no-checkout https://github.com/systematiq-one/SmartTube-droid.git third_party/SmartTube-droid
-          git -C third_party/SmartTube-droid checkout --detach 4825d6aa8b6f1d3181927f9e96c7d89cab13d510
+          git -C third_party/SmartTube-droid checkout --detach 95cb207ceb4dbd2b8af9ddae1c89f65611900e8a # SmartTube-droid 32.68 + playback error fixes
           git -C third_party/SmartTube-droid submodule update --init --recursive
 
       - name: Patch SmartTube for AGP 8.13
@@ -106,10 +106,10 @@ jobs:
           set -euxo pipefail
           python3 scripts/verify-mobile-pull-refresh.py
 
-      - name: Verify 1.10.146 Reader build configuration
+      - name: Verify 1.10.147 Reader build configuration
         run: |
           set -euxo pipefail
-          test "$(grep -c 'versionName = "1.10.146"' app/build.gradle.kts)" -eq 1
+          test "$(grep -c 'versionName = "1.10.147"' app/build.gradle.kts)" -eq 1
           test "$(grep -c 'versionCode = 162' app/build.gradle.kts)" -eq 1
 
       - name: Verify NM7 Reader wiring
@@ -269,7 +269,7 @@ jobs:
               p.write_text(''.join(lines))
           PY
 
-      - name: Build Mobile 1.10.146 (news reader)
+      - name: Build Mobile 1.10.147 (news reader)
         run: |
           set -o pipefail
           gradle --no-daemon --console=plain \
@@ -288,10 +288,7 @@ jobs:
 
       - name: Run full Mobile unit-test suite
         id: mobile_unit_tests
-        # Preserve the exact requested 1.10.142 source. This baseline intentionally still
-        # has TextureView in the mini-player XML; the newer SurfaceView-only assertion is
-        # retained as a warning and must not prevent delivery of the requested baseline APK.
-        continue-on-error: true
+        # Full unit suite is a hard release gate; do not upload an APK if it fails.
         run: |
           set -euxo pipefail
           gradle --no-daemon --console=plain \
@@ -308,7 +305,7 @@ jobs:
       - name: Upload Mobile APK
         uses: actions/upload-artifact@v4
         with:
-          name: NM7-IPTV-Mobile-1.10.146-SOURCE4FC-NEWS-READER
+          name: NM7-IPTV-Mobile-1.10.147-YOUTUBE-403-NEWS-FONT-FIX
           path: dist/mobile/
           retention-days: 30
           if-no-files-found: error
@@ -322,7 +319,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          artifact_id="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts" --jq '.artifacts[] | select(.name == "NM7-IPTV-Mobile-1.10.146-SOURCE4FC-NEWS-READER") | .id' | head -n1)"
+          artifact_id="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts" --jq '.artifacts[] | select(.name == "NM7-IPTV-Mobile-1.10.147-YOUTUBE-403-NEWS-FONT-FIX") | .id' | head -n1)"
           test -n "$artifact_id"
           branch="$GITHUB_REF_NAME"
           short_sha="${GITHUB_SHA:0:12}"
@@ -330,7 +327,7 @@ jobs:
           git clone --quiet --depth 1 --branch "$branch" "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git" "$report_dir"
           cd "$report_dir"
           {
-            echo "# NM7 IPTV Mobile 1.10.146 — CI result"
+            echo "# NM7 IPTV Mobile 1.10.147 — CI result"
             echo
             if [ "$UNIT_TEST_OUTCOME" = "success" ]; then
               echo "- Result: **PASS** (APK build and full Mobile unit-test suite completed successfully)"
@@ -343,7 +340,7 @@ jobs:
             echo "- Source base: 4fc8b187db7e48591e1bcb11969436a56d27d06a"
             echo "- Source commit: $GITHUB_SHA"
             echo "- Workflow run: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-            echo "- Artifact: [Download NM7-IPTV-Mobile-1.10.146-SOURCE4FC-NEWS-READER](https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts/$artifact_id)"
+            echo "- Artifact: [Download NM7-IPTV-Mobile-1.10.147-YOUTUBE-403-NEWS-FONT-FIX](https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts/$artifact_id)"
             echo "- Artifact ID: $artifact_id"
             echo
             echo "## SHA-256"
@@ -372,7 +369,7 @@ jobs:
           report_dir="$(mktemp -d)"
           git clone --quiet --depth 1 --branch "$branch" "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git" "$report_dir"
           cd "$report_dir"
-          printf '# NM7 IPTV Mobile 1.10.146 — CI result\n\n- Status: **FAILED**\n- Branch: `%s`\n- Source commit: `%s`\n- Workflow run: https://github.com/%s/actions/runs/%s\n\nCheck this run for the failing build or unit-test step.\n' "$branch" "$GITHUB_SHA" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > LIVE_FEED_CI_RESULT.md
+          printf '# NM7 IPTV Mobile 1.10.147 — CI result\n\n- Status: **FAILED**\n- Branch: `%s`\n- Source commit: `%s`\n- Workflow run: https://github.com/%s/actions/runs/%s\n\nCheck this run for the failing build or unit-test step.\n' "$branch" "$GITHUB_SHA" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > LIVE_FEED_CI_RESULT.md
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add LIVE_FEED_CI_RESULT.md
