@@ -59,9 +59,10 @@ check('if (!mNm7LeavingForMini || !sNm7Mini || sNm7RestorePending) mNm7LeavingFo
 check("SMARTTUBE_BROWSE.equals(name) || (SMARTTUBE_PACKAGE + \"search.SearchActivity\").equals(name)"
       in application and "installSmartTubeBackHandling(activity);" in application,
       "Android 13+ Browse/Search Back bridge remains installed")
-playback_branch = application[application.find('} else if (SMARTTUBE_PLAYBACK.equals(name)) {'):
-                              application.find('} else if (name.startsWith(SMARTTUBE_PACKAGE)', application.find('} else if (SMARTTUBE_PLAYBACK.equals(name)) {'))]
-check("installSmartTubeBackHandling(activity)" not in playback_branch,
-      "PlaybackActivity deliberately uses native Back dispatch, not Application callback injection")
+playback_branch_start = application.find('} else if (SMARTTUBE_PLAYBACK.equals(name)) {')
+check(playback_branch_start >= 0
+      and application.count("installSmartTubeBackHandling(activity);") == 1
+      and application.index("installSmartTubeBackHandling(activity);") < playback_branch_start,
+      "PlaybackActivity deliberately uses native Back dispatch; the custom bridge is only installed before its branch")
 
 print("PASS: 11 YouTube Back-navigation regression guards")
