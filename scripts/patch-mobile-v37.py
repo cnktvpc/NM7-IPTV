@@ -51,7 +51,9 @@ t = method(t, 'protected void onResume()', '''        super.onResume();
         blockEngine(false);
         // Every foreground entry owns the full target, including opening another video
         // while a mini session exists (not only a tap on the mini overlay).
-        mNm7LeavingForMini = false;
+        // Do not erase an in-flight Back-to-mini transition if Android resumes this Activity
+        // while Browse is being reordered to the foreground. Explicit mini restore clears it.
+        if (!mNm7LeavingForMini || !sNm7Mini || sNm7RestorePending) mNm7LeavingForMini = false;
         completeNm7RestoreOnResume();
         mPlaybackPresenter.onViewResumed();
         if (mNm7TargetRestoreWaiting && mPlayer != null) mPlayer.setPlayWhenReady(false);
