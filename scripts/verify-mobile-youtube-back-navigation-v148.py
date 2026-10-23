@@ -59,10 +59,15 @@ check('if (!mNm7LeavingForMini || !sNm7Mini || sNm7RestorePending) mNm7LeavingFo
 check("SMARTTUBE_BROWSE.equals(name) || (SMARTTUBE_PACKAGE + \"search.SearchActivity\").equals(name)"
       in application and "installSmartTubeBackHandling(activity);" in application,
       "Android 13+ Browse/Search Back bridge remains installed")
-playback_branch_start = application.find('} else if (SMARTTUBE_PLAYBACK.equals(name)) {')
-check(playback_branch_start >= 0
-      and application.count("installSmartTubeBackHandling(activity);") == 1
-      and application.index("installSmartTubeBackHandling(activity);") < playback_branch_start,
-      "PlaybackActivity deliberately uses native Back dispatch; the custom bridge is only installed before its branch")
+created_start = application.find("@Override public void onActivityCreated(Activity activity, Bundle state) {")
+created_end = application.find("private void notifyYoutubeVisibility(", created_start)
+activity_created = application[created_start:created_end] if created_start >= 0 and created_end > created_start else ""
+playback_branch_start = activity_created.find("} else if (SMARTTUBE_PLAYBACK.equals(name)) {")
+back_bridge = activity_created.find("installSmartTubeBackHandling(activity);")
+check(created_start >= 0 and created_end > created_start
+      and "if (SMARTTUBE_BROWSE.equals(name) || (SMARTTUBE_PACKAGE + \"search.SearchActivity\").equals(name))" in activity_created
+      and activity_created.count("installSmartTubeBackHandling(activity);") == 1
+      and back_bridge >= 0 and playback_branch_start > back_bridge,
+      "PlaybackActivity deliberately uses native Back dispatch; the custom bridge is scoped to Browse/Search")
 
 print("PASS: 11 YouTube Back-navigation regression guards")
