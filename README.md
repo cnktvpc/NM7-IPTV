@@ -1,3 +1,17 @@
+# NM7 IPTV Mobile 1.10.148 — YouTube Back hai lần + Reader giữ nguyên — 2026-10-23
+
+- **Kết quả CI:** [Run 39891013369 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39891013369).
+- **Build APK:** PASS. **Full Mobile unit-test suite:** PASS. **Upload artifact:** PASS.
+- **Version:** 1.10.148, versionCode 164.
+- **Artifact:** [NM7-IPTV-Mobile-1.10.148-YOUTUBE-BACK-FIX-NEWS-FONT]( https://github.com/cnktvpc/NM7-IPTV/actions/runs/39891013369/artifacts/12475320363 ), ID `12475320363`.
+- **APK SHA-256:** `ae97e2e69e89170ffb1e0a057581c2a36f85ccff2b7e530940e1495ac10f5b65`.
+- **Artifact ZIP SHA-256:** `0139195f84e7f692edd843b611ff26704d59b726d741e77537bedbe6e4ef0232`.
+- **Back regression:** removed the duplicate API 33+ callback injected directly into PlaybackActivity, leaving native Android/SmartTube Back dispatch for the player. The old Back path could bypass normal player/PIP/parent handling.
+- **Second Back / stale mini state:** Back no longer silently returns when the mini close consumer cannot confirm a mini session; it has a defensive close path. A Back-to-mini transition is preserved if Android incidentally resumes PlaybackActivity while reordering Browse, and resume will not steal the surface back unless an explicit restore is pending.
+- **Back close:** closing the mini-player removes its surface, stops/releases the playback owner and clears the shared YouTube-background state. This is a candidate fix verified by source guards and CI; test the two-Back path on the actual phone before promoting.
+- **Reader:** retained the 1.10.147 inline font/style normalization and category improvements.
+- **Scope:** candidate branch only: `port/news-reader-4fc-stable142-20261022`. Stable branch is not overwritten or promoted.
+
 # NM7 IPTV Mobile 1.10.147 — YouTube HTTP 403 + Reader font consistency fix — 2026-10-23
 
 - **Build:** PASS. **Full Mobile unit-test suite:** PASS. **APK upload:** PASS.
