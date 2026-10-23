@@ -1,3 +1,15 @@
+# PROGRESS — 2026-10-23 — Reader-only rebuild from stable 1.10.142
+
+## Scope guard
+- Candidate branch: `rebuild/reader-only-on-stable-142-20261023`.
+- Created from `stable/mobile-1.10.142`, not from the faulty 1.10.148 candidate.
+- Retained baseline YouTube/Back scripts and SmartTube source pin.
+- Added Reader classes/tests/assets, Reader dependencies, manifest registration, navigation entry and version metadata only.
+- No changes to YouTube Back/player lifecycle scripts.
+- CI build and real-device verification required before calling complete; do not promote to stable yet.
+
+---
+
 # CẬP NHẬT TIẾN ĐỘ — BUILD YOUTUBE MINIPLAYER 1.10.142 — 2026-10-22
 
 ## Kết quả kiểm tra
