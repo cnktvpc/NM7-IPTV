@@ -326,7 +326,7 @@ runpy.run_path("scripts/patch-mobile-v106.py")
 # Compatibility bridge for the upstream SmartTube-droid 32.68 APIs used by the
 # current playback core. Earlier NM7 patches wrote the inherited back-state field
 # directly; current MotherActivity makes it private and exposes state accessors.
-mother_activity = ROOT / "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/misc/MotherActivity.java"
+mother_activity = Path("third_party/SmartTube-droid/common/src/main/java/com/liskovsoft/smartyoutubetv2/common/misc/MotherActivity.java")
 mother_text = mother_activity.read_text(encoding="utf-8")
 setter_anchor = "    protected final void resetBackState() {"
 if setter_anchor not in mother_text:
