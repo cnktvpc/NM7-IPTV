@@ -1,3 +1,13 @@
+## 2026-10-23 — Reader hotfix vòng 2 — ĐANG CHỜ CI
+
+- Người dùng báo lỗi thực tế: cuộn dọc lag/đơ, font bài viết không đồng nhất, ảnh tải thiếu. Không dùng run trước làm bằng chứng các lỗi runtime đã hết.
+- Sửa `FeedScrollView.onTouchEvent`: thao tác dọc không còn bị nuốt `ACTION_UP/ACTION_CANCEL`, cho phép `ScrollView` tự tính vận tốc và cuộn quán tính.
+- Bộ chọn cỡ chữ dùng chung cho danh sách/bài viết, từ 50% đến 160%, lưu `reader_text_scale`; áp dụng WebView text zoom ngay khi đang đọc.
+- Mở rộng nhận dạng ảnh lazy-load: `data-lazy-srcset`, `data-ks-lazyload`, `data-fallback-src`, `data-image`, `data-url` và các thuộc tính hiện có; thêm unit test.
+- Đã cập nhật regression guard cho cuộn dọc, dải font và lazy image.
+- Commits trên candidate: `15f0c6c68d346c393fcd47dc0eaa8acc074b8e5d` (scroll/font), `a11b30409c7ee3022b1f81848808e299b0b4c453` (image extraction), `3230be6c18bd148bdaa32054214d3cbce7b7c799` (image tests), `504301ab0a5659e8941b15812d935ff81b99ec66` (regression guards).
+- **Trạng thái hiện tại: chưa tuyên bố hoàn tất; cần CI build/test và APK mới.** Chưa sửa/promote nhánh stable.
+
 ## 2026-10-23 — Reader hotfix sau khi đối chiếu Super OK [2.5].apk — BUILD + UNIT TEST PASS
 
 - Candidate branch: `port/news-reader-4fc-stable142-20261022` (nhánh stable không bị ghi đè).
