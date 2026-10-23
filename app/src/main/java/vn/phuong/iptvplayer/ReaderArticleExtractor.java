@@ -304,7 +304,7 @@ public final class ReaderArticleExtractor {
                 if (hasExcludedAncestor(parent)) continue;
                 int length = parent.text().length();
                 int paragraphs = parent.select("p").size();
-                if (length >= 260 && length <= 50000 && paragraphs >= 2
+                if (length >= 180 && length <= 50000 && paragraphs >= 2
                         && !containsManyLinks(parent, paragraphs)) {
                     return parent;
                 }
