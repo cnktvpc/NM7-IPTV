@@ -4882,3 +4882,29 @@ Các run 741–745 đều dừng ở bước **Patch SmartTube Mobile UI and pla
 - Hiện đang ở bước **Build Mobile only**; chưa có APK cho đến khi bước này hoàn tất.
 
 Đây là lần đầu vòng 1.10.103 vượt qua toàn bộ patch/verifier và đi vào Gradle build. Chưa đánh dấu PASS cho đến khi build + artifact hoàn tất và người dùng test máy thật.
+
+
+# CI COMPLETED — NM7 IPTV Mobile 1.10.146 Reader hotfix vòng 2 — 2026-10-23
+
+## Lỗi đã xử lý
+- Cuộn dọc bị ì/đứng: nguyên nhân là custom `FeedScrollView` nuốt `ACTION_UP/ACTION_CANCEL`, làm native scroll không tính vận tốc fling. Gesture dọc giờ đi qua `super.onTouchEvent`; gesture ngang chuyển danh mục vẫn được giữ.
+- Cỡ chữ không đồng nhất / mức nhỏ nhất phải thấp hơn 80%: dùng chung bộ điều chỉnh 50%–160% cho danh sách và bài viết; lưu trong `reader_text_scale`.
+- Ảnh bài viết thiếu: bổ sung hỗ trợ các thuộc tính ảnh lazy-load `data-lazy-srcset`, `data-ks-lazyload`, `data-fallback-src`, `data-image`, `data-url`; ưu tiên biến thể `srcset` có độ phân giải cao và tải ảnh bài viết eager.
+
+## Kết quả CI đã xác nhận
+- Workflow run: [39880611757](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39880611757) — **SUCCESS**.
+- Commit nguồn đã build: `805ec4e4d5080a5c8dd6062150d71de9352e786e`.
+- `Build Mobile 1.10.146`: SUCCESS.
+- `Run full Mobile unit-test suite`: SUCCESS.
+- `Upload Mobile APK`: SUCCESS.
+- Artifact ID: `12470343408`; [mở artifact](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39880611757/artifacts/12470343408).
+- SHA-256 APK: `782208b53a225d7f6c95f342b77896131084ca7a6157645f6cd28d8581f9775b`.
+- APK đã tải về để kiểm tra: archive hợp lệ, có AndroidManifest, 7 DEX và native libs cho `arm64-v8a` + `armeabi-v7a`; `jarsigner -verify` báo jar verified (debug keystore tự ký).
+
+## Chưa thể kết luận trước khi test thiết bị
+CI build và unit test không kiểm chứng hết thao tác vuốt thật hoặc ảnh tải từ mọi nhà xuất bản. Bản 1.10.146 vẫn là candidate; yêu cầu người dùng test:
+1. Vuốt dọc nhanh và liên tục trong danh sách tin (xác nhận native fling mượt, không đơ).
+2. Hạ cỡ chữ xuống 50%, rồi mở bài viết và quay lại danh sách (cỡ chữ thống nhất và được lưu).
+3. Mở một số bài từ nhiều báo để xem ảnh chính, ảnh nội dung và ảnh lazy-load có tải đủ không.
+
+Không promote sang stable trước khi nhận kết quả test trên thiết bị.
