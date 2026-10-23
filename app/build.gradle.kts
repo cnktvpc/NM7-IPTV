@@ -10,8 +10,8 @@ android {
         applicationId = "vn.phuong.iptvplayer"
         minSdk = 23
         targetSdk = 36
-        versionCode = 158
-        versionName = "1.10.142"
+        versionCode = 165
+        versionName = "1.10.149"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         manifestPlaceholders["applicationClass"] = "vn.phuong.iptvplayer.MobileNm7Application"
@@ -72,6 +72,10 @@ android {
 }
 
 dependencies {
+    // Reader article DOM extraction and source plugin runtime.
+    implementation("org.jsoup:jsoup:1.23.2")
+    implementation("org.mozilla:rhino:1.7.15.1")
+
     val media3Version = "1.11.0"
     implementation("androidx.media3:media3-exoplayer:$media3Version")
     implementation("androidx.media3:media3-exoplayer-hls:$media3Version")
