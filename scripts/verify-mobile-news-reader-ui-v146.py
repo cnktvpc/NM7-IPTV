@@ -53,14 +53,21 @@ checks = [
      'makeSource("24h"' in reader
      and reader.count("https://www.24h.com.vn/upload/rss/") >= 21
      and "Cười 24h" in reader and "Sức khỏe đời sống" in reader),
-    ("horizontal category swipe intercepts before child click handling",
+    ("horizontal category swipe intercepts before child click handling and vertical fling remains native",
      "class FeedScrollView extends ScrollView" in reader
      and "onInterceptTouchEvent(MotionEvent event)" in reader
-     and "Cancel child click handling" not in reader
-     and "stepCategoryBySwipe" in reader),
-    ("font size options are persisted across Reader sessions",
+     and "stepCategoryBySwipe" in reader
+     and "return super.onTouchEvent(event);" in reader
+     and "calculate velocity and perform native fling scrolling" in reader),
+    ("font scale offers 50–160% and persists across Reader sessions",
      '"reader_text_scale"' in reader and "setSingleChoiceItems(labels, selected" in reader
-     and "putInt(\"reader_text_scale\", textScale)" in reader),
+     and "final int minScale = 50;" in reader and "final int maxScale = 160;" in reader
+     and "putInt(\\"reader_text_scale\\", textScale)" in reader),
+    ("image extractor handles additional lazy attributes and high-resolution variants",
+     'image.attr("data-lazy-srcset")' in extractor
+     and 'image.attr("data-ks-lazyload")' in extractor
+     and "firstSrcsetUrl" in extractor
+     and 'image.attr("data-fallback-src")' in extractor),
     ("article page displays related links within the NM7 reader",
      "collectRelatedArticles" in reader and "handleArticleWebViewNavigation" in reader
      and "nm7://related/" in extractor and "appendRelatedCards(html, related)" in extractor),
