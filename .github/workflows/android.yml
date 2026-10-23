@@ -30,7 +30,7 @@ concurrency:
 jobs:
   build:
     # This branch is built only by android-mobile-final.yml with the shared pinned patch.
-    if: github.event.repository.private == true && github.ref != 'refs/heads/fix/mobile-1.10.26-sleep-timer-icon'
+    if: (github.event.repository.private == true || github.ref == 'refs/heads/port/news-reader-4fc-stable142-20261022') && github.ref != 'refs/heads/fix/mobile-1.10.26-sleep-timer-icon'
     runs-on: ubuntu-24.04
     timeout-minutes: 50
     steps:
