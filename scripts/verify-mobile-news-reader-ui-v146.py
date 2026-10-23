@@ -4,6 +4,7 @@ from pathlib import Path
 
 read = lambda p: Path(p).read_text(encoding="utf-8")
 reader = read("app/src/main/java/vn/phuong/iptvplayer/NewsReaderActivity.java")
+router = read("app/src/main/java/vn/phuong/iptvplayer/ReaderFeedCategoryRouter.java")
 extractor = read("app/src/main/java/vn/phuong/iptvplayer/ReaderArticleExtractor.java")
 tabs = read("app/src/main/java/vn/phuong/iptvplayer/HomeTabBar.java")
 gradle = read("app/build.gradle.kts")
@@ -53,6 +54,15 @@ checks = [
      'makeSource("24h"' in reader
      and reader.count("https://www.24h.com.vn/upload/rss/") >= 21
      and "Cười 24h" in reader and "Sức khỏe đời sống" in reader),
+    ("24h RSS and HTML results are filtered by the selected category before display",
+     "filterArticlesForCategory(source, category, parseFeed(feedUrl, source.name))" in reader
+     and "filterArticlesForCategory(source, category, parseHtmlFeed(pageUrl, source))" in reader
+     and "ReaderFeedCategoryRouter.matchesArticle(source.id, category, article.url)" in reader),
+    ("24h HTML fallback maps each built-in category explicitly and never defaults to its homepage",
+     'ReaderFeedCategoryRouter.htmlPageUrl(id, category, source.homeUrl())' in reader
+     and 'case "Bóng đá": return "https://www.24h.com.vn/bong-da-c48.html";' in router
+     and 'case "An ninh - Hình sự": return "https://www.24h.com.vn/an-ninh-xa-hoi-c51.html";' in router
+     and 'default: return "";' in router),
     ("horizontal category swipe intercepts before child click handling and vertical fling remains native",
      "class FeedScrollView extends ScrollView" in reader
      and "onInterceptTouchEvent(MotionEvent event)" in reader
