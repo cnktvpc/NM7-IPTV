@@ -1,3 +1,15 @@
+# NM7 IPTV Mobile 1.10.149 — Reader-only rebuild from verified 1.10.142 YouTube baseline
+
+> **Build status: GitHub Actions PASS** (run [39901196671](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39901196671)). This is a test candidate, not yet device-verified. The source baseline is exactly `4fc8b187db7e48591e1bcb11969436a56d27d06a`, the source commit recorded for the 1.10.142 YouTube Floating MiniPlayer / SurfaceView build. Release version: `1.10.149`, versionCode `165`.
+
+- **Branch:** [`rebuild/reader-only-from-stable-142-20261023`](https://github.com/cnktvpc/NM7-IPTV/tree/rebuild/reader-only-from-stable-142-20261023)
+- **APK artifact:** [`NM7-IPTV-Mobile-1.10.149-READER-BASELINE142`](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39901196671/artifacts/12478897237) (Artifact ID `12478897237`, available until 2026-11-22).
+- **Validation:** Reader-specific unit tests PASS; APK assembly PASS; artifact upload PASS; original YouTube patch-chain/base guard PASS. The full Mobile unit-test step follows the original workflow's non-blocking policy, so this does not claim all tests as blocking release gates.
+- **Change scope:** Reader screens, article extraction/category routing, optional JS source plugins, tab entry, manifest entries, and Jsoup/Rhino dependencies. The protected YouTube/SmartTube patch scripts and `Nm7FeedAdapter.java` are unchanged from the pinned source. HomeTabBar's original YouTube and IPTV handoff methods were verified identical to the baseline.
+- **Next check:** install and test Back behavior between YouTube playback / floating mini-player and the Reader tab on a device before promoting this branch to stable.
+
+---
+
 # NM7 IPTV Mobile — Stable 1.10.142 — Live card tap-to-play — 2026-10-20
 
 > **Trạng thái: ĐÃ XÁC NHẬN TRÊN THIẾT BỊ — ổn định theo phản hồi người dùng.** Bản 1.10.142 được người dùng cài đặt và xác nhận hoạt động OK. CI build và toàn bộ unit tests đều PASS.
