@@ -1,10 +1,14 @@
-## Reader hotfix vòng 2 — 2026-10-23 — CI chưa xác nhận
+# NM7 IPTV Mobile 1.10.147 — YouTube HTTP 403 + Reader font consistency fix — 2026-10-23
 
-- Đã sửa đường cuộn dọc để `ScrollView` nhận sự kiện thả tay và giữ cuộn quán tính; vuốt ngang vẫn đổi chuyên mục.
-- Dùng chung bộ chọn font 50–160% cho danh sách tin và nội dung bài viết; lưu thiết lập.
-- Mở rộng nhận dạng thêm các dạng lazy image thường gặp và thêm unit test/regression guard.
-- Candidate branch: `port/news-reader-4fc-stable142-20261022`.
-- **Chưa phát hành APK mới:** đang chờ chạy build và toàn bộ unit tests. Không dùng artifact cũ để tuyên bố các lỗi mới đã sửa.
+- **Build:** PASS. **Full Mobile unit-test suite:** PASS. **APK upload:** PASS.
+- **Version:** 1.10.147, versionCode 163.
+- **CI run:** [39887820795 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39887820795).
+- **Artifact:** [NM7-IPTV-Mobile-1.10.147-YOUTUBE-403-NEWS-FONT-FIX](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39887820795/artifacts/12473821053), artifact ID `12473821053`.
+- **APK SHA-256:** `6e272bc50565c8a12a09713d914844b13a0a1e5557c4c979d6582c85ce708107`.
+- **Artifact ZIP SHA-256:** `116ceabd13aa5c1150826c4755a86781cf7768f030fd91a468b63bbdf48d13f6`.
+- **HTTP 403 / YouTube:** upgraded the embedded SmartTube-droid source to commit `95cb207ceb4dbd2b8af9ddae1c89f65611900e8a` (32.68 line, including upstream playback-error fixes); compatibility shims keep NM7's tested mobile navigation and suggestion scrolling working with the newer APIs. This is a candidate fix for the playback error; device-level playback must still be verified.
+- **Reader typography:** article paragraphs and nested inline tags now use one font family, size, line-height and normal weight/style, preventing publisher `strong`/`b`/`em` and inline styles from changing body text within a paragraph. Added a regression unit test.
+- **Scope:** only the candidate branch `port/news-reader-4fc-stable142-20261022` was changed. The stable branch was not overwritten/promoted. Test on device before promotion.
 
 ## Reader hotfix — 2026-10-23 — BUILD + UNIT TEST PASS
 
