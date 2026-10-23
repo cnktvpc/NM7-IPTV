@@ -4,8 +4,8 @@
 - **Bản nền giữ nguyên:** source commit `4fc8b187db7e48591e1bcb11969436a56d27d06a` — NM7 Mobile 1.10.142, versionCode 158, bản nền YouTube Floating MiniPlayer / SurfaceView đã được xác nhận.
 - **Candidate:** NM7 Mobile 1.10.149 / versionCode 165; nhánh `rebuild/reader-only-from-stable-142-20261023`.
 - **Commit sửa code cuối:** [`317825a`](https://github.com/cnktvpc/NM7-IPTV/commit/317825a58d651671071440ffcf38ec1fc6f6b8c8).
-- **CI chính thức:** [Run 39918903288 — SUCCESS](`https://github.com/cnktvpc/NM7-IPTV/actions/runs/39918903288`).
-- **APK artifact của đúng commit:** [NM7-IPTV-Mobile-1.10.149-READER-BASELINE142](`https://github.com/cnktvpc/NM7-IPTV/actions/runs/39918903288/artifacts/12485724456`), ID `12485724456`, 44,019,483 bytes; hết hạn dự kiến 2026-11-22.
+- **CI chính thức:** [Run 39918903288 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39918903288).
+- **APK artifact của đúng commit:** [NM7-IPTV-Mobile-1.10.149-READER-BASELINE142](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39918903288/artifacts/12485724456), ID `12485724456`, 44,019,483 bytes; hết hạn dự kiến 2026-11-22.
 
 ## Nguyên nhân và thay đổi
 1. Quay về tab IPTV gọi `playInline()` lần nữa dù ExoPlayer cũ vẫn còn phiên phát đã chuẩn bị/phát. Việc đặt lại MediaItem/decoder có thể làm hình bị khựng. Sửa bằng cách giữ player còn sống và để lifecycle hiện có tiếp tục phát; chỉ phục hồi stream theo nhánh cũ khi player không còn hợp lệ/đã về IDLE.
