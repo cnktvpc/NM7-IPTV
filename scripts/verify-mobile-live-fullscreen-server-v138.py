@@ -5,7 +5,7 @@ from pathlib import Path
 read = lambda path: Path(path).read_text(encoding="utf-8")
 player = read("app/src/main/java/vn/phuong/iptvplayer/MobileInlinePlayerProviderV2.java")
 gradle = read("app/build.gradle.kts")
-workflow = read(".github/workflows/nm7-mobile-live-card-layout-v142.yml")
+workflow = read(".github/workflows/nm7-mobile-news-reader-stable149.yml")
 
 checks = [
     ("fullscreen selector is installed within the Media3 controller row",
@@ -25,11 +25,11 @@ checks = [
     ("the ordinary inline selector is preserved",
      "private android.widget.Button liveServerButton;" in player
      and "liveServerButton.setOnClickListener(v -> showLiveServerPicker())" in player),
-    ("candidate version is 1.10.142 / code 158",
-     'versionName = "1.10.142"' in gradle and "versionCode = 158" in gradle),
+    ("candidate version is 1.10.149 / code 165",
+     'versionName = "1.10.149"' in gradle and "versionCode = 165" in gradle),
     ("dedicated CI runs this check on the candidate branch",
      "python3 scripts/verify-mobile-live-fullscreen-server-v138.py" in workflow
-     and ("work/mobile-1.10.142-live-card-tap-to-play-20261020" in workflow)),
+     and ("rebuild/news-reader-stable142-20261023" in workflow)),
 ]
 for label, passed in checks:
     if not passed:
