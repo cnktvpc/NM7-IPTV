@@ -1,3 +1,11 @@
+## Reader hotfix vòng 2 — 2026-10-23 — CI chưa xác nhận
+
+- Đã sửa đường cuộn dọc để `ScrollView` nhận sự kiện thả tay và giữ cuộn quán tính; vuốt ngang vẫn đổi chuyên mục.
+- Dùng chung bộ chọn font 50–160% cho danh sách tin và nội dung bài viết; lưu thiết lập.
+- Mở rộng nhận dạng thêm các dạng lazy image thường gặp và thêm unit test/regression guard.
+- Candidate branch: `port/news-reader-4fc-stable142-20261022`.
+- **Chưa phát hành APK mới:** đang chờ chạy build và toàn bộ unit tests. Không dùng artifact cũ để tuyên bố các lỗi mới đã sửa.
+
 ## Reader hotfix — 2026-10-23 — BUILD + UNIT TEST PASS
 
 - Mở rộng danh mục 24h lên 21 RSS feed theo danh sách RSS chính thức.
