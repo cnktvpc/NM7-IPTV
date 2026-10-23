@@ -1,6 +1,7 @@
 package com.liskovsoft.smartyoutubetv2.droid.ui.shared;
 
 import androidx.recyclerview.widget.ConcatAdapter;
+import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.VideoGroup;
 import java.util.ArrayList;
 import java.util.List;
@@ -52,6 +53,19 @@ public final class Nm7FeedAdapter {
     }
 
     public boolean isEmpty() { return adapter.getItemCount() == 0; }
+
+    /** Flat ConcatAdapter position for the selected video, or -1 when not loaded. */
+    public int positionOfVideo(int groupId, Video video) {
+        int flatPosition = 0;
+        for (Entry entry : entries) {
+            if (entry.id == groupId) {
+                int itemPosition = entry.adapter.indexOf(video);
+                return itemPosition < 0 ? -1 : flatPosition + itemPosition;
+            }
+            flatPosition += entry.adapter.getItemCount();
+        }
+        return -1;
+    }
 
     private Entry find(int id) {
         for (Entry e : entries) if (e.id == id) return e;
