@@ -227,7 +227,7 @@ public final class NewsReaderActivity extends Activity {
             getWindow().setNavigationBarContrastEnforced(false);
         }
         sourceId = getPreferencesStore().getString(KEY_SOURCE, "vnexpress");
-        textScale = Math.max(80, Math.min(160, getPreferencesStore().getInt("reader_text_scale", 100)));
+        textScale = Math.max(50, Math.min(160, getPreferencesStore().getInt("reader_text_scale", 100)));
         buildShell();
         renderFeed(true);
         HomeTabBar.attachReader(this);
@@ -313,11 +313,8 @@ public final class NewsReaderActivity extends Activity {
         TextView font = text("A", 20, TEXT, true);
         font.setGravity(Gravity.CENTER);
         toolbar.addView(font, new LinearLayout.LayoutParams(dp(38), -1));
-        font.setOnClickListener(v -> {
-            textScale = textScale >= 120 ? 100 : textScale + 10;
-            renderArticleRows();
-            toast("Cỡ chữ " + textScale + "%");
-        });
+        font.setContentDescription("Chọn cỡ chữ");
+        font.setOnClickListener(v -> showTextScalePicker());
 
         TextView manage = text("▤", 25, ORANGE, true);
         manage.setGravity(Gravity.CENTER);
@@ -329,6 +326,33 @@ public final class NewsReaderActivity extends Activity {
         refresh.setContentDescription("Làm mới tin");
         toolbar.addView(refresh, new LinearLayout.LayoutParams(dp(34), -1));
         refresh.setOnClickListener(v -> loadFeed());
+    }
+
+    private void showTextScalePicker() {
+        final int minScale = 50;
+        final int maxScale = 160;
+        final int step = 10;
+        final int count = (maxScale - minScale) / step + 1;
+        final int[] scales = new int[count];
+        final String[] labels = new String[count];
+        int selected = 5;
+        for (int i = 0; i < count; i++) {
+            scales[i] = minScale + i * step;
+            labels[i] = scales[i] + "%";
+            if (scales[i] == textScale) selected = i;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("Cỡ chữ")
+                .setSingleChoiceItems(labels, selected, (dialog, which) -> {
+                    textScale = scales[which];
+                    getPreferencesStore().edit().putInt("reader_text_scale", textScale).apply();
+                    if (articleWebView != null) articleWebView.getSettings().setTextZoom(textScale);
+                    if (mode == Mode.FEED) renderArticleRows();
+                    toast("Cỡ chữ " + textScale + "%");
+                    dialog.dismiss();
+                })
+                .setNegativeButton("Đóng", null)
+                .show();
     }
 
     private void buildCategories() {
@@ -411,20 +435,25 @@ public final class NewsReaderActivity extends Activity {
         }
 
         @Override public boolean onTouchEvent(MotionEvent event) {
-            if (event.getActionMasked() == MotionEvent.ACTION_UP) {
-                if (horizontalSwipe && !categorySwipeDispatched && swipeDirection != 0) {
-                    categorySwipeDispatched = true;
-                    final int move = swipeDirection;
-                    post(() -> stepCategoryBySwipe(move));
+            final int action = event.getActionMasked();
+            if (horizontalSwipe) {
+                if (action == MotionEvent.ACTION_UP) {
+                    if (!categorySwipeDispatched && swipeDirection != 0) {
+                        categorySwipeDispatched = true;
+                        final int move = swipeDirection;
+                        post(() -> stepCategoryBySwipe(move));
+                    }
+                    horizontalSwipe = false;
+                    return true;
                 }
-                horizontalSwipe = false;
+                if (action == MotionEvent.ACTION_CANCEL) {
+                    horizontalSwipe = false;
+                    return true;
+                }
                 return true;
             }
-            if (event.getActionMasked() == MotionEvent.ACTION_CANCEL) {
-                horizontalSwipe = false;
-                return true;
-            }
-            if (horizontalSwipe) return true;
+            // Do not consume UP/CANCEL for vertical gestures: ScrollView needs them to
+            // calculate velocity and perform native fling scrolling.
             return super.onTouchEvent(event);
         }
     }
@@ -629,26 +658,7 @@ public final class NewsReaderActivity extends Activity {
         font.setGravity(Gravity.CENTER);
         font.setContentDescription("Đổi cỡ chữ bài viết");
         toolbar.addView(font, new LinearLayout.LayoutParams(dp(38), -1));
-        font.setOnClickListener(v -> {
-            final int[] scales = {80, 90, 100, 110, 120, 130, 140, 150, 160};
-            String[] labels = new String[scales.length];
-            int selected = 2;
-            for (int i = 0; i < scales.length; i++) {
-                labels[i] = scales[i] + "%";
-                if (scales[i] == textScale) selected = i;
-            }
-            new AlertDialog.Builder(NewsReaderActivity.this)
-                    .setTitle("Cỡ chữ bài viết")
-                    .setSingleChoiceItems(labels, selected, (dialog, which) -> {
-                        textScale = scales[which];
-                        getPreferencesStore().edit().putInt("reader_text_scale", textScale).apply();
-                        if (articleWebView != null) articleWebView.getSettings().setTextZoom(textScale);
-                        toast("Cỡ chữ " + textScale + "%");
-                        dialog.dismiss();
-                    })
-                    .setNegativeButton("Đóng", null)
-                    .show();
-        });
+        font.setOnClickListener(v -> showTextScalePicker());
 
         TextView original = text("↗", 22, ORANGE, true);
         original.setGravity(Gravity.CENTER);
