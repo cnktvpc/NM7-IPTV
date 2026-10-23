@@ -98,6 +98,10 @@ public final class NewsReaderActivity extends Activity {
     private final Handler main = new Handler(Looper.getMainLooper());
     private final ExecutorService io = Executors.newFixedThreadPool(3);
     private final List<Article> articles = new ArrayList<>();
+    // Keep feed results per source/category for the lifetime of this Activity so swiping
+    // back to a visited category is instant and does not trigger another network load.
+    private final Map<String, List<Article>> feedCache = new HashMap<>();
+    private final Map<String, Integer> feedScrollPositions = new HashMap<>();
     private final Set<String> pluginCategoriesLoading = new HashSet<>();
     private LinearLayout root;
     private LinearLayout toolbar;
@@ -105,6 +109,7 @@ public final class NewsReaderActivity extends Activity {
     private LinearLayout categoryRow;
     private FrameLayout content;
     private LinearLayout articleRows;
+    private FeedScrollView feedScrollView;
     private TextView status;
     private WebView articleWebView;
     private Mode mode = Mode.FEED;
@@ -284,14 +289,18 @@ public final class NewsReaderActivity extends Activity {
     }
 
     private void renderFeed(boolean refresh) {
+        rememberFeedScrollPosition();
         mode = Mode.FEED;
         closeArticleWebView();
         categoryScroller.setVisibility(View.VISIBLE);
         buildToolbar();
         buildCategories();
         showArticleList();
-        if (refresh || articles.isEmpty()) loadFeed();
-        else renderArticleRows();
+        if (refresh || articles.isEmpty()) loadFeed(refresh);
+        else {
+            renderArticleRows();
+            restoreFeedScrollPosition();
+        }
     }
 
     private void buildToolbar() {
@@ -325,7 +334,7 @@ public final class NewsReaderActivity extends Activity {
         refresh.setGravity(Gravity.CENTER);
         refresh.setContentDescription("Làm mới tin");
         toolbar.addView(refresh, new LinearLayout.LayoutParams(dp(34), -1));
-        refresh.setOnClickListener(v -> loadFeed());
+        refresh.setOnClickListener(v -> loadFeed(true));
     }
 
     private void showTextScalePicker() {
@@ -367,6 +376,7 @@ public final class NewsReaderActivity extends Activity {
             tab.setSingleLine(true);
             categoryRow.addView(tab, new LinearLayout.LayoutParams(-2, -1));
             tab.setOnClickListener(v -> {
+                rememberFeedScrollPosition();
                 categoryName = name;
                 searchQuery = "";
                 buildCategories();
@@ -386,6 +396,7 @@ public final class NewsReaderActivity extends Activity {
     }
 
     private void stepCategoryBySwipe(int direction) {
+        rememberFeedScrollPosition();
         Source source = getSource(sourceId);
         List<String> names = new ArrayList<>(source.categories.keySet());
         if (names.size() < 2) return;
@@ -461,6 +472,7 @@ public final class NewsReaderActivity extends Activity {
     private void showArticleList() {
         content.removeAllViews();
         FeedScrollView scroll = new FeedScrollView(this);
+        feedScrollView = scroll;
         scroll.setFillViewport(true);
         scroll.setClipToPadding(false);
         scroll.setPadding(0, dp(2), 0, dp(8));
@@ -473,7 +485,33 @@ public final class NewsReaderActivity extends Activity {
         articleRows.addView(status, new LinearLayout.LayoutParams(-1, dp(100)));
     }
 
+    private String feedCacheKey(String source, String feedUrl) {
+        return source + "\n" + feedUrl;
+    }
+
+    private String feedScrollKey() {
+        return sourceId + "\n" + categoryName;
+    }
+
+    private void rememberFeedScrollPosition() {
+        if (feedScrollView != null) {
+            feedScrollPositions.put(feedScrollKey(), Math.max(0, feedScrollView.getScrollY()));
+        }
+    }
+
+    private void restoreFeedScrollPosition() {
+        final FeedScrollView scroll = feedScrollView;
+        if (scroll == null) return;
+        Integer saved = feedScrollPositions.get(feedScrollKey());
+        final int targetY = saved == null ? 0 : Math.max(0, saved);
+        scroll.post(() -> scroll.scrollTo(0, targetY));
+    }
+
     private void loadFeed() {
+        loadFeed(false);
+    }
+
+    private void loadFeed(boolean forceRefresh) {
         if (mode != Mode.FEED) return;
         Source source = getSource(sourceId);
         if (source.categories.isEmpty()) {
@@ -489,7 +527,18 @@ public final class NewsReaderActivity extends Activity {
         final String feedUrl = feed;
         final String selectedCategory = categoryName;
         final Source selectedSource = source;
+        final String cacheKey = feedCacheKey(source.id, feedUrl);
         final int token = ++requestToken;
+        if (!forceRefresh) {
+            List<Article> cached = feedCache.get(cacheKey);
+            if (cached != null && !cached.isEmpty()) {
+                articles.clear();
+                articles.addAll(cached);
+                renderArticleRows();
+                restoreFeedScrollPosition();
+                return;
+            }
+        }
         showLoading("Đang tải tin từ " + source.name + "…");
         io.execute(() -> {
             List<Article> loaded = Collections.emptyList();
@@ -504,6 +553,11 @@ public final class NewsReaderActivity extends Activity {
             final List<Article> result = loaded;
             final String message = error;
             main.post(() -> {
+                // Cache completed responses even if the user has already swiped to a
+                // different category while this request was in flight.
+                if (message == null && !result.isEmpty()) {
+                    feedCache.put(cacheKey, new ArrayList<>(result));
+                }
                 if (token != requestToken || mode != Mode.FEED) return;
                 articles.clear();
                 articles.addAll(result);
@@ -511,6 +565,7 @@ public final class NewsReaderActivity extends Activity {
                     showLoading(message + "\n\nBạn vẫn ở trong NM7; ứng dụng sẽ không tự mở trang chủ bên ngoài.");
                 } else {
                     renderArticleRows();
+                    restoreFeedScrollPosition();
                 }
             });
         });
@@ -534,7 +589,7 @@ public final class NewsReaderActivity extends Activity {
         LinearLayout.LayoutParams manageParams = new LinearLayout.LayoutParams(0, -1, 1f);
         manageParams.setMargins(dp(8), 0, 0, 0);
         actions.addView(manage, manageParams);
-        retry.setOnClickListener(v -> loadFeed());
+        retry.setOnClickListener(v -> loadFeed(true));
         manage.setOnClickListener(v -> {
             managerKind = "Báo";
             renderManager();

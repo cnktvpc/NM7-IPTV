@@ -138,7 +138,10 @@ public final class HomeTabBar {
 
     private static void openNews(Activity activity) {
         Intent intent = new Intent(activity, NewsReaderActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION | Intent.FLAG_ACTIVITY_NO_USER_ACTION);
+        // Reuse the existing reader screen when returning from IPTV. Creating a new
+        // instance loses the selected category and forces every feed to load again.
+        intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+                | Intent.FLAG_ACTIVITY_NO_ANIMATION | Intent.FLAG_ACTIVITY_NO_USER_ACTION);
         activity.startActivity(intent);
         activity.overridePendingTransition(0, 0);
     }

@@ -1279,6 +1279,16 @@ public final class MobileInlinePlayerProviderV2 extends ContentProvider implemen
             attach(main);
         }
         if (currentActivity != main || SharedPlaybackSession.TAB_IPTV.equals(SharedPlaybackSession.tab(main)) == false) return;
+
+        // Reader is a navigation overlay, not a request to reopen the current stream.
+        // If the same ExoPlayer still owns a prepared/buffering/playing IPTV channel,
+        // let Activity.onResume restore playWhenReady. Calling playInline() here resets
+        // the MediaItem/decoder and makes the live picture visibly stutter on return.
+        if (currentChannel != null && player != null
+                && player.getPlaybackState() != Player.STATE_IDLE) {
+            return;
+        }
+
         long restoredPosition = pendingResumePositionMs;
         boolean restoredPlaying = pendingResumePlaying;
         if (currentChannel == null) {

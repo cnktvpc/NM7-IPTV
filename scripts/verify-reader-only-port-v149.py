@@ -24,6 +24,14 @@ checks = [
     ("Reader activity registrations exist",
      'android:name=".NewsReaderActivity"' in manifest and
      'android:name=".ReaderPluginActivity"' in manifest),
+    ("Reader tab reuses an existing activity",
+     "Intent.FLAG_ACTIVITY_REORDER_TO_FRONT" in tabs and "NewsReaderActivity.class" in tabs),
+    ("Reader caches each feed and restores category scroll position",
+     "feedCache" in reader and "feedCacheKey(source.id, feedUrl)" in reader and
+     "restoreFeedScrollPosition();" in reader and "rememberFeedScrollPosition();" in reader),
+    ("IPTV tab does not restart a surviving ExoPlayer session",
+     "Reader is a navigation overlay" in Path("app/src/main/java/vn/phuong/iptvplayer/MobileInlinePlayerProviderV2.java").read_text() and
+     "player.getPlaybackState() != Player.STATE_IDLE" in Path("app/src/main/java/vn/phuong/iptvplayer/MobileInlinePlayerProviderV2.java").read_text()),
     ("built-in news providers and RSS/HTML fallback exist",
      'makeSource("vnexpress"' in reader and "loadArticlesWithFallback" in reader and "parseHtmlFeed" in reader),
 ]
