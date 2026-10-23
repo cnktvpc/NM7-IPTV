@@ -132,7 +132,7 @@ public final class ReaderArticleExtractor {
         String hero = firstHttpUrl(baseUrl, meta(document, "og:image"),
                 meta(document, "twitter:image"), requestedImage);
 
-        Element article = findArticleBody(document, pageTitle, summary);
+        Element article = findArticleBody(document, firstNonBlank(pageTitle, requestedTitle), summary);
         String articleHtml = "";
         if (article != null) {
             Element clone = article.clone();
@@ -308,6 +308,20 @@ public final class ReaderArticleExtractor {
                         && !containsManyLinks(parent, paragraphs)) {
                     return parent;
                 }
+            }
+        }
+
+        // A single semantic <article> is a safe fallback for lightweight publisher pages
+        // that omit h1/og:title and use generic markup. Do not apply this fallback when a page
+        // contains multiple articles/cards: those must match the requested headline/summary.
+        if (document.select("article").size() == 1) {
+            Element singleArticle = document.selectFirst("article");
+            int paragraphs = singleArticle == null ? 0 : singleArticle.select("p").size();
+            int length = singleArticle == null ? 0 : singleArticle.text().length();
+            if (singleArticle != null && !hasExcludedAncestor(singleArticle)
+                    && length >= 120 && length <= 50000 && paragraphs >= 1
+                    && !containsManyLinks(singleArticle, paragraphs)) {
+                return singleArticle;
             }
         }
 
