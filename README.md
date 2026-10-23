@@ -6,9 +6,11 @@
 - **Protected stable branch:** `stable/mobile-1.10.142` — left untouched.
 - **Source baseline:** `4fc8b187db7e48591e1bcb11969436a56d27d06a` (verified NM7 Mobile 1.10.142 YouTube Floating MiniPlayer / SurfaceView source).
 - **Candidate:** version `1.10.149`, versionCode `165`; not promoted to stable.
-- **Code commit:** [`317825a`](https://github.com/cnktvpc/NM7-IPTV/commit/317825a58d651671071440ffcf38ec1fc6f6b8c8).
-- **CI:** [Run 39918903288 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39918903288).
-- **APK artifact:** [NM7-IPTV-Mobile-1.10.149-READER-BASELINE142](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39918903288/artifacts/12485724456), artifact ID `12485724456`, 44,019,483 bytes; available until 2026-11-22.
+- **Reader navigation fixes:** [`317825a`](https://github.com/cnktvpc/NM7-IPTV/commit/317825a58d651671071440ffcf38ec1fc6f6b8c8).
+- **Article extraction regression tests:** [`ebcc31c`](https://github.com/cnktvpc/NM7-IPTV/commit/ebcc31c71bdb8f82978f5d16a25d03fe748fdce2).
+- **Article extraction fixes:** [`df4b4df`](https://github.com/cnktvpc/NM7-IPTV/commit/df4b4df3876a55b3b1143f7007f71c9db8610807) and [`dc01ba4`](https://github.com/cnktvpc/NM7-IPTV/commit/dc01ba47011e5f9e9c0ffe12c1ce187d5a95e8ac).
+- **Latest CI:** [Run 39936793798 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39936793798), source commit `dc01ba47011e5f9e9c0ffe12c1ce187d5a95e8ac).
+- **Latest APK artifact:** [NM7-IPTV-Mobile-1.10.149-READER-BASELINE142](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39936793798/artifacts/12494138308), artifact ID `12494138308`, 44,021,005 bytes; available until 2026-11-22. Artifact archive digest: `sha256:60b9c29a074b051558ac137daa52fa30490a3bfdc85b4e2660bbb74095096e10`.
 
 ## Focused fixes
 
@@ -23,6 +25,13 @@
 - APK build: **PASS**.
 - Full Mobile unit-test suite: **PASS**.
 - Artifact upload: **PASS**.
+
+## Article body extraction fix — 2026-10-23
+
+- Root cause observed in the regression suite: the stricter extractor rejected a page with exactly one semantic `<article>` when the page had no usable HTML headline, leaving the article body empty. In addition, the matching stage did not use the requested/feed headline as a last-resort match key when page metadata was absent.
+- The extractor now uses the requested headline only as a fallback match key and accepts a single semantic `<article>` only when it is the sole article node, has at least one substantive paragraph, stays within the content-size limit, and is not link-heavy. When multiple article nodes exist, headline/summary matching remains required to avoid mixing neighboring stories.
+- CI on commit `dc01ba4`: Reader-focused tests **PASS**, Mobile 1.10.149 APK build **PASS**, full Mobile unit-test suite **PASS**, artifact upload **PASS**.
+- Runtime verification remains necessary: reopen the exact CafeF story shown in the user video and compare title, summary, hero image, paragraphs and paragraph order against the source page. CI cannot guarantee extraction is correct for every publisher.
 
 ## Scope and release gate
 
