@@ -24,7 +24,7 @@ t = replace(t, 'private static final String TAG = PlaybackActivity.class.getSimp
             Path('scripts/smarttube-playback-mobile.java.inc').read_text(encoding='utf-8'))
 t = replace(t, '        super.onCreate(savedInstanceState);', '''        super.onCreate(savedInstanceState);
         sNm7Active = this;
-        if (VERSION.SDK_INT >= 33) Nm7BackApi.register(this);''')
+        // Keep framework-native Back dispatch; do not register a second callback here.''')
 t = replace(t, '        mExoPlayerController.setPlayer(mPlayer);\n        mPlayerView.setPlayer(mPlayer);',
             '        mExoPlayerController.setPlayer(mPlayer);\n        bindNm7PlayerTarget();')
 t = replace(t, '        createPlayerObjects();', '''        // The upstream fallback switches to OkHttp only after long buffering.
@@ -93,7 +93,6 @@ t = method(t, 'public void onBackPressed()', '''        if (onDetailsBack()) ret
         startActivity(intent);''')
 t = replace(t, '    protected void onDestroy() {\n        super.onDestroy();', '''    protected void onDestroy() {
         cancelNm7TargetRestore(false);
-        if (VERSION.SDK_INT >= 33) Nm7BackApi.unregister(this);
         if (sNm7Active == this) {
             sNm7Active = null;
             sNm7Mini = false;
