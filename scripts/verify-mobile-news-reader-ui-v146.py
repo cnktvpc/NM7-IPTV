@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Static regression guards for NM7 Mobile 1.10.146 native article reader."""
+"""Static regression guards for NM7 Mobile 1.10.147 native article reader."""
 from pathlib import Path
 
 read = lambda p: Path(p).read_text(encoding="utf-8")
@@ -8,10 +8,11 @@ router = read("app/src/main/java/vn/phuong/iptvplayer/ReaderFeedCategoryRouter.j
 extractor = read("app/src/main/java/vn/phuong/iptvplayer/ReaderArticleExtractor.java")
 tabs = read("app/src/main/java/vn/phuong/iptvplayer/HomeTabBar.java")
 gradle = read("app/build.gradle.kts")
+workflow = read(".github/workflows/nm7-mobile-news-reader-v143.yml")
 
 checks = [
     ("candidate version is 1.10.146 / code 162",
-     'versionName = "1.10.146"' in gradle and "versionCode = 162" in gradle),
+     'versionName = "1.10.147"' in gradle and "versionCode = 163" in gradle),
     ("Reader applies status-bar and display-cutout top insets",
      "WindowInsets.Type.statusBars()" in reader
      and "WindowInsets.Type.displayCutout()" in reader
@@ -33,6 +34,14 @@ checks = [
      "background:" in extractor and "#101114" in extractor
      and "#e9e9ed" in extractor and "line-height:" in extractor
      and "int bodyPx = 19;" in extractor),
+    ("article paragraphs and nested inline tags normalize font size, weight, style and family",
+     '.body p,.body li,.body blockquote,.body td' in extractor
+     and '.body p *,.body li *,.body blockquote *,.body td *' in extractor
+     and 'font-weight:400!important' in extractor
+     and 'font-size:inherit!important' in extractor),
+    ("YouTube source pin includes SmartTube-droid 32.68 playback-error fixes",
+     'checkout --detach 95cb207ceb4dbd2b8af9ddae1c89f65611900e8a' in workflow
+     and 'checkout --detach 4825d6aa8b6f1d3181927f9e96c7d89cab13d510' not in workflow),
     ("extractor searches known Vietnamese and common article body selectors",
      '[itemprop=articleBody]' in extractor
      and '".fck_detail"' in extractor
