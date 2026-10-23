@@ -135,14 +135,19 @@ public final class ReaderArticleExtractor {
             clone.select(REMOVE_SELECTOR).remove();
             for (Element image : clone.select("img")) {
                 String src = firstHttpUrl(baseUrl,
+                        firstSrcsetUrl(image.attr("data-lazy-srcset")),
                         firstSrcsetUrl(image.attr("data-srcset")),
                         firstSrcsetUrl(image.attr("srcset")),
-                        image.attr("data-src"),
-                        image.attr("data-original"),
+                        image.attr("data-ks-lazyload"),
                         image.attr("data-lazy-src"),
                         image.attr("data-original-src"),
+                        image.attr("data-original"),
                         image.attr("data-actualsrc"),
                         image.attr("data-echo"),
+                        image.attr("data-fallback-src"),
+                        image.attr("data-image"),
+                        image.attr("data-url"),
+                        image.attr("data-src"),
                         image.attr("src"));
                 if (src.isEmpty()) {
                     Element picture = image.parent();
@@ -161,13 +166,18 @@ public final class ReaderArticleExtractor {
                 image.attr("loading", "eager");
                 image.attr("decoding", "async");
                 image.removeAttr("srcset");
+                image.removeAttr("data-lazy-srcset");
                 image.removeAttr("data-srcset");
-                image.removeAttr("data-src");
-                image.removeAttr("data-original");
+                image.removeAttr("data-ks-lazyload");
                 image.removeAttr("data-lazy-src");
                 image.removeAttr("data-original-src");
+                image.removeAttr("data-original");
                 image.removeAttr("data-actualsrc");
                 image.removeAttr("data-echo");
+                image.removeAttr("data-fallback-src");
+                image.removeAttr("data-image");
+                image.removeAttr("data-url");
+                image.removeAttr("data-src");
                 image.removeAttr("width");
                 image.removeAttr("height");
             }
