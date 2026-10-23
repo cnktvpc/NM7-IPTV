@@ -5,9 +5,11 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
+import android.os.Build;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowInsets;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -69,6 +71,25 @@ public final class HomeTabBar {
         FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, dp(activity, 64), Gravity.BOTTOM);
         host.addView(bar, lp);
+        // Only the Reader tab moves above Android's gesture/navigation inset.
+        // YouTube and IPTV retain the stable 1.10.142 layout and transitions.
+        if (selectedTab == 2) {
+            bar.setOnApplyWindowInsetsListener((view, insets) -> {
+                int bottomInset = Build.VERSION.SDK_INT >= 30
+                        ? insets.getInsets(WindowInsets.Type.navigationBars()).bottom
+                        : insets.getSystemWindowInsetBottom();
+                ViewGroup.LayoutParams raw = view.getLayoutParams();
+                if (raw instanceof FrameLayout.LayoutParams) {
+                    FrameLayout.LayoutParams barParams = (FrameLayout.LayoutParams) raw;
+                    if (barParams.bottomMargin != bottomInset) {
+                        barParams.bottomMargin = bottomInset;
+                        view.setLayoutParams(barParams);
+                    }
+                }
+                return insets;
+            });
+            bar.requestApplyInsets();
+        }
         if (activity instanceof MainActivity) {
             View root = activity.findViewById(R.id.mainRoot);
             if (root != null) {
