@@ -78,8 +78,19 @@ like=get('playback_chip_like'); dislike=get('playback_chip_dislike')
 chips.remove(like);chips.remove(dislike)
 rating=ET.Element('LinearLayout',{A+'layout_width':'wrap_content',A+'layout_height':'44dp',A+'orientation':'horizontal',A+'gravity':'center_vertical',A+'background':'@drawable/nm7_action_pill',A+'layout_marginStart':'8dp',A+'layout_marginEnd':'4dp'})
 rating.append(like); rating.append(ET.Element('View',{A+'layout_width':'1dp',A+'layout_height':'20dp',A+'background':'#DADADA'})); rating.append(dislike); chips.insert(2,rating)
+def detach_from_layout(element):
+    # SmartTube layouts vary: some action chips are nested inside an inner row.
+    # Detach from their actual parent before inserting them into the NM7 chip row.
+    for parent in layout.iter():
+        if element in list(parent):
+            parent.remove(element)
+            return
+    raise ValueError('View is not attached to playback layout: ' + str(element.get(A+'id')))
+
 for id in ('playback_chip_share','playback_chip_playlist','playback_chip_quality','playback_chip_speed','playback_chip_more'):
-    e=get(id);chips.remove(e);chips.append(e)
+    e=get(id)
+    detach_from_layout(e)
+    chips.append(e)
 for e in header.iter('com.google.android.material.button.MaterialButton'):
     attrs(e,layout_height='44dp',minHeight='44dp',textAllCaps='false',layout_marginStart='4dp',layout_marginLeft='4dp',layout_marginEnd='4dp',layout_marginRight='4dp',paddingStart='12dp',paddingEnd='12dp',insetTop='0dp',insetBottom='0dp')
     e.set(B+'cornerRadius','22dp');e.set(B+'strokeWidth','0dp');e.set(B+'backgroundTint','#F1F1F1')
