@@ -3,7 +3,7 @@
 - **Kết quả CI:** [Run 39891013369 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39891013369).
 - **Build APK:** PASS. **Full Mobile unit-test suite:** PASS. **Upload artifact:** PASS.
 - **Version:** 1.10.148, versionCode 164.
-- **Artifact:** [NM7-IPTV-Mobile-1.10.148-YOUTUBE-BACK-FIX-NEWS-FONT]( https://github.com/cnktvpc/NM7-IPTV/actions/runs/39891013369/artifacts/12475320363 ), ID `12475320363`.
+- **Artifact:** [NM7-IPTV-Mobile-1.10.148-YOUTUBE-BACK-FIX-NEWS-FONT](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39891013369/artifacts/12475320363), ID `12475320363`.
 - **APK SHA-256:** `ae97e2e69e89170ffb1e0a057581c2a36f85ccff2b7e530940e1495ac10f5b65`.
 - **Artifact ZIP SHA-256:** `0139195f84e7f692edd843b611ff26704d59b726d741e77537bedbe6e4ef0232`.
 - **Back regression:** removed the duplicate API 33+ callback injected directly into PlaybackActivity, leaving native Android/SmartTube Back dispatch for the player. The old Back path could bypass normal player/PIP/parent handling.
