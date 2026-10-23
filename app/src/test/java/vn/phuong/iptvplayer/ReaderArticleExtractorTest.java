@@ -51,6 +51,21 @@ public class ReaderArticleExtractorTest {
         assertTrue(result.contains("loading=\"eager\""));
     }
 
+    @Test public void resolvesAdditionalPublisherLazyImageAttributes() {
+        String html = "<article><p>Đoạn tin dài đủ để nhận diện nội dung chính và kiểm tra ảnh lazy load từ "
+                + "nhiều hệ thống báo khác nhau. Bài viết có các chi tiết về sự kiện, nhân vật và bối cảnh "
+                + "để bảo đảm trình trích xuất nhận ra vùng bài viết hợp lệ.</p>"
+                + "<img data-lazy-srcset='/img/a.jpg 400w, /img/b.jpg 1200w' src='/pixel.gif'>"
+                + "<img data-ks-lazyload='//cdn.news.example/c.jpg' src='/blank.png'>"
+                + "</article>";
+        String result = ReaderArticleExtractor.renderForTest(html, "https://news.example/a/story",
+                "Bài thử", "", "", "Nguồn", "", 100);
+        assertTrue(result.contains("https://news.example/img/b.jpg"));
+        assertTrue(result.contains("https://cdn.news.example/c.jpg"));
+        assertFalse(result.contains("data-lazy-srcset"));
+        assertFalse(result.contains("data-ks-lazyload"));
+    }
+
     @Test public void appendsRelatedStoriesInsideReaderInsteadOfOpeningPublisherHome() {
         java.util.List<ReaderArticleExtractor.RelatedArticle> related = java.util.Arrays.asList(
                 new ReaderArticleExtractor.RelatedArticle("Bài báo liên quan", "https://news.example/story/2",
