@@ -4908,3 +4908,35 @@ CI build và unit test không kiểm chứng hết thao tác vuốt thật hoặ
 3. Mở một số bài từ nhiều báo để xem ảnh chính, ảnh nội dung và ảnh lazy-load có tải đủ không.
 
 Không promote sang stable trước khi nhận kết quả test trên thiết bị.
+
+
+# CI COMPLETED — Lọc đúng chuyên mục Đọc báo 24h — 2026-10-23
+
+## Video tái hiện
+Video người dùng gửi cho thấy khi chuyển giữa các mục của 24h, danh sách vẫn trộn tin cũ/trang chủ; ví dụ mục **Bóng đá** lẫn tin của **An ninh - Hình sự**.
+
+## Nguyên nhân được sửa
+- RSS response trước đây chỉ cần không rỗng là được hiển thị; không xác minh URL bài có thuộc nhóm đã chọn.
+- Fallback HTML cho 24h chỉ có route cho một vài nhóm; nhánh mặc định dùng trang chủ, làm lộ tin không đúng mục.
+
+## Thay đổi
+- Thêm `ReaderFeedCategoryRouter.java`: route HTML cụ thể cho tất cả 21 nhóm RSS 24h và kiểm tra domain/path/category code của bài.
+- `NewsReaderActivity.loadArticlesWithFallback` lọc RSS **và** HTML theo chuyên mục trước khi trả danh sách; khi RSS ngắn, dùng trang HTML riêng đúng nhóm và gộp bài hợp lệ không trùng URL.
+- Không cho chuyên mục 24h rơi về trang chủ nếu không tìm được route hợp lệ.
+- Các publisher/source khác giữ nguyên logic; không đổi UI và những chức năng Reader khác.
+- Thêm `ReaderFeedCategoryRouterTest.java` kiểm tra Bóng đá / An ninh - Hình sự / Thời trang / Thời trang Hi-tech, route cho 21 nhóm và các URL ngoại lệ.
+- Mở rộng static verifier để bảo vệ logic lọc theo chuyên mục.
+
+## CI và APK đã xác minh
+- Workflow run **39883516420**: [SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39883516420).
+- `Build Mobile 1.10.146`: SUCCESS.
+- `Run full Mobile unit-test suite`: SUCCESS.
+- `Upload Mobile APK`: SUCCESS.
+- Commit nguồn build: `6e5cca4c764ef65a952ab83419c2498d906d807f`.
+- Artifact ID `12471562855`: [mở artifact](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39883516420/artifacts/12471562855).
+- SHA-256 APK: `587f945e7e9d713e79090e80fd922eaa745cc634a8209f06718eb3e46275d07f`.
+- Đã tải artifact, đối chiếu checksum với `SHA256SUMS.txt`, kiểm tra ZIP integrity, AndroidManifest, 7 DEX, native libs `arm64-v8a` + `armeabi-v7a`; `jarsigner -verify` exit 0.
+
+## Trạng thái bàn giao
+- Có APK candidate mới trên nhánh riêng; stable không bị promote/ghi đè.
+- CI/unit tests xác minh được việc biên dịch và logic router. Vẫn cần cài trên thiết bị và thử bấm từng nhóm 24h; chưa tuyên bố đã quan sát runtime sau khi cài.
