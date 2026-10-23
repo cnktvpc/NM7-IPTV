@@ -30,8 +30,9 @@ check("Nm7BackApi.register" not in patch and "Nm7BackApi.unregister" not in patc
 
 # First Back leaves the player alive as mini; the second Back closes it whether it
 # reaches PlaybackActivity during the transition or the foreground BrowseActivity.
-check("if (mNm7LeavingForMini) {\n            consumeNm7BrowseBack();\n            return;\n        }" in play,
-      "a second Back arriving during the Activity transition consumes and closes mini")
+check("if (mNm7LeavingForMini) {\n            if (consumeNm7BrowseBack()) return;" in play
+      and "stopForNm7Iptv();" in play,
+      "a second Back closes mini and cannot be swallowed if the transition state is stale")
 check("mNm7LeavingForMini = true;" in play and "sNm7Mini = true;" in play
       and "startActivity(intent);" in play,
       "first Back keeps the YouTube session alive and returns to Browse mini-player")
@@ -40,13 +41,19 @@ check("consumeNm7BrowseBack()" in browse and "super.onBackPressed();" in browse
       "Browse's second Back consumes the mini close action, with normal Back fallback")
 check("consumeNm7BrowseBack()" in search,
       "Search uses the same close path when the mini-player is active")
-check("if (!isNm7MiniPlayerActive()) return false;" in include
+check("boolean miniActive = isNm7MiniPlayerActive();" in include
+      and "backTransitionPending" in include
+      and "if (!miniActive && !backTransitionPending) return false;" in include
       and "MobileMiniPlayer" in include and "stopForNm7Iptv();" in include,
-      "mini close removes the floating surface and stops the real PlaybackActivity")
+      "mini close tolerates stale mini flags and stops the real PlaybackActivity")
 check("active.mNm7Stopped = true;" in include
       and "active.finishReally();" in include
       and "sNm7Active = null;" in include,
       "closing mini releases the playback owner instead of leaving audio running")
+check('if (sNm7Mini && mNm7LeavingForMini && !sNm7RestorePending)' in include,
+      "incidental resume during a pending Back transition cannot steal playback back from Browse")
+check('if (!mNm7LeavingForMini || !sNm7Mini || sNm7RestorePending) mNm7LeavingForMini = false;' in play,
+      "the pending transition is preserved on resume but clears on deliberate restore/new video")
 
 # The Application-level predictive callback belongs only to Browse/Search.
 check("SMARTTUBE_BROWSE.equals(name) || (SMARTTUBE_PACKAGE + \"search.SearchActivity\").equals(name)"
@@ -57,4 +64,4 @@ playback_branch = application[application.find('} else if (SMARTTUBE_PLAYBACK.eq
 check("installSmartTubeBackHandling(activity)" not in playback_branch,
       "PlaybackActivity deliberately uses native Back dispatch, not Application callback injection")
 
-print("PASS: 9 YouTube Back-navigation regression guards")
+print("PASS: 11 YouTube Back-navigation regression guards")
