@@ -63,89 +63,102 @@ mGridView.setRecycledViewPool(nm7Pool);"""
 s = s.replace(anchor, insert, 1)
 p.write_text(s, encoding="utf-8")
 
-# 4) Add a tiny process-local format-info reuse layer in the existing fast path.
-# This is deliberately 8 entries / 8 seconds: it is not a persistent signed-URL cache.
-matches = list(ROOT.rglob("YouTubeMediaItemService.java"))
-if len(matches) != 1:
-    raise SystemExit(f"v105: expected one YouTubeMediaItemService.java, found {len(matches)}")
-p = matches[0]
-s = p.read_text(encoding="utf-8")
-if "NM7_FORMAT_REUSE_MS" not in s:
-    marker = "public class YouTubeMediaItemService"
-    pos = s.find(marker)
-    if pos < 0:
-        raise SystemExit("v105: YouTubeMediaItemService class anchor missing")
-    brace = s.find("{", pos)
-    fields = """
-    // NM7 1.10.105: tiny process-local reuse window for rapid open/reopen of the
-    // same video. Never persisted; signed stream URLs are discarded after 8s.
-    private static final long NM7_FORMAT_REUSE_MS = 8_000L;
-    private static final int NM7_FORMAT_REUSE_MAX = 8;
-    private final java.util.LinkedHashMap<String, Object[]> mNm7FormatReuse =
-            new java.util.LinkedHashMap<String, Object[]>(16, 0.75f, true) {
-                @Override protected boolean removeEldestEntry(java.util.Map.Entry<String, Object[]> e) {
-                    return size() > NM7_FORMAT_REUSE_MAX;
+# 4) Older MediaServiceCore exposed its cache on YouTubeMediaItemService directly.
+# In SmartTube 32.68 the public method delegates to FormatInfoWrapper, which owns
+# process-local cache and legacy/Innertube fallback. Do not apply the old Java
+# cache patch to that newer wrapper (its anchors were intentionally removed).
+format_wrapper = ROOT / "MediaServiceCore/youtubeapi/src/main/java/com/liskovsoft/youtubeapi/service/internal/FormatInfoWrapper.kt"
+wrapper_text = format_wrapper.read_text(encoding="utf-8") if format_wrapper.is_file() else ""
+if ("private fun getPrimaryProvider()" in wrapper_text
+        and "private fun getCachedFormatInfo(videoId: String?)" in wrapper_text
+        and "mCachedFormatInfo" in wrapper_text):
+    print("v105: skipped old YouTubeMediaItemService cache patch; SmartTube 32.68 FormatInfoWrapper owns cache and provider fallback")
+else:
+    # 4) Add a tiny process-local format-info reuse layer in the existing fast path.
+    # This is deliberately 8 entries / 8 seconds: it is not a persistent signed-URL cache.
+    matches = list(ROOT.rglob("YouTubeMediaItemService.java"))
+    if len(matches) != 1:
+        raise SystemExit(f"v105: expected one YouTubeMediaItemService.java, found {len(matches)}")
+    p = matches[0]
+    s = p.read_text(encoding="utf-8")
+    if "NM7_FORMAT_REUSE_MS" not in s:
+        marker = "public class YouTubeMediaItemService"
+        pos = s.find(marker)
+        if pos < 0:
+            raise SystemExit("v105: YouTubeMediaItemService class anchor missing")
+        brace = s.find("{", pos)
+        fields = """
+        // NM7 1.10.105: tiny process-local reuse window for rapid open/reopen of the
+        // same video. Never persisted; signed stream URLs are discarded after 8s.
+        private static final long NM7_FORMAT_REUSE_MS = 8_000L;
+        private static final int NM7_FORMAT_REUSE_MAX = 8;
+        private final java.util.LinkedHashMap<String, Object[]> mNm7FormatReuse =
+                new java.util.LinkedHashMap<String, Object[]>(16, 0.75f, true) {
+                    @Override protected boolean removeEldestEntry(java.util.Map.Entry<String, Object[]> e) {
+                        return size() > NM7_FORMAT_REUSE_MAX;
+                    }
+                };
+    
+        private MediaItemFormatInfo nm7ReuseGet(String videoId) {
+            synchronized (mNm7FormatReuse) {
+                Object[] v = mNm7FormatReuse.get(videoId);
+                if (v == null || android.os.SystemClock.elapsedRealtime() - ((Long) v[1]) > NM7_FORMAT_REUSE_MS) {
+                    if (v != null) mNm7FormatReuse.remove(videoId);
+                    return null;
                 }
-            };
-
-    private MediaItemFormatInfo nm7ReuseGet(String videoId) {
-        synchronized (mNm7FormatReuse) {
-            Object[] v = mNm7FormatReuse.get(videoId);
-            if (v == null || android.os.SystemClock.elapsedRealtime() - ((Long) v[1]) > NM7_FORMAT_REUSE_MS) {
-                if (v != null) mNm7FormatReuse.remove(videoId);
-                return null;
+                return (MediaItemFormatInfo) v[0];
             }
-            return (MediaItemFormatInfo) v[0];
         }
-    }
-
-    private void nm7ReusePut(String videoId, MediaItemFormatInfo info) {
-        if (videoId == null || info == null) return;
-        synchronized (mNm7FormatReuse) {
-            mNm7FormatReuse.put(videoId, new Object[] { info, android.os.SystemClock.elapsedRealtime() });
+    
+        private void nm7ReusePut(String videoId, MediaItemFormatInfo info) {
+            if (videoId == null || info == null) return;
+            synchronized (mNm7FormatReuse) {
+                mNm7FormatReuse.put(videoId, new Object[] { info, android.os.SystemClock.elapsedRealtime() });
+            }
         }
-    }
-
-"""
-    s=s[:brace+1]+fields+s[brace+1:]
-
-old="""        MediaItemFormatInfo cachedFormatInfo = getCachedFormatInfo(videoId);
-        if (cachedFormatInfo != null) {
-            return cachedFormatInfo;
-        }
-
-        checkSigned();
-"""
-new="""        MediaItemFormatInfo cachedFormatInfo = getCachedFormatInfo(videoId);
-        if (cachedFormatInfo != null) {
-            return cachedFormatInfo;
-        }
-        MediaItemFormatInfo nm7Reuse = nm7ReuseGet(videoId);
-        if (nm7Reuse != null) {
-            return nm7Reuse;
-        }
-
-        checkSigned();
-"""
-if old not in s:
-    raise SystemExit("v105: fast format cache anchor missing")
-s=s.replace(old,new,1)
-old2="""        if (formatInfo != null) {
-            setCachedFormatInfo(formatInfo, clickTrackingParams);
-        }
-
-        return formatInfo;
-"""
-new2="""        if (formatInfo != null) {
-            setCachedFormatInfo(formatInfo, clickTrackingParams);
-            nm7ReusePut(videoId, formatInfo);
-        }
-
-        return formatInfo;
-"""
-if old2 not in s:
-    raise SystemExit("v105: fast format store anchor missing")
-s=s.replace(old2,new2,1)
-p.write_text(s, encoding="utf-8")
+    
+    """
+        s=s[:brace+1]+fields+s[brace+1:]
+    
+    old="""        MediaItemFormatInfo cachedFormatInfo = getCachedFormatInfo(videoId);
+            if (cachedFormatInfo != null) {
+                return cachedFormatInfo;
+            }
+    
+            checkSigned();
+    """
+    new="""        MediaItemFormatInfo cachedFormatInfo = getCachedFormatInfo(videoId);
+            if (cachedFormatInfo != null) {
+                return cachedFormatInfo;
+            }
+            MediaItemFormatInfo nm7Reuse = nm7ReuseGet(videoId);
+            if (nm7Reuse != null) {
+                return nm7Reuse;
+            }
+    
+            checkSigned();
+    """
+    if old not in s:
+        raise SystemExit("v105: fast format cache anchor missing")
+    s=s.replace(old,new,1)
+    old2="""        if (formatInfo != null) {
+                setCachedFormatInfo(formatInfo, clickTrackingParams);
+            }
+    
+            return formatInfo;
+    """
+    new2="""        if (formatInfo != null) {
+                setCachedFormatInfo(formatInfo, clickTrackingParams);
+                nm7ReusePut(videoId, formatInfo);
+            }
+    
+            return formatInfo;
+    """
+    if old2 not in s:
+        raise SystemExit("v105: fast format store anchor missing")
+    s=s.replace(old2,new2,1)
+    p.write_text(s, encoding="utf-8")
+    
+    
 
 print("NM7 Mobile 1.10.105 targeted performance patch applied")
