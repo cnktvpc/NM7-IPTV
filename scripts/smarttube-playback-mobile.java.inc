@@ -381,7 +381,16 @@
     }
 
     public static boolean consumeNm7BrowseBack() {
-        if (!isNm7MiniPlayerActive()) return false;
+        PlaybackActivity active = sNm7Active;
+        boolean miniActive = isNm7MiniPlayerActive();
+        boolean backTransitionPending = active != null && active.mNm7LeavingForMini
+                && active.mPlayer != null && !active.mNm7Stopped
+                && !active.isDestroyed() && !active.isFinishing();
+        // Activity reordering can briefly clear the visual mini flag while the original
+        // player still owns the pending Back transition. Back must still close that owner.
+        if (!miniActive && !backTransitionPending) return false;
+        android.util.Log.i("NM7Playback", "back=close-mini miniActive=" + miniActive
+                + " pending=" + backTransitionPending);
         sNm7RestorePending = false;
         try {
             Class.forName("vn.phuong.iptvplayer.MobileMiniPlayer").getMethod("remove").invoke(null);
