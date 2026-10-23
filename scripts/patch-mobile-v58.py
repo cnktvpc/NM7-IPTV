@@ -190,6 +190,16 @@ p.write_text(s)
 
 p = root / 'common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/models/playback/controllers/ErrorFixerController.java'
 s = p.read_text()
-s = once(s, '                getPlayerTweaksData().setSectionPlaylistEnabled(false);\n                restartEngine = false;', '                getPlayerTweaksData().setSectionPlaylistEnabled(false);\n                restartEngine = true; // Mobile OOM: release allocator/decoder before retry.')
+old_oom = '                getPlayerTweaksData().setSectionPlaylistEnabled(false);\n                restartEngine = false;'
+new_oom = '                getPlayerTweaksData().setSectionPlaylistEnabled(false);\n                restartEngine = true; // Mobile OOM: release allocator/decoder before retry.'
+if old_oom in s:
+    s = once(s, old_oom, new_oom)
+    print('Applied v58 Mobile OOM restart adjustment')
+elif new_oom in s:
+    print('v58 Mobile OOM restart adjustment already applied')
+else:
+    # The pinned SmartTube version may already include a different OOM recovery path.
+    # Do not stop the entire APK build because this optional legacy text patch has drifted.
+    print('Skipped optional v58 OOM text patch: upstream block has changed')
 p.write_text(s)
 print('v58 shared recycling, watch metadata header, pill actions, comments and mini/Home lifecycle applied')
