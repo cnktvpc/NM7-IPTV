@@ -299,7 +299,12 @@
 
     private void completeNm7RestoreOnResume() {
         if (mPlayer == null) return;
-
+        // Back-to-mini can trigger an incidental PlaybackActivity resume while Browse moves
+        // forward. Only a deliberate restore request may reclaim the player/surface mid-transition.
+        if (sNm7Mini && mNm7LeavingForMini && !sNm7RestorePending) {
+            android.util.Log.i("NM7Playback", "preserve mini target during Back transition");
+            return;
+        }
 
         sNm7SuspendedForIptv = false;
         com.google.android.exoplayer2.ui.PlayerView oldTarget = mNm7VideoTarget;
