@@ -1,3 +1,18 @@
+# TIẾN ĐỘ MỚI NHẤT — NM7 IPTV MOBILE 1.10.149 — READER-ONLY — 2026-10-23
+
+## Kết quả triển khai
+- **Bản nền đúng theo ảnh:** commit nguồn `4fc8b187db7e48591e1bcb11969436a56d27d06a`, bản 1.10.142 YouTube Floating MiniPlayer / SurfaceView.
+- **Nhánh làm lại:** [`rebuild/reader-only-from-stable-142-20261023`](https://github.com/cnktvpc/NM7-IPTV/tree/rebuild/reader-only-from-stable-142-20261023).
+- **Phiên bản build:** 1.10.149 / versionCode 165.
+- **GitHub Actions:** [Run 39901196671 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39901196671).
+- **APK artifact:** [NM7-IPTV-Mobile-1.10.149-READER-BASELINE142](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39901196671/artifacts/12478897237), ID `12478897237`, hết hạn dự kiến 2026-11-22.
+- **Đã qua:** restore đúng SmartTube source; chuỗi vá YouTube gốc v37/v106/v114/v119/v120/v121/v122/v123/v128/v130; kiểm tra Reader-only integration và bảo vệ file YouTube; Reader-focused unit tests; APK assembly; upload artifact.
+- **Phạm vi ghép:** chỉ thêm các lớp/tài nguyên/test của Đọc báo, dependencies Jsoup/Rhino, đăng ký Activity và mục tab Đọc báo. Hai hàm `openBrowse` và `openIptv` trong HomeTabBar được đối chiếu giống nguyên văn commit nền. Các file patch YouTube/SmartTube cốt lõi và `Nm7FeedAdapter.java` không đổi.
+- **Lưu ý kiểm thử:** full Mobile unit-test step đang giữ chính sách non-blocking theo workflow gốc; không dùng nhãn SUCCESS của bước này làm khẳng định mọi test đều là gate bắt buộc. Bản 1.10.149 chưa được xác nhận trên thiết bị; cần cài thử để xác minh thao tác Back từ YouTube mini-player và chuyển qua lại tab Đọc báo trước khi promote stable.
+- **SHA-256 artifact ZIP do GitHub báo:** `fb9b6d5ae34694fcbb7cdc9349cf8641e055e4d59ccfb64d05d5320272f40150` (checksum ZIP artifact, không phải checksum APK bên trong).
+
+---
+
 # TIẾN ĐỘ MỚI NHẤT — NM7 IPTV MOBILE 1.10.142 — ĐÃ XÁC NHẬN — 2026-10-20
 
 ## Trạng thái phát hành
