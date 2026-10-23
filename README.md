@@ -625,3 +625,13 @@ Source 1.10.103 đã được đưa vào build chain. **Chưa đánh dấu PASS*
 1. thời gian mở video YouTube;
 2. vuốt/chuyển tab Browse liên tục;
 3. video 4K trong cùng điều kiện như video test đã gửi.
+
+
+## 2026-10-23 — Reader-only rebuild from exact YouTube MiniPlayer baseline
+
+- **Base commit:** `4fc8b187db7e48591e1bcb11969436a56d27d06a` (the source commit shown in the 1.10.142 release screenshot).
+- **Base branch:** `build/youtube-miniplayer-20261020` source lineage; release branch `stable/mobile-1.10.142` remains unchanged.
+- **Rebuild branch:** `rebuild/reader-only-from-stable-142-20261023`.
+- **Scope:** port native News Reader, article extraction, feed category routing, JS plugin screens/runtime/store, Reader tests, dependencies, manifest registrations and the Reader navigation entry only. Keep baseline YouTube/SmartTube playback and Back/mini-player patch chain unchanged; do not port the 1.10.148 hotfix workflow or its YouTube changes.
+- **Candidate version:** 1.10.149, versionCode 165.
+- **Validation status:** source port and Reader static guards are committed. GitHub Actions build/test result and APK artifact are pending; do not treat the candidate as verified until the workflow completes and the YouTube Back/miniplayer behavior is tested on-device.
