@@ -40,7 +40,8 @@ public class ReaderFeedCategoryRouterTest {
 
     @Test public void a24hCategoryNeverFallsBackToHomePage() {
         String[] categories = {
-                "Tin tức", "Bóng đá", "An ninh - Hình sự", "Thời trang", "Thời trang Hi-tech",
+                "Tin tức", "Bóng đá", "Ngoại Hạng Anh", "Thế giới", "Kinh doanh", "Giải trí",
+                "An ninh - Hình sự", "Thời trang", "Thời trang Hi-tech",
                 "Tài chính - Bất động sản", "Ẩm thực", "Làm đẹp", "Phim", "Giáo dục - du học",
                 "Bạn trẻ - Cuộc sống", "Ca nhạc - MTV", "Thể thao", "Phi thường - kỳ quặc",
                 "Công nghệ", "Ô tô", "Thị trường - Tiêu dùng", "Du lịch", "Sức khỏe đời sống", "Cười 24h"
@@ -51,6 +52,15 @@ public class ReaderFeedCategoryRouterTest {
             assertFalse("Category fell back to homepage: " + category,
                     page.isEmpty() || "https://www.24h.com.vn/".equals(page));
         }
+    }
+
+    @Test public void englishPremierLeagueUsesOfficialListingAndAllowsFootballStoryRoutes() {
+        assertEquals("https://www.24h.com.vn/bong-da-ngoai-hang-anh-c149.html",
+                ReaderFeedCategoryRouter.htmlPageUrl("24h", "Ngoại Hạng Anh", "https://www.24h.com.vn/"));
+        assertTrue(ReaderFeedCategoryRouter.matchesArticle("24h", "Ngoại Hạng Anh",
+                "https://www.24h.com.vn/bong-da/dua-vo-dich-ngoai-hang-anh-c48a1181471.html"));
+        assertFalse(ReaderFeedCategoryRouter.matchesArticle("24h", "Ngoại Hạng Anh",
+                "https://example.com/bong-da/ngoai-hang-anh.html"));
     }
 
     @Test public void categoryRouterLeavesOtherPublishersUnchanged() {
