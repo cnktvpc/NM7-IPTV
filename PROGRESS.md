@@ -1,18 +1,29 @@
-# CẬP NHẬT TIẾN ĐỘ — BUILD YOUTUBE MINIPLAYER 1.10.142 — 2026-10-22
+# TIẾN ĐỘ — NM7 IPTV MOBILE 1.10.145 — TIKTOK OPENSDK (24/10/2026)
 
-## Kết quả kiểm tra
-- Repository: `cnktvpc/NM7-IPTV`.
-- Stable branch: `stable/mobile-1.10.142` (đã tồn tại; không ghi đè stable branch cũ).
-- Build branch: `build/youtube-miniplayer-20261020`.
-- Commit: [4fc8b187db7e48591e1bcb11969436a56d27d06a](https://github.com/cnktvpc/NM7-IPTV/commit/4fc8b187db7e48591e1bcb11969436a56d27d06a).
-- Thay đổi commit: thêm `scripts/patch-mobile-v130-pull-refresh.py` vào `paths` trong workflow `.github/workflows/nm7-mobile-live-card-layout-v142.yml`; đây là sửa điều kiện kích hoạt CI, không thay đổi trực tiếp mã app.
-- [GitHub Actions run 39407088691](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39407088691): build APK và upload artifact thành công; artifact ID `12258102908`.
-- Cảnh báo: bước `:app:testMobileDebugUnitTest` có lỗi nhưng được đặt `continue-on-error: true`, nên job tổng thể vẫn SUCCESS. Chưa xác nhận unit tests pass cho run này.
-- Kiểm thử thực tế YouTube MiniPlayer trên thiết bị: chưa có xác nhận mới từ lần build này.
+## Vì sao đổi hướng
+- Bản 1.10.144 WebView toàn trang không đáp ứng yêu cầu tích hợp; không dùng nó làm cơ sở phát hành.
+- TikTok OpenSDK Android 2.3.1 được tích hợp chính thức. SDK công khai cung cấp Login Kit/Share Kit, không có giao diện For You nhúng hoàn chỉnh.
+- Chọn hướng: native NM7 Activity + Login Kit + backend OAuth bảo mật + Display API cho video công khai gần đây của tài khoản đã cấp quyền. Không giả mạo feed For You và không nhúng Client Secret vào APK.
 
-## Quyết định phát hành
-- Giữ nguyên stable baseline 1.10.142; không tuyên bố lỗi test đã được xử lý.
-- Để xác nhận bản MiniPlayer mới ổn định, cần lấy log lỗi unit-test, sửa nguyên nhân nếu có, chạy lại test không bỏ qua lỗi, rồi kiểm tra trên thiết bị: mở YouTube, thu nhỏ, Back, phóng to lại, chuyển tab IPTV/quay lại YouTube và xác nhận hình/tiếng.
+## Đã triển khai ở nhánh tính năng
+- Baseline: `stable/mobile-1.10.142`, không sửa nhánh stable.
+- Candidate versionName 1.10.145 / versionCode 161, applicationId giữ nguyên.
+- Thêm Maven repo TikTok OpenSDK chính thức và dependencies `tiktok-open-sdk-core` / `tiktok-open-sdk-auth` v2.3.1.
+- Thay điểm vào tab TikTok từ `TikTokWebActivity` sang `TikTokIntegrationActivity` native.
+- Tích hợp Login Kit qua Chrome Custom Tab, PKCE verifier, state check và callback Activity. Hiển thị video công khai gần đây trong ViewPager2 dọc bằng official individual-post player.
+- Opaque session token được mã hóa bằng AES-GCM/Android Keystore trên thiết bị; Worker đổi code ở server, refresh token và gọi TikTok Display API.
+- Worker source: `workers/tiktok-open-auth/index.js`; hướng dẫn secrets/triển khai: `workers/tiktok-open-auth/README.md`.
+- Màn hình trong app cho phép cấu hình Client Key và URL Worker; không yêu cầu đóng gói Client Secret vào APK.
+- Workflow in signing certificate fingerprints để đăng ký với TikTok Developer Portal, kiểm tra Node syntax của Worker và build APK 1.10.145.
+
+## Chặn phát hành giả
+- Full For You feed, like/follow/comment và toàn bộ UI TikTok không được SDK/API công khai cung cấp. Bản này không tuyên bố có các khả năng đó.
+- Đăng nhập/video thật chưa hoạt động cho tới khi TikTok Developer app được cấu hình/duyệt, signing fingerprint được đăng ký, Worker được deploy với secrets và URL Worker được nhập trong ứng dụng.
+- CI cuối **PASS** trên commit `146ca71a5b60b99b0d8e4bd0cbe0e4f6852656cb`: push run https://github.com/cnktvpc/NM7-IPTV/actions/runs/40062974954 và PR run https://github.com/cnktvpc/NM7-IPTV/actions/runs/40062977286.
+- APK build, signing check, artifact upload và `TikTokWebPolicyTest` đều PASS.
+- Artifact ZIP: https://github.com/cnktvpc/NM7-IPTV/actions/runs/40062974954/artifacts/12547707847 (ID `12547707847`, hết hạn 23/11/2026).
+- Worker có redirect URI, session secret và fingerprint APK. Còn thiếu secrets `TIKTOK_CLIENT_KEY` + `TIKTOK_CLIENT_SECRET`; đăng nhập/Display API thực tế chưa thể PASS cho đến khi cấu hình credential và quyền trên TikTok Developer Portal.
+- PR #3 vẫn draft; chưa merge stable.
 
 ---
 

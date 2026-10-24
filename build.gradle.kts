@@ -2,6 +2,7 @@ plugins {
     id("com.android.application") version "8.13.2" apply false
     id("com.android.library") version "8.13.2" apply false
     id("org.jetbrains.kotlin.android") version "1.8.10" apply false
+    id("org.jetbrains.kotlin.plugin.parcelize") version "1.8.10" apply false
 }
 
 buildscript {
@@ -16,6 +17,10 @@ buildscript {
     }
 }
 
+// Expose SDK values expected by the pinned official TikTok OpenSDK 2.3.1 Groovy library projects.
+project.extensions.extraProperties.set("compileSdkVersion", 36)
+project.extensions.extraProperties.set("buildToolsVersion", "36.0.0")
+
 gradle.extensions.extraProperties.set("sharedModulesRoot", file("third_party/SmartTube-droid/SharedModules"))
 gradle.extensions.extraProperties.set("sharedModulesConstants", file("third_party/SmartTube-droid/SharedModules/constants.gradle"))
 gradle.extensions.extraProperties.set("mediaServiceCoreRoot", file("third_party/SmartTube-droid/MediaServiceCore"))
@@ -28,7 +33,7 @@ val smartTubeAndroidLibraryModules = setOf(
     ":youtubeapi", ":exoplayer-library", ":exoplayer-library-core", ":exoplayer-library-dash",
     ":exoplayer-library-sabr", ":exoplayer-library-hls", ":exoplayer-library-smoothstreaming",
     ":exoplayer-library-ui", ":exoplayer-extension-mediasession", ":exoplayer-extension-okhttp",
-    ":exoplayer-extension-cronet"
+    ":exoplayer-extension-cronet", ":tiktok-open-sdk-core", ":tiktok-open-sdk-auth"
 )
 
 val smartTubeSharedConstantsProjects = setOf(

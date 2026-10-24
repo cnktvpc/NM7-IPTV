@@ -47,6 +47,11 @@ public final class HomeTabBar {
             if (youtubeSelected) openIptv(activity);
         });
 
+        // The TikTok destination is an Activity inside the same NM7 APK. It loads
+        // TikTok's first-party mobile site, so feed swipes and account UI stay genuine.
+        addItem(activity, bar, R.drawable.nm7_nav_tiktok, false, "TikTok",
+                () -> openTikTok(activity));
+
         // Application settings is a top-level destination of the same bottom bar.
         // It reuses MainActivity's existing dialog so every existing setting and behavior
         // stays identical to the 1.10.112 implementation.
@@ -115,6 +120,22 @@ public final class HomeTabBar {
         startWithoutAnimation(activity, intent);
         activity.getWindow().getDecorView().post(
                 () -> MobileInlinePlayerProviderV2.resumeForIptvTab(activity));
+    }
+
+    private static void openTikTok(Activity activity) {
+        // Stop IPTV/SmartTube audio before opening the native TikTok integration module.
+        PlayerActivity.cancelYoutubeHandoff();
+        SharedPlaybackSession.setTab(activity, SharedPlaybackSession.TAB_IPTV);
+        MobileNm7Application.markTabSwitch();
+        if (MobileNm7Application.isYoutubeSessionActive()) {
+            MobileNm7Application.suspendYoutubeForIptv();
+        }
+        MobileInlinePlayerProviderV2.releaseForYoutube();
+        PlayerActivity.releaseForYoutube();
+
+        Intent intent = new Intent(activity, TikTokIntegrationActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        startWithoutAnimation(activity, intent);
     }
 
     private static void openAppSettings(Activity activity) {

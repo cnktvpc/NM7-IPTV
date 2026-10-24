@@ -6,12 +6,26 @@ android {
     namespace = "vn.phuong.iptvplayer"
     compileSdk = 36
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     defaultConfig {
         applicationId = "vn.phuong.iptvplayer"
         minSdk = 23
         targetSdk = 36
-        versionCode = 158
-        versionName = "1.10.142"
+        versionCode = 161
+        versionName = "1.10.145"
+
+        val ttKey = (project.findProperty("tiktokClientKey") as String?)
+            ?: System.getenv("TIKTOK_CLIENT_KEY") ?: ""
+        val ttApi = (project.findProperty("tiktokApiBaseUrl") as String?)
+            ?: System.getenv("TIKTOK_API_BASE_URL") ?: "https://nm7-tiktok-open-auth.phuongnm7-iptv.workers.dev"
+        fun quoteBuildConfig(value: String): String =
+            "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
+        buildConfigField("String", "TIKTOK_CLIENT_KEY", quoteBuildConfig(ttKey))
+        buildConfigField("String", "TIKTOK_API_BASE_URL", quoteBuildConfig(ttApi))
+        buildConfigField("String", "TIKTOK_REDIRECT_URI", quoteBuildConfig("https://nm7-tiktok-open-auth.phuongnm7-iptv.workers.dev/callback"))
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         manifestPlaceholders["applicationClass"] = "vn.phuong.iptvplayer.MobileNm7Application"
@@ -82,6 +96,12 @@ dependencies {
     implementation("androidx.media3:media3-ui:$media3Version")
     implementation("androidx.media3:media3-datasource-okhttp:$media3Version")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    // Official TikTok OpenSDK 2.3.1 modules are compiled from TikTok's pinned source release
+    // in CI because the corresponding Maven artifacts are not available in the configured repository.
+    implementation(project(":tiktok-open-sdk-core"))
+    implementation(project(":tiktok-open-sdk-auth"))
+    // ViewPager2 provides a native vertical feed for the user's public TikTok videos.
+    implementation("androidx.viewpager2:viewpager2:1.1.0")
 
     // SmartTube's DroidApplication extends AndroidX MultiDexApplication.
     // Keep the dependency direct so the Mobile app compiler can resolve that superclass.

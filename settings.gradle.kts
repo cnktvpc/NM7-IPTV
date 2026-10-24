@@ -13,12 +13,18 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         maven { url = uri("https://jitpack.io") }
+        // Official TikTok OpenSDK repository.
+        maven { url = uri("https://artifact.bytedance.com/repository/AwemeOpenSDK") }
     }
 }
 
 rootProject.name = "IPTV Player"
 include(":app")
 include(":smarttube")
+include(":tiktok-open-sdk-core", ":tiktok-open-sdk-auth")
+val tikTokOpenSdkRoot = file("third_party/tiktok-opensdk-android")
+project(":tiktok-open-sdk-core").projectDir = file("$tikTokOpenSdkRoot/tiktok-open-sdk-core")
+project(":tiktok-open-sdk-auth").projectDir = file("$tikTokOpenSdkRoot/tiktok-open-sdk-auth")
 
 // SmartTube Droid's legacy modules use these shared paths and constants.
 // The original core_settings.gradle files are not present in the checked-out

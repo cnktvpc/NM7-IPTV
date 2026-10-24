@@ -1,3 +1,38 @@
+# NM7 IPTV Mobile 1.10.145 — TikTok OpenSDK integration (single APK; feature branch)
+
+## Hướng triển khai mới
+
+- Baseline: `cnktvpc/NM7-IPTV`, nhánh `stable/mobile-1.10.142`, versionCode 158. Mã TikTok được làm riêng ở `feature/tiktok-in-app-mobile-1.10.142-20261024`; stable không bị sửa.
+- Candidate: `1.10.145` / versionCode `161`, cùng applicationId `vn.phuong.iptvplayer`.
+- Thay tab web TikTok toàn trang bằng Activity native dùng TikTok OpenSDK Android `2.3.1`, Login Kit và Display API. Trang không tự mở ứng dụng TikTok gốc; đăng nhập chạy qua Chrome Custom Tab và quay về NM7.
+- Sau khi ứng dụng TikTok Developer được cấu hình và backend OAuth hoạt động, NM7 hiển thị video công khai gần đây của tài khoản đã kết nối trong native ViewPager2 dọc; mỗi mục dùng player embed chính thức của bài đăng.
+- Thêm backend Cloudflare Worker tại `workers/tiktok-open-auth`: đổi authorization code ở server (Client Secret không nằm trong APK), mã hóa session token AES-GCM, refresh token và lấy hồ sơ/video bằng Display API. Android lưu opaque session token bằng Android Keystore.
+- Có màn hình cấu hình trong APK cho Client Key công khai và URL Worker HTTPS. Không có chỗ nhập/đóng gói Client Secret vào app.
+
+## Giới hạn từ TikTok
+
+OpenSDK chính thức chỉ cung cấp Login Kit/Share Kit; Display API cung cấp hồ sơ và video công khai gần đây của chính người dùng đã cấp quyền, không có API cho feed For You tổng quát hay toàn bộ chức năng thích/theo dõi/bình luận của app gốc. Vì vậy bản này triển khai tích hợp chính thức trong một APK và feed video tài khoản được cấp quyền — không tuyên bố là bản sao đầy đủ ứng dụng TikTok.
+Nguồn: [TikTok OpenSDK Android](https://github.com/tiktok/tiktok-opensdk-android), [Display API](https://developers.tiktok.com/docs/en/display-api-overview).
+
+## Cấu hình để đăng nhập thật
+
+1. Đăng ký ứng dụng Android NM7 trên TikTok Developer Portal. Dùng application ID `vn.phuong.iptvplayer` và signing fingerprint mà workflow in trong log build; bật Login Kit/Display API và xin scope `user.info.basic,video.list`.
+2. Deploy Worker trong `workers/tiktok-open-auth`, đặt secrets `TIKTOK_CLIENT_KEY`, `TIKTOK_CLIENT_SECRET`, `TIKTOK_SESSION_SECRET` (ít nhất 32 ký tự). `TIKTOK_REDIRECT_URI` phải trùng chính xác giá trị được đăng ký trong portal.
+3. Trong NM7 vào TikTok → **Cấu hình TikTok**, nhập Client Key và URL HTTPS của Worker. Không nhập Client Secret trong APK.
+4. Nếu TikTok chưa duyệt scope `video.list`, trang “Video của tôi” có thể không trả video. Feed For You của TikTok không thể được cung cấp qua Display API công khai.
+
+## Build / kiểm thử
+
+- Feature branch: `feature/tiktok-in-app-mobile-1.10.142-20261024`.
+- Workflow: [NM7 TikTok Mobile Build](https://github.com/cnktvpc/NM7-IPTV/actions/workflows/tiktok-mobile-build.yml).
+- Push CI: https://github.com/cnktvpc/NM7-IPTV/actions/runs/40062974954 — **SUCCESS**; PR CI: https://github.com/cnktvpc/NM7-IPTV/actions/runs/40062977286 — **SUCCESS**.
+- Gradle build APK, signing fingerprint, artifact upload và `TikTokWebPolicyTest` đều **PASS** trên commit `146ca71a5b60b99b0d8e4bd0cbe0e4f6852656cb`.
+- Artifact ZIP: [NM7-IPTV-Mobile-1.10.145-TIKTOK-OPENSDK](https://github.com/cnktvpc/NM7-IPTV/actions/runs/40062974954/artifacts/12547707847), ID `12547707847`, dung lượng khoảng 43 MB, chứa APK + `SHA256SUMS.txt`; hạn lưu 23/11/2026.
+- SHA-256 signing certificate của APK này: `D3:8D:21:1C:20:76:E9:6A:E3:56:2A:27:AC:A4:6B:3A:B6:CC:2C:8D:C7:60:A3:0A:5C:74:4E:04:E3:A2:D6:30`. Đã thêm fingerprint vào Worker secret `TIKTOK_ANDROID_SHA256_FINGERPRINT`.
+- Test compile/build chỉ xác minh tích hợp SDK và code; đăng nhập thật cần Client Key, đúng signing fingerprint, app đã cấu hình trong TikTok Developer Portal và Worker secrets.
+
+---
+
 # NM7 IPTV Mobile — Stable 1.10.142 — YouTube Floating MiniPlayer / SurfaceView — 2026-10-20
 
 > **Trạng thái cập nhật 2026-10-22:** Build APK thành công. Lưu ý: bước `:app:testMobileDebugUnitTest` trong run 39407088691 có lỗi nhưng được cấu hình `continue-on-error: true`, vì vậy workflow vẫn báo SUCCESS. Không ghi nhận unit tests là PASS cho lần build này. Cần xử lý lỗi test và kiểm thử trên thiết bị thật trước khi xác nhận riêng các thay đổi YouTube MiniPlayer là ổn định.
