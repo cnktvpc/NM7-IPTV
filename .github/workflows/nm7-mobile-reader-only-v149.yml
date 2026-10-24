@@ -118,12 +118,15 @@ jobs:
           set -euo pipefail
           base="https://nm7-news-reader-api.phuongnm7-iptv.workers.dev"
           curl --retry 2 --retry-delay 2 --connect-timeout 4 --max-time 8 -fsS "$base/health" | grep -q '"ok":true'
-          feed_file="$(mktemp)"
-          trap 'rm -f "$feed_file"' EXIT
-          curl --retry 1 --retry-delay 2 --connect-timeout 4 --max-time 18 -fsS "$base/rss/football" -o "$feed_file"
-          grep -Eiq '<(rss|feed|rdf:RDF)([[:space:]>])' "$feed_file"
-          grep -Eiq '<(item|entry)([[:space:]>])' "$feed_file"
-          test "$(wc -c < "$feed_file")" -gt 250
+          for category in home sports football vietnam; do
+            feed_file="$(mktemp)"
+            curl --connect-timeout 4 --max-time 16 -fsS "$base/rss/$category" -o "$feed_file"
+            grep -Eiq '<(rss|feed|rdf:RDF)([[:space:]>])' "$feed_file"
+            grep -Eiq '<(item|entry)([[:space:]>])' "$feed_file"
+            test "$(wc -c < "$feed_file")" -gt 250
+            rm -f "$feed_file"
+            echo "PASS: Thể Thao 247 $category feed returned RSS items"
+          done
 
       - name: Check Mobile lifecycle regression guards
         run: |

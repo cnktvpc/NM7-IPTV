@@ -70,7 +70,7 @@ export default {
   const results=await Promise.all(jobs);let chosen=null;
   for(const r of results){if(r.ok&&r.kind==="rss"&&validFeed(r.text)){chosen={body:r.text,upstream:r.url};break;}}
   if(!chosen){const html=results.find(r=>r.ok&&r.kind==="html");if(html){const body=htmlToRSS(html.text,cfg.page,category);if(body)chosen={body,upstream:"html:"+html.url};}}
-  if(!chosen&&["home","football","vietnam","vleague","national","international"].includes(category)){const mirror=await fetchText(MIRROR,5200);if(mirror.ok&&validFeed(mirror.text))chosen={body:mirror.text,upstream:"rssamplifier-cache"};}
+  if(!chosen&&["home","sports","football","vietnam","vleague","national","international","epl"].includes(category)){const mirror=await fetchText(MIRROR,5200);if(mirror.ok&&validFeed(mirror.text))chosen={body:mirror.text,upstream:"rssamplifier-cache"};}
   if(!chosen){const statuses=results.map(r=>r.kind+":"+r.status).join(",");return response(JSON.stringify({ok:false,error:"upstream unavailable",category,attempts:statuses}),502,{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","Retry-After":"30"});}
   const result=addHeaders(chosen.body,category,chosen.upstream);ctx.waitUntil(caches.default.put(cacheKey,result.clone()).catch(()=>{}));if(request.method==="HEAD")return new Response(null,{status:200,headers:result.headers});return result;
  }
