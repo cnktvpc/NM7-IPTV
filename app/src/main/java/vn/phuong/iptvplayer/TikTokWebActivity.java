@@ -33,6 +33,12 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -62,12 +68,19 @@ public final class TikTokWebActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Window window = getWindow();
+        // This Activity opts into explicit insets handling. Target SDK 36 uses
+        // edge-to-edge by default; padding the content by real system insets prevents
+        // TikTok's own top navigation from being drawn underneath the Android status bar.
+        WindowCompat.setDecorFitsSystemWindows(window, false);
         window.setStatusBarColor(Color.BLACK);
         window.setNavigationBarColor(Color.BLACK);
+        window.getDecorView().setSystemUiVisibility(0);
         if (Build.VERSION.SDK_INT >= 29) {
             window.setNavigationBarContrastEnforced(false);
             window.setStatusBarContrastEnforced(false);
         }
+        new WindowInsetsControllerCompat(window, window.getDecorView())
+                .setAppearanceLightStatusBars(false);
 
         buildContent();
         configureWebView();
@@ -82,6 +95,13 @@ public final class TikTokWebActivity extends Activity {
     private void buildContent() {
         root = new FrameLayout(this);
         root.setBackgroundColor(Color.BLACK);
+        root.setClipToPadding(false);
+        ViewCompat.setOnApplyWindowInsetsListener(root, (view, insets) -> {
+            Insets bars = insets.getInsets(
+                    WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+            view.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+            return insets;
+        });
 
         webView = new WebView(this);
         webView.setBackgroundColor(Color.BLACK);
@@ -137,6 +157,7 @@ public final class TikTokWebActivity extends Activity {
         root.addView(errorPanel, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         setContentView(root);
+        ViewCompat.requestApplyInsets(root);
     }
 
     private void configureWebView() {
@@ -144,13 +165,18 @@ public final class TikTokWebActivity extends Activity {
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
-        settings.setJavaScriptCanOpenWindowsAutomatically(true);
-        // Keep target=_blank/auth redirects in this WebView and therefore in NM7.
+        settings.setJavaScriptCanOpenWindowsAutomatically(false);
+        // Do not let target=_blank create a second browser/application surface.
+        // All standard links are redirected into this WebView by WebViewClient.
         settings.setSupportMultipleWindows(false);
         settings.setMediaPlaybackRequiresUserGesture(false);
         settings.setLoadsImagesAutomatically(true);
+        // TikTok is a mobile-first feed. Avoid wide desktop layout viewports and page
+        // overview scaling, which made the original UI look stretched on phones.
         settings.setLoadWithOverviewMode(false);
-        settings.setUseWideViewPort(true);
+        settings.setUseWideViewPort(false);
+        settings.setTextZoom(100);
+        settings.setDefaultTextEncodingName("UTF-8");
         settings.setSupportZoom(false);
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
@@ -158,6 +184,14 @@ public final class TikTokWebActivity extends Activity {
         settings.setAllowContentAccess(true);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         if (Build.VERSION.SDK_INT >= 26) settings.setSafeBrowsingEnabled(true);
+        // TikTok's mobile website sometimes treats Android WebView as an app-launch
+        // handoff. Use the same mobile browser UA without Android's "; wv" marker or
+        // the legacy "Version/4.0" token so the feed stays in the embedded web surface.
+        String mobileUa = settings.getUserAgentString();
+        if (mobileUa != null) {
+            mobileUa = mobileUa.replace("; wv", "").replace(" Version/4.0", "");
+            settings.setUserAgentString(mobileUa);
+        }
 
         CookieManager cookies = CookieManager.getInstance();
         cookies.setAcceptCookie(true);
@@ -271,11 +305,12 @@ public final class TikTokWebActivity extends Activity {
 
     /** Keep normal web and authentication pages inside this one NM7 Activity. */
     private boolean handleNavigation(String rawUrl) {
+        // Only HTTP(S) navigations are ever allowed to continue in WebView. No
+        // ACTION_VIEW / package-manager resolution is used here, so tiktok://,
+        // intent://, market:// and other app schemes cannot launch external apps.
         if (TikTokWebPolicy.isWebUrl(rawUrl)) return false;
 
-        // Some TikTok links use intent:// with a browser fallback. Use the web fallback
-        // inside NM7 rather than opening an external TikTok application.
-        if (rawUrl != null && rawUrl.startsWith("intent:")) {
+        if (rawUrl != null && rawUrl.regionMatches(true, 0, "intent:", 0, 7)) {
             try {
                 Intent parsed = Intent.parseUri(rawUrl, Intent.URI_INTENT_SCHEME);
                 String fallback = parsed.getStringExtra("browser_fallback_url");
@@ -286,7 +321,9 @@ public final class TikTokWebActivity extends Activity {
             } catch (Exception ignored) { }
         }
 
-        Toast.makeText(this, "Liên kết này không được mở bằng ứng dụng bên ngoài.", Toast.LENGTH_SHORT).show();
+        // Custom schemes should be consumed, never passed to Android's intent resolver.
+        android.util.Log.i("NM7TikTok", "Blocked non-web navigation: "
+                + (rawUrl == null ? "(null)" : Uri.parse(rawUrl).getScheme()));
         return true;
     }
 
@@ -303,6 +340,11 @@ public final class TikTokWebActivity extends Activity {
         progress.setVisibility(View.GONE);
         root.addView(view, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        WindowInsetsControllerCompat controller = new WindowInsetsControllerCompat(getWindow(), root);
+        controller.setSystemBarsBehavior(
+                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+        controller.hide(WindowInsetsCompat.Type.systemBars());
         root.setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                         | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
@@ -310,6 +352,7 @@ public final class TikTokWebActivity extends Activity {
                         | View.SYSTEM_UI_FLAG_FULLSCREEN
                         | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                         | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+        ViewCompat.requestApplyInsets(root);
         if (requestedOrientation != ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED) {
             setRequestedOrientation(requestedOrientation);
         }
@@ -322,7 +365,11 @@ public final class TikTokWebActivity extends Activity {
         fullscreenView = null;
         fullscreenCallback = null;
         root.removeView(oldView);
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         root.setSystemUiVisibility(previousSystemUiVisibility);
+        WindowInsetsControllerCompat controller = new WindowInsetsControllerCompat(getWindow(), root);
+        controller.show(WindowInsetsCompat.Type.systemBars());
+        ViewCompat.requestApplyInsets(root);
         setRequestedOrientation(previousRequestedOrientation);
         if (callback != null) callback.onCustomViewHidden();
     }
@@ -416,8 +463,10 @@ public final class TikTokWebActivity extends Activity {
 
     @Override
     protected void onPause() {
-        if (webView != null) webView.onPause();
-        webView.pauseTimers();
+        if (webView != null) {
+            webView.onPause();
+            webView.pauseTimers();
+        }
         super.onPause();
     }
 
