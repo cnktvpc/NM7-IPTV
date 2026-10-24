@@ -51,6 +51,36 @@ jobs:
           git -C third_party/SmartTube-droid checkout --detach 4825d6aa8b6f1d3181927f9e96c7d89cab13d510
           git -C third_party/SmartTube-droid submodule update --init --recursive
 
+      - name: Restore pinned official TikTok OpenSDK source
+        run: |
+          set -euxo pipefail
+          git clone --no-checkout https://github.com/tiktok/tiktok-opensdk-android.git third_party/tiktok-opensdk-android
+          git -C third_party/tiktok-opensdk-android checkout --detach 336b59cea9dfb23c0129c2cb03275e05f472c96a
+          test -f third_party/tiktok-opensdk-android/tiktok-open-sdk-auth/src/main/java/com/tiktok/open/sdk/auth/AuthApi.kt
+          test -f third_party/tiktok-opensdk-android/LICENSE
+
+      - name: Patch official TikTok OpenSDK for NM7 AGP 8.13 build
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          root=Path('third_party/tiktok-opensdk-android')
+          for module in ('tiktok-open-sdk-core','tiktok-open-sdk-auth'):
+              build=root/module/'build.gradle'
+              manifest=root/module/'src/main/AndroidManifest.xml'
+              if not build.is_file() or not manifest.is_file():
+                  raise SystemExit('TikTok SDK module missing: '+module)
+              text=build.read_text()
+              package=re.search(r'\\bpackage\\s*=\\s*["\\']([^"\\']+)["\\']',manifest.read_text()).group(1)
+              if not re.search(r'\\bnamespace\\s',text):
+                  text=re.sub(r'(android\\s*\\{)',r'\\1\\n    namespace "'+package+'"',text,1)
+              text=text.replace('apply from: "${rootDir}/deploy.gradle"','')
+              if 'buildFeatures' not in text:
+                  text=re.sub(r'(android\\s*\\{)',r'\\1\\n    buildFeatures { buildConfig true }',text,1)
+              build.write_text(text)
+          PY
+
       - name: Patch SmartTube for AGP 8.13
         run: |
           set -euxo pipefail
@@ -90,7 +120,9 @@ jobs:
           grep -q 'versionName = "1.10.145"' app/build.gradle.kts
           grep -q 'versionCode = 161' app/build.gradle.kts
           grep -q 'package vn.phuong.iptvplayer;' app/src/main/java/vn/phuong/iptvplayer/TikTokIntegrationActivity.java
-          grep -q 'com.tiktok.open.sdk:tiktok-open-sdk-auth:2.3.1' app/build.gradle.kts
+          grep -q 'implementation(project(":tiktok-open-sdk-auth"))' app/build.gradle.kts
+          grep -q 'include(":tiktok-open-sdk-core", ":tiktok-open-sdk-auth")' settings.gradle.kts
+          grep -q '336b59cea9dfb23c0129c2cb03275e05f472c96a' .github/workflows/tiktok-mobile-build.yml
           grep -q 'new AuthApi(this)' app/src/main/java/vn/phuong/iptvplayer/TikTokIntegrationActivity.java
           grep -q 'TIKTOK_CLIENT_SECRET' workers/tiktok-open-auth/index.js
           node --check workers/tiktok-open-auth/index.js
