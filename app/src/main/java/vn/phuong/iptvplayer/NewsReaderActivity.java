@@ -530,7 +530,10 @@ public final class NewsReaderActivity extends Activity {
     }
 
     private void navigateToCategory(String name) {
+        if (name.equals(categoryName)) return;
         rememberFeedScrollPosition();
+        // Invalidate any request for the page being left before taking a cached-page fast path.
+        ++requestToken;
         categoryName = name;
         searchQuery = "";
         updateCategorySelection();
@@ -595,6 +598,8 @@ public final class NewsReaderActivity extends Activity {
         }
 
         String nextCategory = names.get(next);
+        // A completed request for the page being swiped away must not paint into this page.
+        ++requestToken;
         if (outgoingPage.getParent() instanceof ViewGroup) {
             ((ViewGroup) outgoingPage.getParent()).removeView(outgoingPage);
         }
@@ -1156,6 +1161,7 @@ public final class NewsReaderActivity extends Activity {
                     sourceId = choices.get(which).id;
                     categoryName = choices.get(which).categories.keySet().iterator().next();
                     searchQuery = "";
+                    ++requestToken;
                     getPreferencesStore().edit().putString(KEY_SOURCE, sourceId).apply();
                     renderFeed(false);
                 }).setNegativeButton("Đóng", null).show();
