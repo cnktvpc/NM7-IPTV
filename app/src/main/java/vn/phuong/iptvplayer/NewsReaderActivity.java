@@ -572,10 +572,17 @@ public final class NewsReaderActivity extends Activity {
 
     private void discardSwipePreview(FeedPage preview) {
         if (preview == null) return;
+        preview.scroll.animate().cancel();
+        // A tab tap may reuse this same page while a swipe-back animation is settling.
+        // Never detach the page if it has already become the active feed.
+        if (preview == currentFeedPage) {
+            preview.scroll.setTranslationX(0f);
+            preview.scroll.setAlpha(1f);
+            return;
+        }
         if (preview.scroll.getParent() instanceof ViewGroup) {
             ((ViewGroup) preview.scroll.getParent()).removeView(preview.scroll);
         }
-        preview.scroll.animate().cancel();
         preview.scroll.setTranslationX(0f);
         preview.scroll.setAlpha(1f);
     }
@@ -712,6 +719,7 @@ public final class NewsReaderActivity extends Activity {
                             swipePreviewPage = prepareSwipePreview(direction, this);
                         }
                         final FeedPage preview = swipePreviewPage;
+                        final String categoryAtSwipeStart = categoryName;
                         swipePreviewPage = null;
                         float width = Math.max(1, getWidth());
                         if (preview != null) {
@@ -719,7 +727,17 @@ public final class NewsReaderActivity extends Activity {
                         }
                         animate().translationX(direction > 0 ? -width : width)
                                 .alpha(0.88f).setDuration(95)
-                                .withEndAction(() -> stepCategoryBySwipe(direction, this, preview)).start();
+                                .withEndAction(() -> {
+                                    if (mode == Mode.FEED && currentFeedPage != null
+                                            && currentFeedPage.scroll == this
+                                            && categoryAtSwipeStart.equals(categoryName)) {
+                                        stepCategoryBySwipe(direction, this, preview);
+                                    } else {
+                                        discardSwipePreview(preview);
+                                        setTranslationX(0f);
+                                        setAlpha(1f);
+                                    }
+                                }).start();
                     } else {
                         final FeedPage preview = swipePreviewPage;
                         swipePreviewPage = null;

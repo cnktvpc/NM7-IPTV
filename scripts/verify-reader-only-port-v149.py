@@ -40,6 +40,9 @@ checks = [
     ("Thumbnails are sampled to display size and held in a bounded cache",
      "thumbnailCache" in reader and "MAX_READER_THUMBNAILS" in reader and
      "inSampleSize = calculateThumbnailSampleSize" in reader),
+    ("Swipe completion cannot override a later tab tap",
+     "categoryAtSwipeStart.equals(categoryName)" in reader and
+     "currentFeedPage.scroll == this" in reader and "preview == currentFeedPage" in reader),
     ("Page switches invalidate stale asynchronous feed responses",
      "Invalidate any request for the page being left" in reader and
      "A completed request for the page being swiped away" in reader),
