@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.ClipData;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -52,6 +53,10 @@ public final class TikTokWebActivity extends Activity {
     private PermissionRequest pendingWebPermission;
     private String[] pendingWebResources = new String[0];
     private String[] pendingAndroidPermissions = new String[0];
+    private View fullscreenView;
+    private WebChromeClient.CustomViewCallback fullscreenCallback;
+    private int previousSystemUiVisibility;
+    private int previousRequestedOrientation;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -238,6 +243,21 @@ public final class TikTokWebActivity extends Activity {
             }
 
             @Override
+            public void onShowCustomView(View view, CustomViewCallback callback) {
+                showWebFullscreen(view, ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED, callback);
+            }
+
+            @Override
+            public void onShowCustomView(View view, int requestedOrientation, CustomViewCallback callback) {
+                showWebFullscreen(view, requestedOrientation, callback);
+            }
+
+            @Override
+            public void onHideCustomView() {
+                hideWebFullscreen();
+            }
+
+            @Override
             public void onPermissionRequest(PermissionRequest request) {
                 runOnUiThread(() -> requestWebMediaPermission(request));
             }
@@ -268,6 +288,43 @@ public final class TikTokWebActivity extends Activity {
 
         Toast.makeText(this, "Liên kết này không được mở bằng ứng dụng bên ngoài.", Toast.LENGTH_SHORT).show();
         return true;
+    }
+
+    private void showWebFullscreen(View view, int requestedOrientation,
+                                    WebChromeClient.CustomViewCallback callback) {
+        if (fullscreenView != null) {
+            callback.onCustomViewHidden();
+            return;
+        }
+        fullscreenView = view;
+        fullscreenCallback = callback;
+        previousSystemUiVisibility = root.getSystemUiVisibility();
+        previousRequestedOrientation = getRequestedOrientation();
+        progress.setVisibility(View.GONE);
+        root.addView(view, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        root.setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+        if (requestedOrientation != ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED) {
+            setRequestedOrientation(requestedOrientation);
+        }
+    }
+
+    private void hideWebFullscreen() {
+        if (fullscreenView == null) return;
+        View oldView = fullscreenView;
+        WebChromeClient.CustomViewCallback callback = fullscreenCallback;
+        fullscreenView = null;
+        fullscreenCallback = null;
+        root.removeView(oldView);
+        root.setSystemUiVisibility(previousSystemUiVisibility);
+        setRequestedOrientation(previousRequestedOrientation);
+        if (callback != null) callback.onCustomViewHidden();
     }
 
     private void requestWebMediaPermission(PermissionRequest request) {
@@ -385,12 +442,18 @@ public final class TikTokWebActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        if (webView != null && webView.canGoBack()) webView.goBack();
-        else super.onBackPressed();
+        if (fullscreenView != null) {
+            hideWebFullscreen();
+        } else if (webView != null && webView.canGoBack()) {
+            webView.goBack();
+        } else {
+            super.onBackPressed();
+        }
     }
 
     @Override
     protected void onDestroy() {
+        if (fullscreenView != null) hideWebFullscreen();
         if (pendingFileChooser != null) {
             pendingFileChooser.onReceiveValue(null);
             pendingFileChooser = null;
