@@ -2300,8 +2300,10 @@ public final class NewsReaderActivity extends Activity {
         List<Article> result = new ArrayList<>();
         try {
             conn = (HttpURLConnection) new URL(feedUrl).openConnection();
-            conn.setConnectTimeout(10000);
-            conn.setReadTimeout(12000);
+            boolean isThietThao247Feed = feedUrl != null
+                    && feedUrl.toLowerCase(Locale.ROOT).contains("thethao247.vn");
+            conn.setConnectTimeout(isThietThao247Feed ? 6000 : 10000);
+            conn.setReadTimeout(isThietThao247Feed ? 8000 : 12000);
             conn.setInstanceFollowRedirects(true);
             conn.setRequestProperty("User-Agent", userAgent());
             conn.setRequestProperty("Accept", "application/rss+xml, application/atom+xml, application/xml, text/xml, */*");
