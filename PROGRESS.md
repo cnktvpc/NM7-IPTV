@@ -1,13 +1,26 @@
-# TIẾN ĐỘ MỚI NHẤT — NM7 IPTV MOBILE 1.10.150 — SMOOTH READER — CI PASS — 2026-10-24
+# TIẾN ĐỘ MỚI NHẤT — NM7 IPTV MOBILE 1.10.151 — NEWS SOURCE RECOVERY — 2026-10-24
 
 ## Kết quả hiện tại
 - **Nhánh thử nghiệm:** `rebuild/reader-only-from-stable-142-20261023`.
-- **Candidate:** 1.10.150 / versionCode 166, dựng trên đúng source baseline 1.10.142 commit `4fc8b187db7e48591e1bcb11969436a56d27d06a`.
-- **Code SHA được build:** [`240b2875dce64f92479a2e9dfaf44bd04bed53ee`](https://github.com/cnktvpc/NM7-IPTV/commit/240b2875dce64f92479a2e9dfaf44bd04bed53ee).
-- **GitHub Actions:** [Run 40048625858 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/40048625858). Reader-focused unit tests, build APK, full Mobile unit-test suite và upload artifact đều PASS.
-- **APK:** [NM7-IPTV-Mobile-1.10.150-SMOOTH-READER](https://github.com/cnktvpc/NM7-IPTV/actions/runs/40048625858/artifacts/12542926072), artifact ID `12542926072`, 44,021,024 bytes, hết hạn 2026-11-23. SHA-256 archive digest: `7d8c66b5dab31493d0936b3fb0fc64974daff9e4ce61fd6f9f49c86aa26e7d80`.
-- **Stable không đổi:** `stable/mobile-1.10.142` còn nguyên SHA `7500feb0a2755148e1a40ca12a1037380253bc46`; chưa merge/promote candidate.
-- **Phạm vi:** chỉ sửa Reader, route chuyên mục báo và các regression guard liên quan; không cố ý thay đổi YouTube/SmartTube, nguồn playlist mặc định, hay phần IPTV ngoài việc giữ nguyên phiên player khi chuyển tab.
+- **Candidate:** 1.10.151 / versionCode 167, dựng trên source baseline 1.10.142 commit `4fc8b187db7e48591e1bcb11969436a56d27d06a`.
+- **Code SHA đang build:** [`945c6a73c9a52b52b367cb6a1e15bdf01c036b6d`](https://github.com/cnktvpc/NM7-IPTV/commit/945c6a73c9a52b52b367cb6a1e15bdf01c036b6d).
+- **GitHub Actions:** [Run 40066396996 — 1.10.151 News Source Recovery](https://github.com/cnktvpc/NM7-IPTV/actions/runs/40066396996). Workflow đã vượt qua các bước kiểm tra cấu hình phiên bản, Reader integration, bảo vệ YouTube và lifecycle; build/test tiếp tục theo dõi đến khi có kết quả cuối.
+- **APK mới:** chưa ghi kết quả/đường dẫn ở thời điểm cập nhật này; sẽ bổ sung sau khi artifact upload thành công.
+- **Stable không đổi:** `stable/mobile-1.10.142` còn SHA `7500feb0a2755148e1a40ca12a1037380253bc46`; chưa merge/promote candidate.
+- **Phạm vi:** nguồn báo và Reader; không cố ý thay đổi YouTube/SmartTube hoặc playlist mặc định. Candidate dựa trên đúng mã nền 1.10.142.
+
+## Phân tích lỗi Thể Thao 247
+- Video người dùng gửi cho thấy tab **Bóng đá** bị kẹt ở trạng thái “Đang tải tin” rồi hiện nút thử lại.
+- Trước sửa, tab bóng đá chỉ thử `https://thethao247.vn/bong-da.rss`; fallback HTML trả về trang chủ chung thay vì danh mục bóng đá.
+- Đối chiếu danh mục RSS chính thức thấy có các feed riêng cho Bóng đá Việt Nam, Bóng đá quốc tế, Ngoại hạng Anh, World Cup, La Liga, Cúp C1/C2, Bóng đá Đức và nhiều môn thể thao. Feed `bong-da.rss` trả về lỗi 503 trong lần xác minh trực tuyến; do đó không nên coi đó là nguồn duy nhất.
+- Candidate mới thử các feed bóng đá thay thế rồi chuyển sang trang HTML chuyên mục chính thức; ghép bài trùng lặp một lần, mở rộng selector lấy link bài và dùng timeout ngắn hơn với host này.
+- Thể Thao 247 có các tab bổ sung: Bóng đá Việt Nam, V-League, Đội tuyển Quốc gia, Bóng đá quốc tế, Ngoại hạng Anh, World Cup 2026, La Liga, Cúp C1/C2, Bóng đá Đức, Nhận định, Chuyển nhượng, Tennis, Golf, Bóng rổ, Cầu lông, Bóng chuyền và Võ thuật.
+
+## Mở rộng nguồn báo như SuperOK
+- Bổ sung vào catalog để người dùng có thể cài từ mục **Quản lý nguồn đọc**: Znews, GameK, Tuổi Trẻ Cười, Emdep, Mực Tím, Sức khỏe & Đời sống (các nguồn thấy trong video), cùng VietNamNet, VietnamPlus và VOV.
+- GameK và Sức khỏe & Đời sống có các tab RSS theo nhóm nội dung; nguồn không có RSS dùng bộ trích xuất HTML và vẫn mở bài theo domain gốc.
+- Cập nhật test router chuyên mục Thể Thao 247 và verifier CI để khóa các nguồn mới, fallback RSS/HTML, version 1.10.151 và giữ nguyên chuỗi YouTube/SmartTube.
+
 
 ## Thay đổi cho vuốt/chuyển tab
 1. Vuốt ngang giờ kéo trang hiện tại và trang lân cận cùng lúc theo ngón tay; animation hoàn tất khi nhấc tay, không đợi nhấc tay mới đổi trang.
