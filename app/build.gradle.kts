@@ -6,6 +6,10 @@ android {
     namespace = "vn.phuong.iptvplayer"
     compileSdk = 36
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     defaultConfig {
         applicationId = "vn.phuong.iptvplayer"
         minSdk = 23
