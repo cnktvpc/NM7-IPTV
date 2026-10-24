@@ -353,14 +353,14 @@ public final class TikTokWebActivity extends Activity {
         super.onResume();
         if (webView != null) {
             webView.onResume();
-            WebView.resumeTimers();
+            webView.resumeTimers();
         }
     }
 
     @Override
     protected void onPause() {
         if (webView != null) webView.onPause();
-        WebView.pauseTimers();
+        webView.pauseTimers();
         super.onPause();
     }
 
@@ -408,7 +408,7 @@ public final class TikTokWebActivity extends Activity {
             webView.destroy();
             webView = null;
         }
-        WebView.pauseTimers();
+        webView.pauseTimers();
         super.onDestroy();
     }
 }
