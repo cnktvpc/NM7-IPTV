@@ -17,6 +17,10 @@ buildscript {
     }
 }
 
+// Expose SDK values expected by the pinned official TikTok OpenSDK 2.3.1 Groovy library projects.
+project.extensions.extraProperties.set("compileSdkVersion", 36)
+project.extensions.extraProperties.set("buildToolsVersion", "36.0.0")
+
 gradle.extensions.extraProperties.set("sharedModulesRoot", file("third_party/SmartTube-droid/SharedModules"))
 gradle.extensions.extraProperties.set("sharedModulesConstants", file("third_party/SmartTube-droid/SharedModules/constants.gradle"))
 gradle.extensions.extraProperties.set("mediaServiceCoreRoot", file("third_party/SmartTube-droid/MediaServiceCore"))
