@@ -1,18 +1,20 @@
 # NM7 IPTV Mobile — News Sources candidate 1.10.151 (2026-10-24)
 
 - **Candidate:** `1.10.151` / versionCode `167`; isolated branch `rebuild/reader-only-from-stable-142-20261023`.
-- **Source baseline:** exact NM7 Mobile 1.10.142 source commit `4fc8b187db7e48591e1bcb11969436a56d27d06a`; no changes promoted to the stable branch.
-- **Current build commit:** [`945c6a73c9a52b52b367cb6a1e15bdf01c036b6d`](https://github.com/cnktvpc/NM7-IPTV/commit/945c6a73c9a52b52b367cb6a1e15bdf01c036b6d).
-- **GitHub Actions:** [run 40066396996 — 1.10.151 news source recovery](https://github.com/cnktvpc/NM7-IPTV/actions/runs/40066396996). Build was running when this section was written; APK artifact details are recorded after the build finishes.
-- **Thể Thao 247 recovery:** diagnosed a single-feed dependency (`bong-da.rss`) and a generic homepage fallback. The reader now retries official Vietnamese/international football RSS feeds, routes to publisher category pages, combines article results, adds more football/sports tabs, expands article-link selectors, and shortens timeouts for this host so one broken feed does not stall the fallback path.
-- **News catalog expansion:** added the providers visible in the supplied SuperOK comparison video — Znews, GameK, Tuổi Trẻ Cười, Emdep, Mực Tím, Sức khỏe & Đời sống — plus VietNamNet, VietnamPlus, and VOV. GameK and Sức khỏe & Đời sống have multiple official RSS categories; HTML fallback remains available for homepage-based sources.
-- **Test coverage:** added unit tests for official Thể Thao 247 category routes and CI guards for feed fallback and catalog entries. The existing Reader swipe/cache protections and YouTube baseline integrity checks remain in the verification pipeline.
-- **Stable protected:** `stable/mobile-1.10.142` remains at SHA `7500feb0a2755148e1a40ca12a1037380253bc46`; candidate has not been merged/promoted.
+- **Source baseline:** exact NM7 Mobile 1.10.142 source commit `4fc8b187db7e48591e1bcb11969436a56d27d06a`; no changes promoted to stable.
+- **Code SHA built:** [`945c6a73c9a52b52b367cb6a1e15bdf01c036b6d`](https://github.com/cnktvpc/NM7-IPTV/commit/945c6a73c9a52b52b367cb6a1e15bdf01c036b6d).
+- **GitHub Actions:** [run 40066396996 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/40066396996). Reader-focused unit tests, APK build, full Mobile unit-test suite, and artifact upload all succeeded.
+- **APK artifact:** [NM7-IPTV-Mobile-1.10.151-NEWS-SOURCES](https://github.com/cnktvpc/NM7-IPTV/actions/runs/40066396996/artifacts/12549890920), artifact ID `12549890920`, 44,029,080 bytes, expires 2026-11-23. SHA-256 archive digest: `a920fabb0fa924743f113ed6550a0bf92dc362463e966ca9a46360566275af69`.
+- **Thể Thao 247 recovery:** diagnosed a single-feed dependency (`bong-da.rss`) and generic homepage fallback. The reader retries official alternate football feeds, routes to publisher category pages, combines unique articles, adds sports/football categories, uses broader article-link selectors, and shortens timeouts for this host.
+- **News catalog expansion:** added Znews, GameK, Tuổi Trẻ Cười, Emdep, Mực Tím, Sức khỏe & Đời sống — the six sources shown in the supplied SuperOK comparison video — plus VietNamNet, VietnamPlus, and VOV. GameK and Sức khỏe & Đời sống have multiple official RSS categories; homepage-only providers use HTML fallback.
+- **Manual acceptance remains:** the APK built and CI passed, but I cannot claim real-device playback of the publisher feed from CI alone. Please install and verify Thể Thao 247 → Bóng đá and the added source/category tabs on the device.
+- **Stable protected:** `stable/mobile-1.10.142` remains at SHA `7500feb0a2755148e1a40ca12a1037380253bc46`; candidate not merged/promoted.
 
 ## Relevant links
 
 - [Feature branch](https://github.com/cnktvpc/NM7-IPTV/tree/rebuild/reader-only-from-stable-142-20261023)
 - [Latest build and test run](https://github.com/cnktvpc/NM7-IPTV/actions/runs/40066396996)
+- [APK artifact download](https://github.com/cnktvpc/NM7-IPTV/actions/runs/40066396996/artifacts/12549890920)
 - [Source: Thể Thao 247 official RSS index](https://thethao247.vn/rss.html)
 - [Source: GameK official RSS index](https://gamek.vn/rss.chn)
 - [Source: Sức khỏe & Đời sống official RSS index](https://suckhoedoisong.vn/page-rss.htm)
