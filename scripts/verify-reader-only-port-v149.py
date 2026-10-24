@@ -11,8 +11,8 @@ tabs = read("app/src/main/java/vn/phuong/iptvplayer/HomeTabBar.java")
 manifest = read("app/src/main/AndroidManifest.xml")
 reader = read("app/src/main/java/vn/phuong/iptvplayer/NewsReaderActivity.java")
 checks = [
-    ("version is 1.10.149/code 165",
-     'versionName = "1.10.149"' in gradle and "versionCode = 165" in gradle),
+    ("version is 1.10.150/code 166",
+     'versionName = "1.10.150"' in gradle and "versionCode = 166" in gradle),
     ("Reader is selectable from the shared bottom navigation",
      "attachReader" in tabs and "R.drawable.nm7_nav_news" in tabs and "openNews(activity)" in tabs),
     ("original 4fc IPTV handoff method remains", 
@@ -26,9 +26,19 @@ checks = [
      'android:name=".ReaderPluginActivity"' in manifest),
     ("Reader tab reuses an existing activity",
      "Intent.FLAG_ACTIVITY_REORDER_TO_FRONT" in tabs and "NewsReaderActivity.class" in tabs),
-    ("Reader caches each feed and restores category scroll position",
-     "feedCache" in reader and "feedCacheKey(source.id, feedUrl)" in reader and
-     "restoreFeedScrollPosition();" in reader and "rememberFeedScrollPosition();" in reader),
+    ("Reader caches feeds and rendered pages, restoring scroll",
+     "feedCache" in reader and "feedCacheKey(source.id, feedUrl, selectedCategory)" in reader and
+     "feedPages" in reader and "restoreFeedScrollPosition();" in reader and
+     "rememberFeedScrollPosition();" in reader),
+    ("Horizontal swipe follows the finger and animates the next cached page",
+     "setTranslationX(followX)" in reader and "animate().translationX" in reader and
+     "stepCategoryBySwipe(direction, this)" in reader and "updateCategorySelection()" in reader),
+    ("Adjacent categories are prefetched without rebuilding the visible page",
+     "prefetchAdjacentFeeds" in reader and "prefetchedFeeds" in reader),
+    ("24h has dedicated EPL, World, Business and Entertainment categories",
+     '"Ngoại Hạng Anh", "https://www.24h.com.vn/bong-da-ngoai-hang-anh-c149.html"' in reader and
+     'case "Ngoại Hạng Anh": return "https://www.24h.com.vn/bong-da-ngoai-hang-anh-c149.html";' in
+       read("app/src/main/java/vn/phuong/iptvplayer/ReaderFeedCategoryRouter.java")),
     ("IPTV tab does not restart a surviving ExoPlayer session",
      "Reader is a navigation overlay" in Path("app/src/main/java/vn/phuong/iptvplayer/MobileInlinePlayerProviderV2.java").read_text() and
      "player.getPlaybackState() != Player.STATE_IDLE" in Path("app/src/main/java/vn/phuong/iptvplayer/MobileInlinePlayerProviderV2.java").read_text()),
