@@ -1,23 +1,20 @@
-# NM7 IPTV Mobile — News Sources candidate 1.10.151 (2026-10-24)
+# NM7 IPTV Mobile — Fast News Reader candidate 1.10.152 (2026-10-24)
 
-- **Candidate:** `1.10.151` / versionCode `167`; isolated branch `rebuild/reader-only-from-stable-142-20261023`.
-- **Source baseline:** exact NM7 Mobile 1.10.142 source commit `4fc8b187db7e48591e1bcb11969436a56d27d06a`; no changes promoted to stable.
-- **Code SHA built:** [`945c6a73c9a52b52b367cb6a1e15bdf01c036b6d`](https://github.com/cnktvpc/NM7-IPTV/commit/945c6a73c9a52b52b367cb6a1e15bdf01c036b6d).
-- **GitHub Actions:** [run 40066396996 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/40066396996). Reader-focused unit tests, APK build, full Mobile unit-test suite, and artifact upload all succeeded.
-- **APK artifact:** [NM7-IPTV-Mobile-1.10.151-NEWS-SOURCES](https://github.com/cnktvpc/NM7-IPTV/actions/runs/40066396996/artifacts/12549890920), artifact ID `12549890920`, 44,029,080 bytes, expires 2026-11-23. SHA-256 archive digest: `a920fabb0fa924743f113ed6550a0bf92dc362463e966ca9a46360566275af69`.
-- **Thể Thao 247 recovery:** diagnosed a single-feed dependency (`bong-da.rss`) and generic homepage fallback. The reader retries official alternate football feeds, routes to publisher category pages, combines unique articles, adds sports/football categories, uses broader article-link selectors, and shortens timeouts for this host.
-- **News catalog expansion:** added Znews, GameK, Tuổi Trẻ Cười, Emdep, Mực Tím, Sức khỏe & Đời sống — the six sources shown in the supplied SuperOK comparison video — plus VietNamNet, VietnamPlus, and VOV. GameK and Sức khỏe & Đời sống have multiple official RSS categories; homepage-only providers use HTML fallback.
-- **Manual acceptance remains:** the APK built and CI passed, but I cannot claim real-device playback of the publisher feed from CI alone. Please install and verify Thể Thao 247 → Bóng đá and the added source/category tabs on the device.
-- **Stable protected:** `stable/mobile-1.10.142` remains at SHA `7500feb0a2755148e1a40ca12a1037380253bc46`; candidate not merged/promoted.
+- **Candidate:** `1.10.152` / versionCode `168`; isolated branch `rebuild/reader-only-from-stable-142-20261023`.
+- **Source baseline:** NM7 Mobile 1.10.142 commit `4fc8b187db7e48591e1bcb11969436a56d27d06a`.
+- **Root cause found in the latest user video:** every Thể Thao 247 tab failed, not just football. Several source URLs in the app used the wrong RSS category paths, and direct RSS/HTML requests from the app's network route fail. Separately, background prefetch used the same three-thread executor as the selected feed and thumbnails; generic fallback also tried to parse an RSS URL as HTML, adding a redundant long timeout.
+- **Fix:** a dedicated Cloudflare Worker gateway fetches official RSS and category HTML concurrently, normalizes HTML to RSS when needed, falls back to an RSS mirror for football categories, and caches successful responses at the edge for 5 minutes. The app uses this gateway first and retains only one short direct-RSS fallback.
+- **Speed:** removed competing adjacent-category prefetch, separated feed/article requests from thumbnails and plugins, cancels stale feed tasks when changing categories, bounded RSS/HTML timeouts, and prevents RSS URLs being retried as HTML. Article extraction timeout is capped at 8.5 seconds.
+- **Worker:** [health endpoint](https://nm7-news-reader-api.phuongnm7-iptv.workers.dev/health), [football feed](https://nm7-news-reader-api.phuongnm7-iptv.workers.dev/rss/football), versioned source: `workers/nm7-news-reader-api/worker.js`.
+- **CI gate:** new workflow performs an actual HTTP health check and validates RSS XML/items from the deployed Worker before building the APK.
+- **Latest candidate:** [build workflow](https://github.com/cnktvpc/NM7-IPTV/actions/workflows/nm7-mobile-reader-only-v149.yml?query=branch%3Arebuild%2Freader-only-from-stable-142-20261023). APK link/digest will be recorded after the new build finishes.
+- **Stable protected:** `stable/mobile-1.10.142` remains unchanged; candidate not merged/promoted.
 
 ## Relevant links
 
 - [Feature branch](https://github.com/cnktvpc/NM7-IPTV/tree/rebuild/reader-only-from-stable-142-20261023)
-- [Latest build and test run](https://github.com/cnktvpc/NM7-IPTV/actions/runs/40066396996)
-- [APK artifact download](https://github.com/cnktvpc/NM7-IPTV/actions/runs/40066396996/artifacts/12549890920)
-- [Source: Thể Thao 247 official RSS index](https://thethao247.vn/rss.html)
-- [Source: GameK official RSS index](https://gamek.vn/rss.chn)
-- [Source: Sức khỏe & Đời sống official RSS index](https://suckhoedoisong.vn/page-rss.htm)
+- [Official Thể Thao 247 RSS index](https://thethao247.vn/rss.html)
+- [Latest build workflow](https://github.com/cnktvpc/NM7-IPTV/actions/workflows/nm7-mobile-reader-only-v149.yml?query=branch%3Arebuild%2Freader-only-from-stable-142-20261023)
 ---
 
 # NM7 IPTV Mobile 1.10.149 — IPTV/Reader return fix on verified 1.10.142 baseline

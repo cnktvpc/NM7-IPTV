@@ -18,6 +18,10 @@ final class ReaderFeedCategoryRouter {
                 case "Bóng đá quốc tế": return "https://thethao247.vn/bong-da-quoc-te-c2/";
                 case "Ngoại hạng Anh": return "https://thethao247.vn/ngoai-hang-anh-c8/";
                 case "World Cup 2026": return "https://thethao247.vn/world-cup";
+                case "V-League": return "https://thethao247.vn/v-league-c15/";
+                case "Đội tuyển Quốc gia": return "https://thethao247.vn/bong-da-viet-nam-c1/";
+                case "Nhận định bóng đá": return "https://thethao247.vn/nhan-dinh-bong-da/";
+                case "Chuyển nhượng": return "https://thethao247.vn/chuyen-nhuong/";
                 case "Bóng đá Tây Ban Nha - La Liga": return "https://thethao247.vn/bong-da-tay-ban-nha-la-liga-c9/";
                 case "Cúp C1": return "https://thethao247.vn/cup-c1-c13/";
                 case "Cúp C2 Europa League": return "https://thethao247.vn/cup-c2-europa-league-c75/";
@@ -61,6 +65,36 @@ final class ReaderFeedCategoryRouter {
             case "Cười 24h": return "https://www.24h.com.vn/cuoi24h/";
             default: return "";
         }
+    }
+
+    static String proxyFeedUrl(String sourceId, String category) {
+        if (!"thethao247".equals(sourceId) || category == null) return "";
+        String slug;
+        switch (category) {
+            case "Trang chủ": slug = "home"; break;
+            case "Thể thao": slug = "sports"; break;
+            case "Bóng đá": slug = "football"; break;
+            case "Bóng đá Việt Nam": slug = "vietnam"; break;
+            case "V-League": slug = "vleague"; break;
+            case "Đội tuyển Quốc gia": slug = "national"; break;
+            case "Bóng đá quốc tế": slug = "international"; break;
+            case "Ngoại hạng Anh": slug = "epl"; break;
+            case "World Cup 2026": slug = "worldcup"; break;
+            case "Bóng đá Tây Ban Nha - La Liga": slug = "laliga"; break;
+            case "Cúp C1": slug = "ucl"; break;
+            case "Cúp C2 Europa League": slug = "uel"; break;
+            case "Bóng đá Đức": slug = "bundesliga"; break;
+            case "Nhận định bóng đá": slug = "prediction"; break;
+            case "Chuyển nhượng": slug = "transfer"; break;
+            case "Tennis - Quần vợt": slug = "tennis"; break;
+            case "Golf": slug = "golf"; break;
+            case "Bóng rổ": slug = "basketball"; break;
+            case "Cầu lông": slug = "badminton"; break;
+            case "Bóng chuyền": slug = "volleyball"; break;
+            case "Võ thuật": slug = "martial"; break;
+            default: return "";
+        }
+        return "https://nm7-news-reader-api.phuongnm7-iptv.workers.dev/rss/" + slug;
     }
 
     static boolean matchesArticle(String sourceId, String category, String articleUrl) {

@@ -74,6 +74,21 @@ public class ReaderFeedCategoryRouterTest {
                 ReaderFeedCategoryRouter.htmlPageUrl("thethao247", "Thể thao", "https://thethao247.vn/"));
     }
 
+    @Test public void theThao247GatewayRoutesEveryOfficialCategory() {
+        assertEquals("https://nm7-news-reader-api.phuongnm7-iptv.workers.dev/rss/home",
+                ReaderFeedCategoryRouter.proxyFeedUrl("thethao247", "Trang chủ"));
+        assertEquals("https://nm7-news-reader-api.phuongnm7-iptv.workers.dev/rss/football",
+                ReaderFeedCategoryRouter.proxyFeedUrl("thethao247", "Bóng đá"));
+        assertEquals("https://nm7-news-reader-api.phuongnm7-iptv.workers.dev/rss/vietnam",
+                ReaderFeedCategoryRouter.proxyFeedUrl("thethao247", "Bóng đá Việt Nam"));
+        assertEquals("https://nm7-news-reader-api.phuongnm7-iptv.workers.dev/rss/epl",
+                ReaderFeedCategoryRouter.proxyFeedUrl("thethao247", "Ngoại hạng Anh"));
+        assertEquals("https://nm7-news-reader-api.phuongnm7-iptv.workers.dev/rss/prediction",
+                ReaderFeedCategoryRouter.proxyFeedUrl("thethao247", "Nhận định bóng đá"));
+        assertEquals("", ReaderFeedCategoryRouter.proxyFeedUrl("dantri", "Thể thao"));
+        assertEquals("", ReaderFeedCategoryRouter.proxyFeedUrl("thethao247", "Unknown"));
+    }
+
     @Test public void categoryRouterLeavesOtherPublishersUnchanged() {
         assertEquals("https://vnexpress.net/the-thao",
                 ReaderFeedCategoryRouter.htmlPageUrl("vnexpress", "Thể thao", "https://vnexpress.net/the-thao"));

@@ -1,27 +1,20 @@
-# TIẾN ĐỘ MỚI NHẤT — NM7 IPTV MOBILE 1.10.151 — NEWS SOURCE RECOVERY — CI SUCCESS — 2026-10-24
+# TIẾN ĐỘ MỚI NHẤT — NM7 IPTV MOBILE 1.10.152 — CACHED GATEWAY + FAST READER — 2026-10-24
 
-## Trạng thái cuối
-- **Nhánh thử nghiệm:** `rebuild/reader-only-from-stable-142-20261023`.
-- **Candidate:** 1.10.151 / versionCode 167, từ source baseline NM7 Mobile 1.10.142 commit `4fc8b187db7e48591e1bcb11969436a56d27d06a`.
-- **Code SHA đã build:** [`945c6a73c9a52b52b367cb6a1e15bdf01c036b6d`](https://github.com/cnktvpc/NM7-IPTV/commit/945c6a73c9a52b52b367cb6a1e15bdf01c036b6d).
-- **GitHub Actions:** [Run 40066396996 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/40066396996).
-- **APK:** [NM7-IPTV-Mobile-1.10.151-NEWS-SOURCES](https://github.com/cnktvpc/NM7-IPTV/actions/runs/40066396996/artifacts/12549890920), artifact ID `12549890920`, 44,029,080 bytes, hết hạn 2026-11-23. SHA-256 archive digest: `a920fabb0fa924743f113ed6550a0bf92dc362463e966ca9a46360566275af69`.
-- **Kiểm thử:** Reader-focused unit tests PASS; build Mobile APK PASS; full Mobile unit-test suite PASS; upload artifact PASS; không có bước lỗi trong lượt build cuối.
-- **Stable không đổi:** `stable/mobile-1.10.142` vẫn ở SHA `7500feb0a2755148e1a40ca12a1037380253bc46`; chưa merge/promote candidate.
-- **Lưu ý:** CI chứng minh mã biên dịch và test vượt qua; chưa thể thay thế kiểm tra trực tiếp trên điện thoại, nên cần xác nhận nguồn TT247 tải bài thực tế trên thiết bị.
+## Chẩn đoán gốc từ video mới
+- Video cho thấy **mọi tab Thể Thao 247** (Trang chủ, Thể thao, Bóng đá và Bóng đá Việt Nam) đều báo lỗi. Đây không phải lỗi riêng một RSS.
+- Một số đường dẫn RSS trong catalog trước đây sai route. Các RSS hiện được trỏ theo mã danh mục chính thức: `bong-da-viet-nam-c1.rss`, `v-league-c15.rss`, `bong-da-quoc-te-c2.rss`, `ngoai-hang-anh-c8.rss`, v.v.
+- Luồng cũ xếp hai request prefetch cạnh nhau vào cùng pool mạng 3 luồng với request tab hiện tại và ảnh thumbnail; khi tab đổi liên tục, request quan trọng phải chờ.
+- Fallback cũ có thể thử tải lại URL `.rss` bằng parser HTML, thêm một lượt timeout 8–16 giây sau khi RSS thất bại. Thông báo lỗi cũng không cho biết mã HTTP/host cụ thể.
 
-## Phân tích lỗi Thể Thao 247
-- Video người dùng gửi cho thấy tab **Bóng đá** bị kẹt ở “Đang tải tin” rồi hiện nút thử lại.
-- Trước sửa, tab bóng đá chỉ thử `https://thethao247.vn/bong-da.rss`; fallback HTML có thể quay về trang chủ chung thay vì danh mục bóng đá.
-- Đối chiếu RSS index chính thức, nguồn có feed riêng cho Bóng đá Việt Nam, Bóng đá quốc tế, Ngoại hạng Anh, World Cup, La Liga, C1/C2, bóng đá Đức, Tennis, Golf, Bóng rổ, Cầu lông, Bóng chuyền và nhiều môn khác. Lần kiểm tra trực tuyến gặp HTTP 503 ở `bong-da.rss`; vì vậy không nên phụ thuộc duy nhất vào feed đó.
-- Candidate thử các RSS bóng đá thay thế rồi chuyển sang trang HTML chuyên mục chính thức; chống trùng bài, mở rộng selector link bài và rút ngắn timeout cho hostname này để tăng khả năng chuyển sang fallback.
-- Thêm các tab TT247: Bóng đá Việt Nam, V-League, Đội tuyển Quốc gia, Bóng đá quốc tế, Ngoại hạng Anh, World Cup 2026, La Liga, Cúp C1/C2, Bóng đá Đức, Nhận định, Chuyển nhượng, Tennis, Golf, Bóng rổ, Cầu lông, Bóng chuyền, Võ thuật.
-
-## Mở rộng nguồn báo như SuperOK
-- Bổ sung các nguồn có trong video: **Znews, GameK, Tuổi Trẻ Cười, Emdep, Mực Tím, Sức khỏe & Đời sống**; bổ sung thêm **VietNamNet, VietnamPlus, VOV**. Các nguồn ở trong danh mục nguồn báo để cài/bật từ “Quản lý nguồn đọc”.
-- GameK và Sức khỏe & Đời sống có RSS theo từng nhóm chủ đề; nguồn trang chủ dùng fallback HTML khi RSS không khai báo hoặc không trả nội dung.
-- Đã thêm test route cho TT247, verifier kiểm tra fallback/source catalog/version, đồng thời kiểm tra giữ nguyên chuỗi YouTube/SmartTube so với baseline.
-- **Build xong:** [CI run 40066396996](https://github.com/cnktvpc/NM7-IPTV/actions/runs/40066396996) — all required steps succeeded. [APK artifact](https://github.com/cnktvpc/NM7-IPTV/actions/runs/40066396996/artifacts/12549890920).
+## Candidate 1.10.152 / versionCode 168
+- Tạo Worker độc lập `nm7-news-reader-api`; mỗi tab TT247 có endpoint; Worker tải RSS chính thức và trang HTML danh mục song song, chuẩn hóa HTML thành RSS khi cần, thử RSS mirror cho một số tab bóng đá khi upstream lỗi, cache thành công ở edge 5 phút và trả header chẩn đoán.
+- Ứng dụng dùng gateway trước, chỉ dùng một lượt RSS trực tiếp ngắn làm dự phòng. Đã thêm test URL routing.
+- Gỡ prefetch hai tab khỏi luồng tải; tách executor feed/bài báo khỏi executor thumbnail/plugin; hủy feed task cũ khi người dùng đổi danh mục/nguồn.
+- Giảm timeout HTML/RSS, không thử RSS-as-HTML; thêm thông báo lỗi có mã HTTP/hostname cho phản hồi HTTP không thành công; giới hạn tải nội dung bài xuống 8.5 giây.
+- Đưa source Worker vào `workers/nm7-news-reader-api/worker.js` để mã đã deploy có thể được review/rebuild.
+- CI bắt buộc kiểm tra endpoint `/health` và kiểm tra response `/rss/football` có RSS XML và ít nhất một item trước build APK.
+- **Build đang chờ CI:** nếu kiểm tra Worker thất bại thì phải sửa gateway/test, không được bỏ qua kiểm tra hoặc gửi APK cũ.
+- **Stable:** `stable/mobile-1.10.142` không đổi, chưa merge candidate.
 
 
 ## Thay đổi cho vuốt/chuyển tab

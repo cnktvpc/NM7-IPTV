@@ -72,7 +72,7 @@ public final class ReaderArticleExtractor {
                 .header("Accept-Language", "vi-VN,vi;q=0.9,en;q=0.5")
                 .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
                 .referrer("https://www.google.com/")
-                .timeout(16000)
+                .timeout(8500)
                 .maxBodySize(6 * 1024 * 1024)
                 .followRedirects(true)
                 .get();

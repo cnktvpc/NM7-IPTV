@@ -66,6 +66,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -97,6 +98,9 @@ public final class NewsReaderActivity extends Activity {
     private static final Pattern SPACE = Pattern.compile("\\s+");
     private final Handler main = new Handler(Looper.getMainLooper());
     private final ExecutorService io = Executors.newFixedThreadPool(3);
+    // Feed/article requests must not queue behind thumbnail downloads or background work.
+    private final ExecutorService feedIo = Executors.newFixedThreadPool(3);
+    private Future<?> activeFeedTask;
     private final List<Article> articles = new ArrayList<>();
     // Keep feed results per source/category for the lifetime of this Activity so swiping
     // back to a visited category is instant and does not trigger another network load.
@@ -107,7 +111,6 @@ public final class NewsReaderActivity extends Activity {
     // Small LRU of downsampled list thumbnails keeps pager caching from retaining full-size images.
     private final LinkedHashMap<String, Bitmap> thumbnailCache = new LinkedHashMap<>(48, 0.75f, true);
     private static final int MAX_READER_THUMBNAILS = 40;
-    private final Set<String> prefetchedFeeds = new HashSet<>();
     private final Map<String, Integer> feedScrollPositions = new HashMap<>();
     private final Set<String> pluginCategoriesLoading = new HashSet<>();
     private LinearLayout root;
@@ -166,27 +169,27 @@ public final class NewsReaderActivity extends Activity {
                             "Star", "https://kenh14.vn/rss/star.rss",
                             "Sao Việt", "https://kenh14.vn/rss/star/sao-viet.rss",
                             "Đời sống", "https://kenh14.vn/rss/doisong.rss")),
-            makeSource("thethao247", "Thể Thao 247", "Tin bóng đá và thể thao · nhiều RSS dự phòng", "thethao247.vn",
+            makeSource("thethao247", "Thể Thao 247", "Tin bóng đá và thể thao · RSS chính thức qua gateway cache", "thethao247.vn",
                     cats("Trang chủ", "https://thethao247.vn/trang-chu.rss",
                             "Thể thao", "https://thethao247.vn/the-thao-c5.rss",
                             "Bóng đá", "https://thethao247.vn/bong-da.rss",
-                            "Bóng đá Việt Nam", "https://thethao247.vn/bong-da-viet-nam.rss",
-                            "V-League", "https://thethao247.vn/v-league.rss",
-                            "Đội tuyển Quốc gia", "https://thethao247.vn/doi-tuyen-quoc-gia.rss",
-                            "Bóng đá quốc tế", "https://thethao247.vn/bong-da-quoc-te.rss",
-                            "Ngoại hạng Anh", "https://thethao247.vn/ngoai-hang-anh.rss",
-                            "World Cup 2026", "https://thethao247.vn/world-cup-2026.rss",
-                            "Bóng đá Tây Ban Nha - La Liga", "https://thethao247.vn/bong-da-tay-ban-nha-la-liga.rss",
-                            "Cúp C1", "https://thethao247.vn/cup-c1.rss",
-                            "Cúp C2 Europa League", "https://thethao247.vn/cup-c2-europa-league.rss",
-                            "Bóng đá Đức", "https://thethao247.vn/bong-da-duc.rss",
+                            "Bóng đá Việt Nam", "https://thethao247.vn/bong-da-viet-nam-c1.rss",
+                            "V-League", "https://thethao247.vn/v-league-c15.rss",
+                            "Đội tuyển Quốc gia", "https://thethao247.vn/tuyen-quoc-gia-vn-c19.rss",
+                            "Bóng đá quốc tế", "https://thethao247.vn/bong-da-quoc-te-c2.rss",
+                            "Ngoại hạng Anh", "https://thethao247.vn/ngoai-hang-anh-c8.rss",
+                            "World Cup 2026", "https://thethao247.vn/world-cup.rss",
+                            "Bóng đá Tây Ban Nha - La Liga", "https://thethao247.vn/bong-da-tay-ban-nha-la-liga-c9.rss",
+                            "Cúp C1", "https://thethao247.vn/cup-c1-c13.rss",
+                            "Cúp C2 Europa League", "https://thethao247.vn/cup-c2-europa-league-c75.rss",
+                            "Bóng đá Đức", "https://thethao247.vn/bong-da-duc-c11.rss",
                             "Nhận định bóng đá", "https://thethao247.vn/nhan-dinh-bong-da.rss",
                             "Chuyển nhượng", "https://thethao247.vn/chuyen-nhuong.rss",
                             "Tennis - Quần vợt", "https://thethao247.vn/quan-vot-tennis-c4.rss",
-                            "Golf", "https://thethao247.vn/golf.rss",
-                            "Bóng rổ", "https://thethao247.vn/bong-ro.rss",
-                            "Cầu lông", "https://thethao247.vn/cau-long.rss",
-                            "Bóng chuyền", "https://thethao247.vn/bong-chuyen.rss",
+                            "Golf", "https://thethao247.vn/golf-c42.rss",
+                            "Bóng rổ", "https://thethao247.vn/bong-ro-c43.rss",
+                            "Cầu lông", "https://thethao247.vn/cau-long-c44.rss",
+                            "Bóng chuyền", "https://thethao247.vn/bong-chuyen-c45.rss",
                             "Võ thuật", "https://thethao247.vn/vo-thuat.rss")),
             makeSource("dantri", "Dân Trí", "Tin tức Việt Nam và quốc tế", "dantri.com.vn",
                     cats("Trang chủ", "https://dantri.com.vn/rss/home.rss",
@@ -555,34 +558,9 @@ public final class NewsReaderActivity extends Activity {
         return true;
     }
 
-    private void prefetchAdjacentFeeds(Source source, String activeCategory) {
-        if (source == null || source.jsPlugin || source.categories.size() < 2) return;
-        List<String> names = new ArrayList<>(source.categories.keySet());
-        int index = names.indexOf(activeCategory);
-        if (index < 0) return;
-        for (int offset : new int[]{-1, 1}) {
-            String category = names.get((index + offset + names.size()) % names.size());
-            String url = source.categories.get(category);
-            if (TextUtils.isEmpty(url)) continue;
-            String key = feedCacheKey(source.id, url, category);
-            List<Article> cached = feedCache.get(key);
-            if ((cached != null && !cached.isEmpty()) || !prefetchedFeeds.add(key)) continue;
-            io.execute(() -> {
-                List<Article> loaded = Collections.emptyList();
-                try { loaded = loadArticlesWithFallback(source, url, category); }
-                catch (Exception ignored) { }
-                final List<Article> completed = loaded == null
-                        ? Collections.emptyList() : new ArrayList<>(loaded);
-                main.post(() -> {
-                    prefetchedFeeds.remove(key);
-                    if (!completed.isEmpty()) feedCache.put(key, completed);
-                });
-            });
-        }
-    }
-
     private void navigateToCategory(String name) {
         if (name.equals(categoryName)) return;
+        if (activeFeedTask != null && !activeFeedTask.isDone()) activeFeedTask.cancel(true);
         rememberFeedScrollPosition();
         // Invalidate any request for the page being left before taking a cached-page fast path.
         ++requestToken;
@@ -858,6 +836,7 @@ public final class NewsReaderActivity extends Activity {
         final String selectedCategory = categoryName;
         final Source selectedSource = source;
         final String cacheKey = feedCacheKey(source.id, feedUrl, selectedCategory);
+        if (activeFeedTask != null && !activeFeedTask.isDone()) activeFeedTask.cancel(true);
         final int token = ++requestToken;
         if (!forceRefresh) {
             List<Article> cached = feedCache.get(cacheKey);
@@ -870,16 +849,13 @@ public final class NewsReaderActivity extends Activity {
                 } else {
                     restoreFeedScrollPosition();
                 }
-                // Carry prefetch forward even when this category was already in the data cache,
-                // so fast swiping can keep the next pages warm without making a new request.
-                prefetchAdjacentFeeds(source, selectedCategory);
                 return;
             }
         }
         boolean hasVisibleRows = currentFeedPage != null && currentFeedPage.rendered
                 && !currentFeedPage.items.isEmpty();
         if (!hasVisibleRows) showLoading("Đang tải tin từ " + source.name + "…");
-        io.execute(() -> {
+        activeFeedTask = feedIo.submit(() -> {
             List<Article> loaded = Collections.emptyList();
             String error = null;
             try {
@@ -915,7 +891,6 @@ public final class NewsReaderActivity extends Activity {
                 articles.addAll(result);
                 renderArticleRows();
                 restoreFeedScrollPosition();
-                prefetchAdjacentFeeds(selectedSource, selectedCategory);
             });
         });
     }
@@ -1151,7 +1126,7 @@ public final class NewsReaderActivity extends Activity {
                 ? getSource(sourceId).name : currentArticleSource;
         final int scale = textScale;
         final List<ReaderArticleExtractor.RelatedArticle> related = collectRelatedArticles(url);
-        io.execute(() -> {
+        feedIo.execute(() -> {
             String html;
             try {
                 html = ReaderArticleExtractor.fetchAndRender(url, articleTitle, articleSummary,
@@ -1277,6 +1252,7 @@ public final class NewsReaderActivity extends Activity {
         new AlertDialog.Builder(this).setTitle("Chọn nguồn đọc")
                 .setItems(labels, (dialog, which) -> {
                     rememberFeedScrollPosition();
+                    if (activeFeedTask != null && !activeFeedTask.isDone()) activeFeedTask.cancel(true);
                     sourceId = choices.get(which).id;
                     categoryName = choices.get(which).categories.keySet().iterator().next();
                     searchQuery = "";
@@ -1902,50 +1878,32 @@ public final class NewsReaderActivity extends Activity {
     }
 
     /**
-     * Thể Thao 247 sometimes returns 503 for an individual RSS endpoint even while its
-     * category HTML pages are available. Try the publisher's official alternate football
-     * feeds, then scrape the matching official category pages instead of failing the tab.
+     * The publisher rejects direct requests on some Android network paths. Prefer the
+     * Cloudflare RSS gateway (edge-cached and normalized from RSS/HTML), then try one
+     * short direct RSS request as a last resort. Do not fan out serially to many URLs.
      */
     private List<Article> loadTheThao247Articles(Source source, String feedUrl, String category) throws Exception {
-        LinkedHashMap<String, Article> accumulated = new LinkedHashMap<>();
-        List<String> feeds = new ArrayList<>();
-        if (isWebUrl(feedUrl)) feeds.add(feedUrl);
-        if ("Bóng đá".equals(category)) {
-            feeds.add("https://thethao247.vn/bong-da-viet-nam.rss");
-            feeds.add("https://thethao247.vn/bong-da-quoc-te.rss");
-        } else if ("Thể thao".equals(category)) {
-            feeds.add("https://thethao247.vn/the-thao-24h.rss");
-        }
-        Exception lastFailure = null;
-        Set<String> attemptedFeeds = new HashSet<>();
-        for (String url : feeds) {
-            if (!attemptedFeeds.add(url.toLowerCase(Locale.ROOT))) continue;
+        Exception gatewayFailure = null;
+        String gatewayUrl = ReaderFeedCategoryRouter.proxyFeedUrl(source.id, category);
+        if (isWebUrl(gatewayUrl)) {
             try {
-                for (Article article : parseFeed(url, source.name)) addUniqueArticle(accumulated, article);
+                List<Article> gatewayArticles = parseFeed(gatewayUrl, source.name);
+                if (!gatewayArticles.isEmpty()) return gatewayArticles;
+                gatewayFailure = new java.io.IOException("News gateway returned an empty feed");
             } catch (Exception e) {
-                lastFailure = e;
+                gatewayFailure = e;
             }
         }
 
-        // Even a partial RSS result should be enriched from the live category listing,
-        // as some of these feeds return only a few items or a transient HTML error.
-        List<String> pages = new ArrayList<>();
-        String primaryPage = ReaderFeedCategoryRouter.htmlPageUrl(source.id, category, source.homeUrl());
-        if (isWebUrl(primaryPage)) pages.add(primaryPage);
-        if ("Bóng đá".equals(category)) pages.add("https://thethao247.vn/bong-da-viet-nam-c1/");
-        for (String page : pages) {
+        if (isWebUrl(feedUrl)) {
             try {
-                for (Article article : parseHtmlFeed(page, source)) addUniqueArticle(accumulated, article);
-            } catch (Exception e) {
-                if (lastFailure == null) lastFailure = e;
-            }
-            // Preserve a fast response when the first official source already gave a complete list.
-            if (accumulated.size() >= 12 && !"Bóng đá".equals(category)) break;
+                List<Article> direct = parseFeed(feedUrl, source.name);
+                if (!direct.isEmpty()) return direct;
+            } catch (Exception ignored) { }
         }
-        if (!accumulated.isEmpty()) return new ArrayList<>(accumulated.values());
-        if (lastFailure != null) {
-            throw new java.io.IOException("Thể Thao 247: RSS và trang chuyên mục đều tạm thời không truy cập được: "
-                    + safeError(lastFailure), lastFailure);
+        if (gatewayFailure != null) {
+            throw new java.io.IOException("Không tải được Thể Thao 247 qua gateway RSS đã cache hoặc RSS chính thức: "
+                    + safeError(gatewayFailure), gatewayFailure);
         }
         return Collections.emptyList();
     }
@@ -1990,7 +1948,7 @@ public final class NewsReaderActivity extends Activity {
 
         // This final fallback remains for existing sources, but for 24h it is also
         // filtered by route, so an RSS URL can never turn into a generic homepage list.
-        if (isWebUrl(feedUrl) && !feedUrl.equals(pageUrl)) {
+        if (isWebUrl(feedUrl) && !feedUrl.equals(pageUrl) && !isFeedUrl(feedUrl)) {
             try {
                 List<Article> feedPage = filterArticlesForCategory(source, category, parseHtmlFeed(feedUrl, source));
                 if (!feedPage.isEmpty()) return strict24hCategory
@@ -2109,7 +2067,7 @@ public final class NewsReaderActivity extends Activity {
                 .header("Accept-Language", "vi-VN,vi;q=0.9,en;q=0.5")
                 .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
                 .header("Cache-Control", "no-cache")
-                .timeout(isThietThao247Page ? 10000 : 16000)
+                .timeout(isThietThao247Page ? 5500 : 8000)
                 .maxBodySize(6 * 1024 * 1024)
                 .followRedirects(true)
                 .get();
@@ -2295,6 +2253,12 @@ public final class NewsReaderActivity extends Activity {
         return "";
     }
 
+    private static boolean isFeedUrl(String url) {
+        if (TextUtils.isEmpty(url)) return false;
+        String value = url.toLowerCase(Locale.ROOT);
+        return value.matches(".*\\.(rss|atom|xml)(?:[?#].*)?$") || value.contains("/rss/");
+    }
+
     private static List<Article> parseFeed(String feedUrl, String sourceName) throws Exception {
         HttpURLConnection conn = null;
         List<Article> result = new ArrayList<>();
@@ -2302,12 +2266,18 @@ public final class NewsReaderActivity extends Activity {
             conn = (HttpURLConnection) new URL(feedUrl).openConnection();
             boolean isThietThao247Feed = feedUrl != null
                     && feedUrl.toLowerCase(Locale.ROOT).contains("thethao247.vn");
-            conn.setConnectTimeout(isThietThao247Feed ? 6000 : 10000);
-            conn.setReadTimeout(isThietThao247Feed ? 8000 : 12000);
+            boolean isReaderGateway = feedUrl != null
+                    && feedUrl.toLowerCase(Locale.ROOT).contains("nm7-news-reader-api.phuongnm7-iptv.workers.dev");
+            conn.setConnectTimeout(isReaderGateway ? 4000 : isThietThao247Feed ? 3200 : 5500);
+            conn.setReadTimeout(isReaderGateway ? 8000 : isThietThao247Feed ? 4500 : 7500);
             conn.setInstanceFollowRedirects(true);
             conn.setRequestProperty("User-Agent", userAgent());
             conn.setRequestProperty("Accept", "application/rss+xml, application/atom+xml, application/xml, text/xml, */*");
             conn.setRequestProperty("Accept-Language", "vi-VN,vi;q=0.9,en;q=0.5");
+            int responseCode = conn.getResponseCode();
+            if (responseCode < 200 || responseCode >= 300) {
+                throw new java.io.IOException("HTTP " + responseCode + " from " + new URL(feedUrl).getHost());
+            }
             try (InputStream input = conn.getInputStream()) {
                 XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
                 factory.setNamespaceAware(true);
@@ -2487,6 +2457,8 @@ public final class NewsReaderActivity extends Activity {
     @Override protected void onDestroy() {
         ++requestToken;
         closeArticleWebView();
+        if (activeFeedTask != null) activeFeedTask.cancel(true);
+        feedIo.shutdownNow();
         io.shutdownNow();
         super.onDestroy();
     }

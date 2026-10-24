@@ -11,8 +11,8 @@ tabs = read("app/src/main/java/vn/phuong/iptvplayer/HomeTabBar.java")
 manifest = read("app/src/main/AndroidManifest.xml")
 reader = read("app/src/main/java/vn/phuong/iptvplayer/NewsReaderActivity.java")
 checks = [
-    ("version is 1.10.151/code 167",
-     'versionName = "1.10.151"' in gradle and "versionCode = 167" in gradle),
+    ("version is 1.10.152/code 168",
+     'versionName = "1.10.152"' in gradle and "versionCode = 168" in gradle),
     ("Reader is selectable from the shared bottom navigation",
      "attachReader" in tabs and "R.drawable.nm7_nav_news" in tabs and "openNews(activity)" in tabs),
     ("original 4fc IPTV handoff method remains", 
@@ -35,8 +35,18 @@ checks = [
      "prepareSwipePreview(direction, this)" in reader and
      "stepCategoryBySwipe(direction, this, preview)" in reader and
      "updateCategorySelection()" in reader),
-    ("Adjacent categories are prefetched without rebuilding the visible page",
-     "prefetchAdjacentFeeds" in reader and "prefetchedFeeds" in reader),
+    ("Selected feed requests are isolated from thumbnail work and background prefetch is removed",
+     "feedIo = Executors.newFixedThreadPool(3)" in reader and "feedIo.submit(() -> {" in reader and
+     "prefetchAdjacentFeeds(" not in reader and "prefetchedFeeds" not in reader and
+     "activeFeedTask.cancel(true)" in reader),
+    ("RSS XML is never fetched again as an HTML page on generic fallback",
+     "isFeedUrl(feedUrl)" in reader and "!isFeedUrl(feedUrl)" in reader),
+    ("Thể Thao 247 uses its cached news gateway before direct RSS fallback",
+     "ReaderFeedCategoryRouter.proxyFeedUrl(source.id, category)" in reader and
+     "nm7-news-reader-api.phuongnm7-iptv.workers.dev" in reader),
+    ("Thể Thao 247 catalog uses official RSS category IDs",
+     "bong-da-viet-nam-c1.rss" in reader and "v-league-c15.rss" in reader and
+     "bong-da-quoc-te-c2.rss" in reader and "ngoai-hang-anh-c8.rss" in reader),
     ("Thumbnails are sampled to display size and held in a bounded cache",
      "thumbnailCache" in reader and "MAX_READER_THUMBNAILS" in reader and
      "inSampleSize = calculateThumbnailSampleSize" in reader),
@@ -55,6 +65,8 @@ checks = [
      "player.getPlaybackState() != Player.STATE_IDLE" in Path("app/src/main/java/vn/phuong/iptvplayer/MobileInlinePlayerProviderV2.java").read_text()),
     ("built-in news providers and RSS/HTML fallback exist",
      'makeSource("vnexpress"' in reader and "loadArticlesWithFallback" in reader and "parseHtmlFeed" in reader),
+    ("Article extraction has a bounded request timeout",
+     ".timeout(8500)" in read("app/src/main/java/vn/phuong/iptvplayer/ReaderArticleExtractor.java")),
     ("Thể Thao 247 retries alternate feeds and falls back to official HTML sections",
      "loadTheThao247Articles" in reader and "bong-da-viet-nam.rss" in reader and
      "bong-da-quoc-te.rss" in reader and "ReaderFeedCategoryRouter.htmlPageUrl(id, category, source.homeUrl())" in reader and
