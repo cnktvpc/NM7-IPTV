@@ -67,10 +67,10 @@ checks = [
      'makeSource("vnexpress"' in reader and "loadArticlesWithFallback" in reader and "parseHtmlFeed" in reader),
     ("Article extraction has a bounded request timeout",
      ".timeout(8500)" in read("app/src/main/java/vn/phuong/iptvplayer/ReaderArticleExtractor.java")),
-    ("Thể Thao 247 retries alternate feeds and falls back to official HTML sections",
-     "loadTheThao247Articles" in reader and "bong-da-viet-nam.rss" in reader and
-     "bong-da-quoc-te.rss" in reader and "ReaderFeedCategoryRouter.htmlPageUrl(id, category, source.homeUrl())" in reader and
-     ".article-title a[href]" in reader),
+    ("Thể Thao 247 uses the cached gateway first and a short direct RSS fallback",
+     "loadTheThao247Articles" in reader and "ReaderFeedCategoryRouter.proxyFeedUrl(source.id, category)" in reader and
+     "bong-da-viet-nam-c1.rss" in reader and "bong-da-quoc-te-c2.rss" in reader and
+     "isReaderGateway ? 4000" in reader),
     ("SuperOK-style news providers are available in the catalog",
      all(('makeSource("' + source_id + '"') in reader for source_id in
           ("znews", "gamek", "tuoitrecuoi", "emdep", "muctim", "suckhoedoisong", "vietnamnet", "vietnamplus", "vov"))),
