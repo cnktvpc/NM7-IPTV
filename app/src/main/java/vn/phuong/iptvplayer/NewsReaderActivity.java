@@ -592,14 +592,16 @@ public final class NewsReaderActivity extends Activity {
         @Override public boolean onInterceptTouchEvent(MotionEvent event) {
             switch (event.getActionMasked()) {
                 case MotionEvent.ACTION_DOWN:
-                    downX = event.getX();
-                    downY = event.getY();
+                    // Use screen coordinates because this view itself is translated during a
+                    // swipe; local coordinates would be transformed by the changing translation.
+                    downX = event.getRawX();
+                    downY = event.getRawY();
                     downTime = event.getEventTime();
                     horizontalSwipe = false;
                     break;
                 case MotionEvent.ACTION_MOVE:
-                    float dx = event.getX() - downX;
-                    float dy = event.getY() - downY;
+                    float dx = event.getRawX() - downX;
+                    float dy = event.getRawY() - downY;
                     if (Math.abs(dx) >= dp(20) && Math.abs(dx) > Math.abs(dy) * 1.15f) {
                         horizontalSwipe = true;
                         return true;
@@ -617,7 +619,7 @@ public final class NewsReaderActivity extends Activity {
             final int action = event.getActionMasked();
             if (horizontalSwipe) {
                 if (action == MotionEvent.ACTION_MOVE) {
-                    float dx = event.getX() - downX;
+                    float dx = event.getRawX() - downX;
                     float width = Math.max(1, getWidth());
                     float followX = Math.max(-width * 0.82f, Math.min(width * 0.82f, dx * 0.82f));
                     setTranslationX(followX);
@@ -625,7 +627,7 @@ public final class NewsReaderActivity extends Activity {
                     return true;
                 }
                 if (action == MotionEvent.ACTION_UP) {
-                    float dx = event.getX() - downX;
+                    float dx = event.getRawX() - downX;
                     long elapsed = Math.max(1L, event.getEventTime() - downTime);
                     float velocity = Math.abs(dx) * 1000f / elapsed;
                     float threshold = Math.max(dp(52), getWidth() * 0.16f);
@@ -704,6 +706,9 @@ public final class NewsReaderActivity extends Activity {
                 } else {
                     restoreFeedScrollPosition();
                 }
+                // Carry prefetch forward even when this category was already in the data cache,
+                // so fast swiping can keep the next pages warm without making a new request.
+                prefetchAdjacentFeeds(source, selectedCategory);
                 return;
             }
         }
