@@ -285,7 +285,7 @@ jobs:
           set -euxo pipefail
           for apk in app/build/outputs/apk/mobile/debug/*.apk; do
             echo "=== Signing certificate for $apk ==="
-            apksigner verify --print-certs "$apk"
+            "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$apk"
           done
 
       - name: Upload APK before running unit tests
