@@ -166,10 +166,28 @@ public final class NewsReaderActivity extends Activity {
                             "Star", "https://kenh14.vn/rss/star.rss",
                             "Sao Việt", "https://kenh14.vn/rss/star/sao-viet.rss",
                             "Đời sống", "https://kenh14.vn/rss/doisong.rss")),
-            makeSource("thethao247", "Thể Thao 247", "Tin thể thao và bóng đá", "thethao247.vn",
+            makeSource("thethao247", "Thể Thao 247", "Tin bóng đá và thể thao · nhiều RSS dự phòng", "thethao247.vn",
                     cats("Trang chủ", "https://thethao247.vn/trang-chu.rss",
                             "Thể thao", "https://thethao247.vn/the-thao-c5.rss",
-                            "Bóng đá", "https://thethao247.vn/bong-da.rss")),
+                            "Bóng đá", "https://thethao247.vn/bong-da.rss",
+                            "Bóng đá Việt Nam", "https://thethao247.vn/bong-da-viet-nam.rss",
+                            "V-League", "https://thethao247.vn/v-league.rss",
+                            "Đội tuyển Quốc gia", "https://thethao247.vn/doi-tuyen-quoc-gia.rss",
+                            "Bóng đá quốc tế", "https://thethao247.vn/bong-da-quoc-te.rss",
+                            "Ngoại hạng Anh", "https://thethao247.vn/ngoai-hang-anh.rss",
+                            "World Cup 2026", "https://thethao247.vn/world-cup-2026.rss",
+                            "Bóng đá Tây Ban Nha - La Liga", "https://thethao247.vn/bong-da-tay-ban-nha-la-liga.rss",
+                            "Cúp C1", "https://thethao247.vn/cup-c1.rss",
+                            "Cúp C2 Europa League", "https://thethao247.vn/cup-c2-europa-league.rss",
+                            "Bóng đá Đức", "https://thethao247.vn/bong-da-duc.rss",
+                            "Nhận định bóng đá", "https://thethao247.vn/nhan-dinh-bong-da.rss",
+                            "Chuyển nhượng", "https://thethao247.vn/chuyen-nhuong.rss",
+                            "Tennis - Quần vợt", "https://thethao247.vn/quan-vot-tennis-c4.rss",
+                            "Golf", "https://thethao247.vn/golf.rss",
+                            "Bóng rổ", "https://thethao247.vn/bong-ro.rss",
+                            "Cầu lông", "https://thethao247.vn/cau-long.rss",
+                            "Bóng chuyền", "https://thethao247.vn/bong-chuyen.rss",
+                            "Võ thuật", "https://thethao247.vn/vo-thuat.rss")),
             makeSource("dantri", "Dân Trí", "Tin tức Việt Nam và quốc tế", "dantri.com.vn",
                     cats("Trang chủ", "https://dantri.com.vn/rss/home.rss",
                             "Thời sự", "https://dantri.com.vn/rss/thoi-su.rss",
@@ -230,7 +248,38 @@ public final class NewsReaderActivity extends Activity {
                             "Công nghệ", "https://tinmoi.vn/rss/cong-nghe.rss")),
             makeSource("vtv", "VTV", "Tin tức từ Đài Truyền hình Việt Nam", "vtv.vn",
                     cats("Trang chủ", "https://vtv.vn/rss/trang-chu.rss",
-                            "Thời sự", "https://vtv.vn/rss/thoi-su.rss"))
+                            "Thời sự", "https://vtv.vn/rss/thoi-su.rss")),
+            // Additional newspaper catalog entries visible in SuperOK, available to install from News Sources.
+            makeSource("znews", "Znews", "Tin tức, thời sự, kinh doanh, thể thao", "znews.vn",
+                    cats("Trang chủ", "https://znews.vn/")),
+            makeSource("gamek", "GameK", "Game, esports, mobile và công nghệ giải trí", "gamek.vn",
+                    cats("Trang chủ", "https://gamek.vn/trang-chu.rss",
+                            "MMO", "https://gamek.vn/mmo.rss",
+                            "Thị trường", "https://gamek.vn/thi-truong.rss",
+                            "PC Console", "https://gamek.vn/pc-console.rss",
+                            "Esport", "https://gamek.vn/esport.rss",
+                            "Mobile", "https://gamek.vn/mobile-social.rss",
+                            "Gaming Gear", "https://gamek.vn/gaming-gear.rss",
+                            "Manga Film", "https://gamek.vn/manga-film.rss")),
+            makeSource("tuoitrecuoi", "Tuổi Trẻ Cười", "Tin vui, biếm họa và đời sống", "cuoi.tuoitre.vn",
+                    cats("Trang chủ", "https://cuoi.tuoitre.vn/")),
+            makeSource("emdep", "Emdep", "Gia đình, làm đẹp, ẩm thực và đời sống", "emdep.vn",
+                    cats("Trang chủ", "https://emdep.vn/")),
+            makeSource("muctim", "Mực Tím", "Tin tức giới trẻ và học đường", "muctim.tuoitre.vn",
+                    cats("Trang chủ", "https://muctim.tuoitre.vn/")),
+            makeSource("suckhoedoisong", "Sức khỏe & Đời sống", "Tin y tế và chăm sóc sức khỏe", "suckhoedoisong.vn",
+                    cats("Trang chủ", "https://suckhoedoisong.vn/rss",
+                            "Thời sự", "https://suckhoedoisong.vn/thoi-su.rss",
+                            "Y tế", "https://suckhoedoisong.vn/y-te.rss",
+                            "Khỏe - Đẹp", "https://suckhoedoisong.vn/khoe-dep.rss",
+                            "Đời sống", "https://suckhoedoisong.vn/doi-song.rss")),
+            makeSource("vietnamnet", "VietNamNet", "Tin tức trong nước và quốc tế", "vietnamnet.vn",
+                    cats("Trang chủ", "https://vietnamnet.vn/home.rss",
+                            "Thời sự", "https://vietnamnet.vn/rss/thoi-su.rss")),
+            makeSource("vietnamplus", "VietnamPlus", "Thông tấn xã Việt Nam", "vietnamplus.vn",
+                    cats("Trang chủ", "https://www.vietnamplus.vn/rss/home.rss")),
+            makeSource("vov", "VOV", "Đài Tiếng nói Việt Nam", "vov.vn",
+                    cats("Trang chủ", "https://vov.vn/"))
     ));
 
 
@@ -1852,8 +1901,62 @@ public final class NewsReaderActivity extends Activity {
         getPreferencesStore().edit().putStringSet(key, new HashSet<>(value)).apply();
     }
 
+    /**
+     * Thể Thao 247 sometimes returns 503 for an individual RSS endpoint even while its
+     * category HTML pages are available. Try the publisher's official alternate football
+     * feeds, then scrape the matching official category pages instead of failing the tab.
+     */
+    private List<Article> loadTheThao247Articles(Source source, String feedUrl, String category) throws Exception {
+        LinkedHashMap<String, Article> accumulated = new LinkedHashMap<>();
+        List<String> feeds = new ArrayList<>();
+        if (isWebUrl(feedUrl)) feeds.add(feedUrl);
+        if ("Bóng đá".equals(category)) {
+            feeds.add("https://thethao247.vn/bong-da-viet-nam.rss");
+            feeds.add("https://thethao247.vn/bong-da-quoc-te.rss");
+        } else if ("Thể thao".equals(category)) {
+            feeds.add("https://thethao247.vn/the-thao-24h.rss");
+        }
+        Exception lastFailure = null;
+        for (String url : feeds) {
+            if (containsIgnoreCase(feeds.subList(0, feeds.indexOf(url)), url)) continue;
+            try {
+                for (Article article : parseFeed(url, source.name)) addUniqueArticle(accumulated, article);
+            } catch (Exception e) {
+                lastFailure = e;
+            }
+        }
+
+        // Even a partial RSS result should be enriched from the live category listing,
+        // as some of these feeds return only a few items or a transient HTML error.
+        List<String> pages = new ArrayList<>();
+        String primaryPage = ReaderFeedCategoryRouter.htmlPageUrl(source.id, category, source.homeUrl());
+        if (isWebUrl(primaryPage)) pages.add(primaryPage);
+        if ("Bóng đá".equals(category)) pages.add("https://thethao247.vn/bong-da-viet-nam-c1/");
+        for (String page : pages) {
+            try {
+                for (Article article : parseHtmlFeed(page, source)) addUniqueArticle(accumulated, article);
+            } catch (Exception e) {
+                if (lastFailure == null) lastFailure = e;
+            }
+            // Preserve a fast response when the first official source already gave a complete list.
+            if (accumulated.size() >= 12) break;
+        }
+        if (!accumulated.isEmpty()) return new ArrayList<>(accumulated.values());
+        if (lastFailure != null) {
+            throw new java.io.IOException("Thể Thao 247: RSS và trang chuyên mục đều tạm thời không truy cập được: "
+                    + safeError(lastFailure), lastFailure);
+        }
+        return Collections.emptyList();
+    }
+
+    private static boolean containsIgnoreCase(List<String> values, String candidate) {
+        for (String value : values) if (value.equalsIgnoreCase(candidate)) return true;
+        return false;
+    }
+
     private List<Article> loadArticlesWithFallback(Source source, String feedUrl, String category) throws Exception {
         if (source.jsPlugin) return parsePluginNewsSource(source, category);
+        if ("thethao247".equals(source.id)) return loadTheThao247Articles(source, feedUrl, category);
 
         final boolean strict24hCategory = "24h".equals(source.id) && !"Trang chủ".equals(category);
         Exception rssFailure = null;
@@ -1942,9 +2045,8 @@ public final class NewsReaderActivity extends Activity {
         String id = source.id;
         if (source.jsPlugin) return source.homeUrl();
         if (source.customRss) return source.homeUrl();
-        if ("24h".equals(id)) {
-            // For a 24h tab with no specific fallback URL, return empty instead of
-            // silently parsing the homepage and showing unrelated headlines.
+        if ("24h".equals(id) || "thethao247".equals(id)) {
+            // Route failures to the selected official category instead of scraping an unrelated homepage.
             return ReaderFeedCategoryRouter.htmlPageUrl(id, category, source.homeUrl());
         }
 
@@ -2004,12 +2106,14 @@ public final class NewsReaderActivity extends Activity {
     }
 
     private static List<Article> parseHtmlFeed(String pageUrl, Source source) throws Exception {
+        boolean isThietThao247Page = pageUrl != null && pageUrl.toLowerCase(Locale.ROOT).contains("thethao247.vn");
         Document document = Jsoup.connect(pageUrl)
                 .userAgent(userAgent())
                 .referrer("https://www.google.com/")
                 .header("Accept-Language", "vi-VN,vi;q=0.9,en;q=0.5")
                 .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
-                .timeout(16000)
+                .header("Cache-Control", "no-cache")
+                .timeout(isThietThao247Page ? 10000 : 16000)
                 .maxBodySize(6 * 1024 * 1024)
                 .followRedirects(true)
                 .get();
