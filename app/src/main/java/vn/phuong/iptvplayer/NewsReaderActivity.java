@@ -543,11 +543,43 @@ public final class NewsReaderActivity extends Activity {
         loadFeed(false);
     }
 
-    private void stepCategoryBySwipe(int direction, FeedScrollView outgoingPage) {
+    private FeedPage prepareSwipePreview(int direction, FeedScrollView outgoingPage) {
+        Source source = getSource(sourceId);
+        List<String> names = new ArrayList<>(source.categories.keySet());
+        if (names.size() < 2) return null;
+        int current = names.indexOf(categoryName);
+        if (current < 0) current = 0;
+        int next = (current + direction + names.size()) % names.size();
+        FeedPage preview = obtainFeedPage(feedPageKey(sourceId, names.get(next)));
+        if (preview.scroll == outgoingPage) return null;
+        if (preview.scroll.getParent() instanceof ViewGroup) {
+            ((ViewGroup) preview.scroll.getParent()).removeView(preview.scroll);
+        }
+        // Place the neighbor underneath the current page. Both pages then follow the finger,
+        // so a swipe reveals real cached content rather than a blank background.
+        content.addView(preview.scroll, 0, new FrameLayout.LayoutParams(-1, -1));
+        float width = Math.max(1, content.getWidth());
+        preview.scroll.setTranslationX(direction > 0 ? width : -width);
+        preview.scroll.setAlpha(1f);
+        return preview;
+    }
+
+    private void discardSwipePreview(FeedPage preview) {
+        if (preview == null) return;
+        if (preview.scroll.getParent() instanceof ViewGroup) {
+            ((ViewGroup) preview.scroll.getParent()).removeView(preview.scroll);
+        }
+        preview.scroll.animate().cancel();
+        preview.scroll.setTranslationX(0f);
+        preview.scroll.setAlpha(1f);
+    }
+
+    private void stepCategoryBySwipe(int direction, FeedScrollView outgoingPage, FeedPage incomingPage) {
         rememberFeedScrollPosition();
         Source source = getSource(sourceId);
         List<String> names = new ArrayList<>(source.categories.keySet());
         if (names.size() < 2) {
+            discardSwipePreview(incomingPage);
             outgoingPage.setTranslationX(0f);
             outgoingPage.setAlpha(1f);
             return;
@@ -555,26 +587,47 @@ public final class NewsReaderActivity extends Activity {
         int current = names.indexOf(categoryName);
         if (current < 0) current = 0;
         int next = (current + direction + names.size()) % names.size();
-        if (next == current) return;
+        if (next == current) {
+            discardSwipePreview(incomingPage);
+            outgoingPage.setTranslationX(0f);
+            outgoingPage.setAlpha(1f);
+            return;
+        }
 
+        String nextCategory = names.get(next);
         if (outgoingPage.getParent() instanceof ViewGroup) {
             ((ViewGroup) outgoingPage.getParent()).removeView(outgoingPage);
         }
         outgoingPage.setTranslationX(0f);
         outgoingPage.setAlpha(1f);
-        categoryName = names.get(next);
+        categoryName = nextCategory;
         searchQuery = "";
         updateCategorySelection();
         scrollSelectedCategoryIntoView(categoryName);
-        showArticleList();
 
-        FeedPage incomingPage = currentFeedPage;
-        if (incomingPage != null) {
-            incomingPage.scroll.setTranslationX(direction > 0 ? Math.max(1, content.getWidth()) : -Math.max(1, content.getWidth()));
-            incomingPage.scroll.setAlpha(0.92f);
-            incomingPage.scroll.animate().translationX(0f).alpha(1f).setDuration(145).start();
+        if (incomingPage != null && incomingPage.key.equals(feedPageKey(sourceId, categoryName))
+                && incomingPage.scroll.getParent() == content) {
+            incomingPage.scroll.animate().cancel();
+            incomingPage.scroll.setTranslationX(0f);
+            incomingPage.scroll.setAlpha(1f);
+            currentFeedPage = incomingPage;
+            feedScrollView = incomingPage.scroll;
+            articleRows = incomingPage.rows;
+            articles.clear();
+            articles.addAll(incomingPage.items);
+            trimFeedPages();
+        } else {
+            discardSwipePreview(incomingPage);
+            showArticleList();
+            incomingPage = currentFeedPage;
+            if (incomingPage != null) {
+                incomingPage.scroll.setTranslationX(direction > 0 ? Math.max(1, content.getWidth()) : -Math.max(1, content.getWidth()));
+                incomingPage.scroll.setAlpha(0.92f);
+                incomingPage.scroll.animate().translationX(0f).alpha(1f).setDuration(145).start();
+            }
         }
-        if (incomingPage != null && incomingPage.rendered && !incomingPage.items.isEmpty()) {
+
+        if (currentFeedPage != null && currentFeedPage.rendered && !currentFeedPage.items.isEmpty()) {
             restoreFeedScrollPosition();
             return;
         }
@@ -586,6 +639,8 @@ public final class NewsReaderActivity extends Activity {
         private float downY;
         private long downTime;
         private boolean horizontalSwipe;
+        private FeedPage swipePreviewPage;
+        private int swipePreviewDirection;
 
         FeedScrollView(Context context) { super(context); }
 
@@ -621,9 +676,19 @@ public final class NewsReaderActivity extends Activity {
                 if (action == MotionEvent.ACTION_MOVE) {
                     float dx = event.getRawX() - downX;
                     float width = Math.max(1, getWidth());
+                    int direction = dx < 0 ? 1 : -1;
+                    if (swipePreviewPage == null || swipePreviewDirection != direction) {
+                        discardSwipePreview(swipePreviewPage);
+                        swipePreviewDirection = direction;
+                        swipePreviewPage = prepareSwipePreview(direction, this);
+                    }
                     float followX = Math.max(-width * 0.82f, Math.min(width * 0.82f, dx * 0.82f));
                     setTranslationX(followX);
                     setAlpha(1f - Math.min(0.12f, Math.abs(followX) / width * 0.12f));
+                    if (swipePreviewPage != null) {
+                        float side = direction > 0 ? width : -width;
+                        swipePreviewPage.scroll.setTranslationX(side + followX);
+                    }
                     return true;
                 }
                 if (action == MotionEvent.ACTION_UP) {
@@ -633,19 +698,43 @@ public final class NewsReaderActivity extends Activity {
                     float threshold = Math.max(dp(52), getWidth() * 0.16f);
                     if (Math.abs(dx) >= threshold || (velocity >= dp(900) && Math.abs(dx) >= dp(24))) {
                         final int direction = dx < 0 ? 1 : -1;
+                        if (swipePreviewPage == null || swipePreviewDirection != direction) {
+                            discardSwipePreview(swipePreviewPage);
+                            swipePreviewDirection = direction;
+                            swipePreviewPage = prepareSwipePreview(direction, this);
+                        }
+                        final FeedPage preview = swipePreviewPage;
+                        swipePreviewPage = null;
                         float width = Math.max(1, getWidth());
+                        if (preview != null) {
+                            preview.scroll.animate().translationX(0f).alpha(1f).setDuration(95).start();
+                        }
                         animate().translationX(direction > 0 ? -width : width)
                                 .alpha(0.88f).setDuration(95)
-                                .withEndAction(() -> stepCategoryBySwipe(direction, this)).start();
+                                .withEndAction(() -> stepCategoryBySwipe(direction, this, preview)).start();
                     } else {
+                        final FeedPage preview = swipePreviewPage;
+                        swipePreviewPage = null;
                         animate().translationX(0f).alpha(1f).setDuration(100).start();
+                        if (preview != null) {
+                            float side = swipePreviewDirection > 0 ? Math.max(1, content.getWidth()) : -Math.max(1, content.getWidth());
+                            preview.scroll.animate().translationX(side).alpha(1f).setDuration(100)
+                                    .withEndAction(() -> discardSwipePreview(preview)).start();
+                        }
                     }
                     horizontalSwipe = false;
                     return true;
                 }
                 if (action == MotionEvent.ACTION_CANCEL) {
                     horizontalSwipe = false;
+                    final FeedPage preview = swipePreviewPage;
+                    swipePreviewPage = null;
                     animate().translationX(0f).alpha(1f).setDuration(90).start();
+                    if (preview != null) {
+                        float side = swipePreviewDirection > 0 ? Math.max(1, content.getWidth()) : -Math.max(1, content.getWidth());
+                        preview.scroll.animate().translationX(side).alpha(1f).setDuration(90)
+                                .withEndAction(() -> discardSwipePreview(preview)).start();
+                    }
                     return true;
                 }
                 return true;
