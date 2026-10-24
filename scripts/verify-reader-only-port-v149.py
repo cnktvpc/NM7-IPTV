@@ -11,8 +11,8 @@ tabs = read("app/src/main/java/vn/phuong/iptvplayer/HomeTabBar.java")
 manifest = read("app/src/main/AndroidManifest.xml")
 reader = read("app/src/main/java/vn/phuong/iptvplayer/NewsReaderActivity.java")
 checks = [
-    ("version is 1.10.150/code 166",
-     'versionName = "1.10.150"' in gradle and "versionCode = 166" in gradle),
+    ("version is 1.10.151/code 167",
+     'versionName = "1.10.151"' in gradle and "versionCode = 167" in gradle),
     ("Reader is selectable from the shared bottom navigation",
      "attachReader" in tabs and "R.drawable.nm7_nav_news" in tabs and "openNews(activity)" in tabs),
     ("original 4fc IPTV handoff method remains", 
@@ -55,6 +55,13 @@ checks = [
      "player.getPlaybackState() != Player.STATE_IDLE" in Path("app/src/main/java/vn/phuong/iptvplayer/MobileInlinePlayerProviderV2.java").read_text()),
     ("built-in news providers and RSS/HTML fallback exist",
      'makeSource("vnexpress"' in reader and "loadArticlesWithFallback" in reader and "parseHtmlFeed" in reader),
+    ("Thể Thao 247 retries alternate feeds and falls back to official HTML sections",
+     "loadTheThao247Articles" in reader and "bong-da-viet-nam.rss" in reader and
+     "bong-da-quoc-te.rss" in reader and "ReaderFeedCategoryRouter.htmlPageUrl(id, category, source.homeUrl())" in reader and
+     ".article-title a[href]" in reader),
+    ("SuperOK-style news providers are available in the catalog",
+     all(('makeSource("' + source_id + '"') in reader for source_id in
+          ("znews", "gamek", "tuoitrecuoi", "emdep", "muctim", "suckhoedoisong", "vietnamnet", "vietnamplus", "vov"))),
 ]
 for label, passed in checks:
     if not passed:
