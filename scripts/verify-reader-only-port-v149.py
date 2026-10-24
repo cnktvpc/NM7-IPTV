@@ -37,6 +37,9 @@ checks = [
      "updateCategorySelection()" in reader),
     ("Adjacent categories are prefetched without rebuilding the visible page",
      "prefetchAdjacentFeeds" in reader and "prefetchedFeeds" in reader),
+    ("Page switches invalidate stale asynchronous feed responses",
+     "Invalidate any request for the page being left" in reader and
+     "A completed request for the page being swiped away" in reader),
     ("24h has dedicated EPL, World, Business and Entertainment categories",
      '"Ngoại Hạng Anh", "https://www.24h.com.vn/bong-da-ngoai-hang-anh-c149.html"' in reader and
      'case "Ngoại Hạng Anh": return "https://www.24h.com.vn/bong-da-ngoai-hang-anh-c149.html";' in
