@@ -14,6 +14,10 @@ final class ReaderFeedCategoryRouter {
             case "Trang chủ": return "https://www.24h.com.vn/";
             case "Tin tức": return "https://www.24h.com.vn/tin-tuc-trong-ngay-c46.html";
             case "Bóng đá": return "https://www.24h.com.vn/bong-da-c48.html";
+            case "Ngoại Hạng Anh": return "https://www.24h.com.vn/bong-da-ngoai-hang-anh-c149.html";
+            case "Thế giới": return "https://www.24h.com.vn/the-gioi-24h-c415e7888.html";
+            case "Kinh doanh": return "https://www.24h.com.vn/kinh-doanh-c161.html";
+            case "Giải trí": return "https://www.24h.com.vn/giai-tri-c731.html";
             case "An ninh - Hình sự": return "https://www.24h.com.vn/an-ninh-xa-hoi-c51.html";
             case "Thời trang": return "https://www.24h.com.vn/thoi-trang-c78.html";
             case "Thời trang Hi-tech": return "https://www.24h.com.vn/thoi-trang-hi-tech-c407.html";
@@ -51,6 +55,12 @@ final class ReaderFeedCategoryRouter {
         switch (category) {
             case "Tin tức": return has(path, "tin-tuc-trong-ngay", "-c46a");
             case "Bóng đá": return has(path, "bong-da", "-c48a");
+            // The EPL listing publishes stories under the site's shared football route (c48a),
+            // not consistently under c149a; only allow same-site football article URLs here.
+            case "Ngoại Hạng Anh": return has(path, "/bong-da/", "bong-da-") || has(path, "-c48a");
+            case "Thế giới": return has(path, "the-gioi-24h", "the-gioi", "-c415a", "-c788a");
+            case "Kinh doanh": return has(path, "kinh-doanh", "-c161a");
+            case "Giải trí": return has(path, "giai-tri", "-c731a");
             case "An ninh - Hình sự": return has(path, "an-ninh-xa-hoi", "an-ninh-hinh-su", "-c51a");
             case "Thời trang":
                 return !has(path, "thoi-trang-hi-tech", "-c407a") && has(path, "thoi-trang", "-c78a");
