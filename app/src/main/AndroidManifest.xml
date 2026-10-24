@@ -39,7 +39,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:scheme="https"
-                    android:host="open-platform.tiktokapis.com"
+                    android:host="nm7-tiktok-open-auth.phuongnm7-iptv.workers.dev"
                     android:pathPrefix="/callback" />
             </intent-filter>
         </activity>
