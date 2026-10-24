@@ -8,8 +8,30 @@ final class ReaderFeedCategoryRouter {
     private ReaderFeedCategoryRouter() { }
 
     static String htmlPageUrl(String sourceId, String category, String sourceHomeUrl) {
-        if (!"24h".equals(sourceId)) return sourceHomeUrl;
         if (category == null) return "";
+        if ("thethao247".equals(sourceId)) {
+            switch (category) {
+                case "Trang chủ": return "https://thethao247.vn/";
+                case "Thể thao": return "https://thethao247.vn/the-thao-c5/";
+                case "Bóng đá": return "https://thethao247.vn/bong-da-quoc-te-c2/";
+                case "Bóng đá Việt Nam": return "https://thethao247.vn/bong-da-viet-nam-c1/";
+                case "Bóng đá quốc tế": return "https://thethao247.vn/bong-da-quoc-te-c2/";
+                case "Ngoại hạng Anh": return "https://thethao247.vn/ngoai-hang-anh-c8/";
+                case "World Cup 2026": return "https://thethao247.vn/world-cup";
+                case "Bóng đá Tây Ban Nha - La Liga": return "https://thethao247.vn/bong-da-tay-ban-nha-la-liga-c9/";
+                case "Cúp C1": return "https://thethao247.vn/cup-c1-c13/";
+                case "Cúp C2 Europa League": return "https://thethao247.vn/cup-c2-europa-league-c75/";
+                case "Bóng đá Đức": return "https://thethao247.vn/bong-da-duc-c11/";
+                case "Nhận định bóng đá": return "https://thethao247.vn/nhan-dinh-bong-da-c288/";
+                case "Tennis - Quần vợt": return "https://thethao247.vn/quan-vot-tennis-c4/";
+                case "Bóng rổ": return "https://thethao247.vn/bong-ro-c43/";
+                case "Cầu lông": return "https://thethao247.vn/cau-long-c44/";
+                case "Bóng chuyền": return "https://thethao247.vn/bong-chuyen-c45/";
+                case "Võ thuật": return "https://thethao247.vn/vo-thuat-c228/";
+                default: return "https://thethao247.vn/";
+            }
+        }
+        if (!"24h".equals(sourceId)) return sourceHomeUrl;
         switch (category) {
             case "Trang chủ": return "https://www.24h.com.vn/";
             case "Tin tức": return "https://www.24h.com.vn/tin-tuc-trong-ngay-c46.html";
