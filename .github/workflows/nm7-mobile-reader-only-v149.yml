@@ -1,4 +1,4 @@
-name: NM7 IPTV Mobile 1.10.150 — Smooth Reader from exact 1.10.142 source
+name: NM7 IPTV Mobile 1.10.151 — News Source Recovery from exact 1.10.142 source
 # Exact source baseline: 4fc8b187db7e48591e1bcb11969436a56d27d06a.
 "on":
   push:
@@ -100,11 +100,11 @@ jobs:
           set -euxo pipefail
           python3 scripts/verify-mobile-pull-refresh.py
 
-      - name: Verify 1.10.150 Reader-only build configuration
+      - name: Verify 1.10.151 Reader-only build configuration
         run: |
           set -euxo pipefail
-          test "$(grep -c 'versionName = "1.10.150"' app/build.gradle.kts)" -eq 1
-          test "$(grep -c 'versionCode = 166' app/build.gradle.kts)" -eq 1
+          test "$(grep -c 'versionName = "1.10.151"' app/build.gradle.kts)" -eq 1
+          test "$(grep -c 'versionCode = 167' app/build.gradle.kts)" -eq 1
 
       - name: Verify Reader-only integration and unchanged YouTube baseline
         run: |
@@ -243,7 +243,7 @@ jobs:
             -PjunitXVersion=1.1.5 -PtruthXVersion=1.5.0 -PtestXSupportVersion=1.1.0 -PannotationXVersion=1.1.0 \
             :app:testMobileDebugUnitTest --tests vn.phuong.iptvplayer.ReaderArticleExtractorTest --tests vn.phuong.iptvplayer.ReaderFeedCategoryRouterTest --tests vn.phuong.iptvplayer.ReaderPluginRuntimeTest
 
-      - name: Build Mobile 1.10.150 (smooth Reader port from exact source commit 4fc8b187)
+      - name: Build Mobile 1.10.151 (news source recovery from exact source commit 4fc8b187)
         run: |
           set -o pipefail
           gradle --no-daemon --console=plain \
@@ -278,7 +278,7 @@ jobs:
       - name: Upload Mobile APK
         uses: actions/upload-artifact@v4
         with:
-          name: NM7-IPTV-Mobile-1.10.150-SMOOTH-READER
+          name: NM7-IPTV-Mobile-1.10.151-NEWS-SOURCES
           path: dist/mobile/
           retention-days: 30
           if-no-files-found: error
