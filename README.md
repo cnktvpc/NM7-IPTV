@@ -1,10 +1,20 @@
+# Final verification — NM7 IPTV Mobile 1.10.152 (2026-10-24)
+
+- **Final GitHub Actions run:** [#54 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/40070653204), commit `2758a8b671ca236b93202e3fe7107081d0278c7d`.
+- **Live gateway smoke test:** PASS for Thể Thao 247 Trang chủ, Thể thao, Bóng đá and Bóng đá Việt Nam; each endpoint returned RSS XML containing items.
+- **Tests/build:** Reader-focused unit tests PASS; full Mobile unit-test suite PASS with the mini-player SurfaceView regression fixed; Mobile APK build PASS; artifact upload PASS.
+- **APK:** [Download NM7-IPTV-Mobile-1.10.152-FAST-NEWS-READER](https://github.com/cnktvpc/NM7-IPTV/actions/runs/40070653204/artifacts/12551506352)
+- **Archive SHA-256:** `70cc905753a5d2040d4fd6cbc3b160bcfba7750ab24f70614df94708baf386af` (44,029,544 bytes; artifact retained until 2026-11-23).
+- **Additional root cause:** `nm7_mini_player.xml` specified `texture_view`, contradicting the Mobile SurfaceView regression test. It now uses `surface_view`; the full test suite is a blocking CI step instead of `continue-on-error`.
+- **Stable branch:** `stable/mobile-1.10.142` remains untouched. This is a candidate build; the user should still verify real feeds and playback on the target device/network.
+
 
 
 ## Root-cause follow-up — 2026-10-24 (gateway diagnostics)
 - Latest CI failures were at the real HTTP smoke test, before Android build. The live Worker could not obtain RSS/HTML from the publisher: direct feed returned 503 and category HTML 403; RSS Amplifier's direct RSS URL returned 402. These statuses are captured from GitHub Actions.
 - Worker hotfix now tries fallbacks concurrently instead of serially: RSS Amplifier feed, Google News RSS filtered by `site:thethao247.vn`, Bing News RSS with the same site/category filter, and RSS Amplifier's HTML page. It avoids sending a Thể Thao 247 Referer header to unrelated aggregator domains.
 - Failure responses include per-provider HTTP status, byte count and RSS validation details; successful responses remain edge-cached for 5 minutes. This makes the next failure actionable instead of a generic spinner.
-- Current deployed Worker script: `nm7-news-reader-api`; source of truth: `workers/nm7-news-reader-api/worker.js`. CI still must verify all four failing categories (home/sports/football/vietnam); the APK is not declared ready until gateway smoke checks and Android tests/build pass.
+- Current deployed Worker script: `nm7-news-reader-api`; source of truth: `workers/nm7-news-reader-api/worker.js`. Final run #54 verified all four categories and passed reader tests, the full Mobile test suite, APK build and upload.
 # NM7 IPTV Mobile — Fast News Reader candidate 1.10.152 (2026-10-24)
 
 - **Candidate:** `1.10.152` / versionCode `168`; isolated branch `rebuild/reader-only-from-stable-142-20261023`.

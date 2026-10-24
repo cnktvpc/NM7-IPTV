@@ -1,3 +1,17 @@
+# TRẠNG THÁI CUỐI — NM7 IPTV MOBILE 1.10.152 — 2026-10-24
+
+- **GitHub Actions run #54: SUCCESS:** https://github.com/cnktvpc/NM7-IPTV/actions/runs/40070653204
+- Commit: `2758a8b671ca236b93202e3fe7107081d0278c7d`.
+- **Gateway live-test:** PASS cả 4 endpoint Thể Thao 247: Trang chủ, Thể thao, Bóng đá, Bóng đá Việt Nam; mỗi endpoint trả RSS/XML có item.
+- **Reader-focused unit tests:** PASS.
+- **Full Mobile unit-test suite:** PASS. Lỗi duy nhất ở run #53 là `YouTubeSurfaceLayoutTest.miniUsesSurfaceAfterAllResourceMerges`: layout mini-player khai báo `texture_view` nhưng test yêu cầu `SurfaceView`. Đã sửa `app/src/main/res/layout/nm7_mini_player.xml` thành `app:surface_type="surface_view"`. Đồng thời bỏ `continue-on-error` để full test suite chặn upload khi có lỗi.
+- **Build APK:** PASS. **Upload artifact:** PASS.
+- APK mới: https://github.com/cnktvpc/NM7-IPTV/actions/runs/40070653204/artifacts/12551506352
+- Tên artifact: `NM7-IPTV-Mobile-1.10.152-FAST-NEWS-READER`
+- Archive SHA-256: `70cc905753a5d2040d4fd6cbc3b160bcfba7750ab24f70614df94708baf386af`
+- Dung lượng artifact ZIP: 44,029,544 bytes. Hạn lưu artifact: 2026-11-23.
+- **Bản stable** `stable/mobile-1.10.142` không bị thay đổi; chưa merge candidate. Bước còn lại là người dùng kiểm tra trực tiếp các feed và phát lại trên thiết bị/mạng mục tiêu.
+
 
 
 ## Root-cause follow-up — 2026-10-24 (gateway diagnostics)
@@ -26,7 +40,7 @@
 - Giảm timeout HTML/RSS, không thử RSS-as-HTML; thêm thông báo lỗi có mã HTTP/hostname cho phản hồi HTTP không thành công; giới hạn tải nội dung bài xuống 8.5 giây.
 - Đưa source Worker vào `workers/nm7-news-reader-api/worker.js` để mã đã deploy có thể được review/rebuild.
 - CI bắt buộc kiểm tra endpoint `/health` và kiểm tra response `/rss/football` có RSS XML và ít nhất một item trước build APK.
-- **Build đang chờ CI:** nếu kiểm tra Worker thất bại thì phải sửa gateway/test, không được bỏ qua kiểm tra hoặc gửi APK cũ.
+- **Hoàn tất tại run #54:** gateway bốn danh mục, Reader-focused tests, full Mobile unit-test suite, build APK và upload đều PASS. Artifact/checksum ở đầu file.
 - **Stable:** `stable/mobile-1.10.142` không đổi, chưa merge candidate.
 
 
