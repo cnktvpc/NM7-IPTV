@@ -18,7 +18,8 @@ This Worker keeps the TikTok client secret off the APK and serves the recent-pub
    gradle -PtiktokClientKey='<client-key>' -PtiktokApiBaseUrl='https://<your-worker-domain>' :app:assembleMobileDebug
    ```
    Do not put the TikTok Client Secret in Gradle properties, app resources, or the APK.
-5. Confirm `GET /health` returns `configured: true`.
+5. Set a plain Worker variable `TIKTOK_ANDROID_SHA256_FINGERPRINT` to the colon-delimited SHA-256 signing fingerprint printed by the APK build. The Worker serves it from `/.well-known/assetlinks.json` so Android can verify the HTTPS OAuth callback as an App Link.
+6. Confirm `GET /health` returns `configured: true`. If the signing fingerprint or TikTok Developer redirect registration does not match the APK, Login Kit cannot complete back into NM7.
 
 ## Endpoints
 
