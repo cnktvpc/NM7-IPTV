@@ -270,7 +270,7 @@ public final class TikTokIntegrationActivity extends Activity {
         }
         String url = trimSlash(BuildConfig.TIKTOK_API_BASE_URL) + "/api/tiktok/mobile/exchange";
         setLoading(true, "Đang hoàn tất kết nối tài khoản TikTok…");
-        Request request = new Request.Builder().url(url).post(RequestBody.create(body.toString(), JSON)).build();
+        Request request = new Request.Builder().url(url).post(RequestBody.create(JSON, body.toString())).build();
         http.newCall(request).enqueue(new Callback() {
             @Override public void onFailure(@NonNull Call call, @NonNull IOException error) {
                 runOnUiThread(() -> {
