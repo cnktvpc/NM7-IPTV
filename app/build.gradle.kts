@@ -96,9 +96,10 @@ dependencies {
     implementation("androidx.media3:media3-ui:$media3Version")
     implementation("androidx.media3:media3-datasource-okhttp:$media3Version")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    // Official TikTok Login Kit and core OpenSDK. Pin the SDK version for reproducible builds.
-    implementation("com.tiktok.open.sdk:tiktok-open-sdk-core:2.3.1")
-    implementation("com.tiktok.open.sdk:tiktok-open-sdk-auth:2.3.1")
+    // Official TikTok OpenSDK 2.3.1 modules are compiled from TikTok's pinned source release
+    // in CI because the corresponding Maven artifacts are not available in the configured repository.
+    implementation(project(":tiktok-open-sdk-core"))
+    implementation(project(":tiktok-open-sdk-auth"))
     // ViewPager2 provides a native vertical feed for the user's public TikTok videos.
     implementation("androidx.viewpager2:viewpager2:1.1.0")
 
