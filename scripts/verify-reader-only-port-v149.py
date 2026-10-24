@@ -30,9 +30,11 @@ checks = [
      "feedCache" in reader and "feedCacheKey(source.id, feedUrl, selectedCategory)" in reader and
      "feedPages" in reader and "restoreFeedScrollPosition();" in reader and
      "rememberFeedScrollPosition();" in reader),
-    ("Horizontal swipe follows the finger and animates the next cached page",
+    ("Horizontal swipe reveals the neighboring page and animates both pages",
      "setTranslationX(followX)" in reader and "animate().translationX" in reader and
-     "stepCategoryBySwipe(direction, this)" in reader and "updateCategorySelection()" in reader),
+     "prepareSwipePreview(direction, this)" in reader and
+     "stepCategoryBySwipe(direction, this, preview)" in reader and
+     "updateCategorySelection()" in reader),
     ("Adjacent categories are prefetched without rebuilding the visible page",
      "prefetchAdjacentFeeds" in reader and "prefetchedFeeds" in reader),
     ("24h has dedicated EPL, World, Business and Entertainment categories",
