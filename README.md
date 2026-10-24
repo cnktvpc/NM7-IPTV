@@ -25,7 +25,10 @@ Nguồn: [TikTok OpenSDK Android](https://github.com/tiktok/tiktok-opensdk-andro
 
 - Feature branch: `feature/tiktok-in-app-mobile-1.10.142-20261024`.
 - Workflow: [NM7 TikTok Mobile Build](https://github.com/cnktvpc/NM7-IPTV/actions/workflows/tiktok-mobile-build.yml).
-- Artifact dự kiến: `NM7-IPTV-Mobile-1.10.145-TIKTOK-OPENSDK` (APK + `SHA256SUMS.txt`). CI mới sẽ được ghi lại sau khi build/test hoàn tất.
+- Push CI: https://github.com/cnktvpc/NM7-IPTV/actions/runs/40062974954 — **SUCCESS**; PR CI: https://github.com/cnktvpc/NM7-IPTV/actions/runs/40062977286 — **SUCCESS**.
+- Gradle build APK, signing fingerprint, artifact upload và `TikTokWebPolicyTest` đều **PASS** trên commit `146ca71a5b60b99b0d8e4bd0cbe0e4f6852656cb`.
+- Artifact ZIP: [NM7-IPTV-Mobile-1.10.145-TIKTOK-OPENSDK](https://github.com/cnktvpc/NM7-IPTV/actions/runs/40062974954/artifacts/12547707847), ID `12547707847`, dung lượng khoảng 43 MB, chứa APK + `SHA256SUMS.txt`; hạn lưu 23/11/2026.
+- SHA-256 signing certificate của APK này: `D3:8D:21:1C:20:76:E9:6A:E3:56:2A:27:AC:A4:6B:3A:B6:CC:2C:8D:C7:60:A3:0A:5C:74:4E:04:E3:A2:D6:30`. Đã thêm fingerprint vào Worker secret `TIKTOK_ANDROID_SHA256_FINGERPRINT`.
 - Test compile/build chỉ xác minh tích hợp SDK và code; đăng nhập thật cần Client Key, đúng signing fingerprint, app đã cấu hình trong TikTok Developer Portal và Worker secrets.
 
 ---
