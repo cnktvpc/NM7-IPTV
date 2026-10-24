@@ -8,8 +8,8 @@ final class ReaderFeedCategoryRouter {
     private ReaderFeedCategoryRouter() { }
 
     static String htmlPageUrl(String sourceId, String category, String sourceHomeUrl) {
-        if (category == null) return "";
         if ("thethao247".equals(sourceId)) {
+            if (category == null) return sourceHomeUrl;
             switch (category) {
                 case "Trang chủ": return "https://thethao247.vn/";
                 case "Thể thao": return "https://thethao247.vn/the-thao-c5/";
@@ -32,6 +32,7 @@ final class ReaderFeedCategoryRouter {
             }
         }
         if (!"24h".equals(sourceId)) return sourceHomeUrl;
+        if (category == null) return "";
         switch (category) {
             case "Trang chủ": return "https://www.24h.com.vn/";
             case "Tin tức": return "https://www.24h.com.vn/tin-tuc-trong-ngay-c46.html";
