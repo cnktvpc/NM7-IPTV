@@ -1,3 +1,27 @@
+# NM7 IPTV Mobile 1.10.143 — TikTok tích hợp trong một ứng dụng (24/10/2026; bản thử nghiệm)
+
+## Phạm vi triển khai
+
+- Baseline: repository `cnktvpc/NM7-IPTV`, nhánh stable `stable/mobile-1.10.142`, versionCode 158. Phát triển trên nhánh riêng `feature/tiktok-in-app-mobile-1.10.142-20261024`; không sửa nhánh stable.
+- Ứng viên thử nghiệm mới: `1.10.143` / versionCode `159`, có thể cài nâng cấp trên NM7 1.10.142 do giữ nguyên applicationId.
+- Thêm tab TikTok vào thanh điều hướng dùng chung của NM7. Tab mở `TikTokWebActivity` bên trong chính APK NM7, tải website mobile chính thức tại `https://www.tiktok.com/foryou?lang=vi-VN`. Không yêu cầu cài ứng dụng TikTok riêng. Back trước hết điều hướng lịch sử TikTok; khi hết lịch sử sẽ quay lại NM7.
+- WebView giữ JavaScript, DOM storage, cookies, trang đăng nhập và điều hướng website trong cùng ứng dụng. Lớp điều hướng không mở liên kết ứng dụng ngoài; lỗi TLS bị từ chối thay vì bỏ qua. Nếu trang yêu cầu camera/micro, Android xin quyền lúc cần; chức năng chọn ảnh/video dùng bộ chọn hệ thống.
+- Khi mở TikTok, NM7 yêu cầu dừng/suspend phiên IPTV và YouTube để tránh phát âm thanh nền. Khi Back về NM7, người dùng quay lại ứng dụng NM7.
+- Đây là website TikTok chính thức được nhúng trong Activity WebView, không phải SDK nhị phân TikTok và không phải bản sao giao diện. Chính sách của TikTok có thể hạn chế một số luồng đăng nhập/captcha bên trong WebView; xác minh trên thiết bị thật là điều kiện bắt buộc trước khi phát hành.
+
+## Build và kiểm thử
+
+- Nhánh phát triển: `feature/tiktok-in-app-mobile-1.10.142-20261024`.
+- Workflow riêng: [NM7 TikTok Mobile Build](https://github.com/cnktvpc/NM7-IPTV/actions/workflows/tiktok-mobile-build.yml). Workflow build APK trước rồi upload artifact `NM7-IPTV-Mobile-1.10.143-TIKTOK-INTEGRATED`, sau đó chạy `TikTokWebPolicyTest`; vì vậy APK vẫn có thể được tải nếu unit test thất bại.
+- Kiểm thử policy được thêm cho URL For You chính thức, các miền TikTok hợp lệ, URL đánh lừa, scheme không an toàn và thông tin đăng nhập gắn trong URL.
+- PR nháp sẽ được mở từ nhánh này về `stable/mobile-1.10.142` sau khi kiểm tra CI. Chưa merge, không deploy lên nhánh stable trước khi kiểm tra APK trên điện thoại.
+
+## Giới hạn cần kiểm tra trên thiết bị
+
+TikTok là website bên thứ nhất, nên vuốt feed và giao diện tài khoản do TikTok tự xử lý thay vì lớp vuốt của NM7. TikTok có thể không cho đăng nhập một số tài khoản trong WebView nhúng hoặc yêu cầu xác minh bổ sung. Nếu gặp màn hình chặn/đăng nhập không chạy trong WebView, cần chuyển sang phương án TikTok Login Kit được phê duyệt hoặc app-link chính thức; không nên giả lập feed hay lấy thông tin đăng nhập bằng mã riêng.
+
+---
+
 # NM7 IPTV Mobile — Stable 1.10.142 — YouTube Floating MiniPlayer / SurfaceView — 2026-10-20
 
 > **Trạng thái cập nhật 2026-10-22:** Build APK thành công. Lưu ý: bước `:app:testMobileDebugUnitTest` trong run 39407088691 có lỗi nhưng được cấu hình `continue-on-error: true`, vì vậy workflow vẫn báo SUCCESS. Không ghi nhận unit tests là PASS cho lần build này. Cần xử lý lỗi test và kiểm thử trên thiết bị thật trước khi xác nhận riêng các thay đổi YouTube MiniPlayer là ổn định.
