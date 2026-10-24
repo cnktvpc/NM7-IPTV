@@ -5,7 +5,7 @@
 - Baseline: `stable/mobile-1.10.142`, versionCode 158. Nhánh phát triển riêng: `feature/tiktok-in-app-mobile-1.10.142-20261024`; stable không bị sửa.
 - Ứng viên sau sửa: `1.10.144`, versionCode `160`, giữ applicationId `vn.phuong.iptvplayer`.
 - Sửa lỗi người dùng báo ở 1.10.143: giao diện TikTok mobile bị kéo giãn; nội dung top bar chui vào status bar; đường dẫn/app deep-link có thể đưa người dùng ra ngoài NM7.
-- Xử lý system bar với `WindowInsetsCompat` trên target SDK 36, đệm nội dung theo status bar/navigation bar/display cutout, giữ nền đen và biểu tượng system bar tương phản.
+- Xử lý system bar bằng API WindowInsets/WindowInsetsController gốc của Android trên target SDK 36, đệm nội dung theo status bar/navigation bar/display cutout, giữ nền đen và biểu tượng system bar tương phản.
 - Ép WebView dùng layout viewport theo chiều rộng màn hình (không dùng wide viewport/overview zoom), text zoom 100%, UA mobile loại bỏ marker WebView `wv` / `Version/4.0` để website ưu tiên trải nghiệm trình duyệt mobile.
 - Chặn custom URI schemes như `tiktok://`, `intent://` và `market://`; chỉ HTTP(S) được tiếp tục trong WebView. Không gọi Android intent resolver để mở ứng dụng ngoài. `target=_blank`/popup tự mở bị hạn chế.
 - Giữ fullscreen HTML5, Back/History trong TikTok, upload ảnh/video và xin quyền camera/micro theo yêu cầu của website.
@@ -13,7 +13,14 @@
 ## Build / xác minh
 
 - APK cũ 1.10.143 đã build/test nhưng **không đáp ứng yêu cầu giao diện**, không nên dùng làm bản sửa.
-- Bản 1.10.144 đang chờ CI trên mã sửa này. Link run/artifact cuối sẽ được ghi ngay sau khi build và unit test hoàn tất.
+## CI cuối — PASS (24/10/2026)
+- Commit sửa giao diện: `5d1d49f5`.
+- Push CI: https://github.com/cnktvpc/NM7-IPTV/actions/runs/40058223797 — build APK PASS, upload artifact PASS, `TikTokWebPolicyTest` PASS.
+- PR CI: https://github.com/cnktvpc/NM7-IPTV/actions/runs/40058226294 — build APK PASS, upload artifact PASS, `TikTokWebPolicyTest` PASS.
+- Artifact: `NM7-IPTV-Mobile-1.10.144-TIKTOK-INTEGRATED`, ID `12546163912`, ZIP ~43 MB: https://github.com/cnktvpc/NM7-IPTV/actions/runs/40058223797/artifacts/12546163912. Hạn lưu đến 23/11/2026.
+- Lỗi build đầu do baseline không khai báo AndroidX Core đã được sửa bằng API WindowInsets/WindowInsetsController của Android platform; commit cuối build/test xanh.
+- Lưu ý: CI xanh không thay thế kiểm tra thiết bị. Chưa thể khẳng định vuốt, đăng nhập và bố cục thực tế hoàn hảo cho tới khi người dùng cài APK và xác nhận.
+
 - Unit test bổ sung cho UA mobile và chính sách chặn deep link; build workflow kiểm tra đúng versionName/versionCode mới.
 
 ## Giới hạn tích hợp cần hiểu đúng
