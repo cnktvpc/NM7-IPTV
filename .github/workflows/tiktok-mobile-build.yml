@@ -84,6 +84,24 @@ jobs:
               build.write_text(text)
           PY
 
+      - name: Patch TikTok OpenSDK nullability for current Android SDK
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          path=Path('third_party/tiktok-opensdk-android/tiktok-open-sdk-core/src/main/java/com/tiktok/open/sdk/core/utils/SignatureUtils.kt')
+          text=path.read_text()
+          old='if (sig.hasMultipleSigners()) {'
+          if text.count(old) != 2:
+              raise SystemExit('Unexpected TikTok SignatureUtils.kt structure')
+          text=text.replace(old, 'if (sig == null) {\\n                emptyList()\\n            } else if (sig.hasMultipleSigners()) {')
+          text=text.replace('sig.apkContentsSigners.map {', '(sig.apkContentsSigners ?: emptyArray()).map {')
+          text=text.replace('sig.signingCertificateHistory.map {', '(sig.signingCertificateHistory ?: emptyArray()).map {')
+          if text.count('if (sig == null)') != 2:
+              raise SystemExit('TikTok nullable signingInfo patch did not apply twice')
+          path.write_text(text)
+          PY
+
       - name: Patch SmartTube for AGP 8.13
         run: |
           set -euxo pipefail
