@@ -2,6 +2,7 @@ plugins {
     id("com.android.application") version "8.13.2" apply false
     id("com.android.library") version "8.13.2" apply false
     id("org.jetbrains.kotlin.android") version "1.8.10" apply false
+    id("org.jetbrains.kotlin.plugin.parcelize") version "1.8.10" apply false
 }
 
 buildscript {
@@ -28,7 +29,7 @@ val smartTubeAndroidLibraryModules = setOf(
     ":youtubeapi", ":exoplayer-library", ":exoplayer-library-core", ":exoplayer-library-dash",
     ":exoplayer-library-sabr", ":exoplayer-library-hls", ":exoplayer-library-smoothstreaming",
     ":exoplayer-library-ui", ":exoplayer-extension-mediasession", ":exoplayer-extension-okhttp",
-    ":exoplayer-extension-cronet"
+    ":exoplayer-extension-cronet", ":tiktok-open-sdk-core", ":tiktok-open-sdk-auth"
 )
 
 val smartTubeSharedConstantsProjects = setOf(
