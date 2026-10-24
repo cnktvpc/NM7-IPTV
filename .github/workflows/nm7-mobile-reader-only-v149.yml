@@ -120,6 +120,7 @@ jobs:
           health="$(curl --retry 2 --retry-delay 2 --connect-timeout 4 --max-time 8 -fsS "$base/health")"
           echo "$health"
           grep -q '"ok":true' <<< "$health"
+          echo "Gateway health: OK; direct upstream fallback is not assumed to be available."
           for category in home sports football vietnam; do
             feed_file="$(mktemp)"
             status="$(curl --connect-timeout 4 --max-time 16 -sS -o "$feed_file" -w '%{http_code}' "$base/rss/$category")"
@@ -133,7 +134,7 @@ jobs:
             grep -Eiq '<(item|entry)([[:space:]>])' "$feed_file" || { echo "FAIL: $category response has no RSS items"; head -c 2000 "$feed_file"; exit 1; }
             test "$(wc -c < "$feed_file")" -gt 250
             rm -f "$feed_file"
-            echo "PASS: Thể Thao 247 $category feed returned RSS items"
+            echo "PASS: Thể Thao 247 $category feed returned RSS items (official RSS/HTML, mirror or Google News fallback)"
           done
 
       - name: Check Mobile lifecycle regression guards

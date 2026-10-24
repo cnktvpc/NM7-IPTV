@@ -78,6 +78,13 @@ export default {
     if(backup.ok&&validFeed(backup.text)){chosen={body:backup.text,upstream:"fallback:"+backupUrl};break;}
   }
 }
+if(!chosen){
+ const queryMap={home:"site:thethao247.vn",sports:"site:thethao247.vn thể thao",football:"site:thethao247.vn bóng đá",vietnam:"site:thethao247.vn bóng đá Việt Nam",vleague:"site:thethao247.vn V-League",national:"site:thethao247.vn đội tuyển Việt Nam",international:"site:thethao247.vn bóng đá quốc tế",epl:"site:thethao247.vn Ngoại hạng Anh",worldcup:"site:thethao247.vn World Cup",laliga:"site:thethao247.vn La Liga",ucl:"site:thethao247.vn Cúp C1",uel:"site:thethao247.vn Europa League",bundesliga:"site:thethao247.vn Bundesliga",transfer:"site:thethao247.vn chuyển nhượng",prediction:"site:thethao247.vn nhận định bóng đá",tennis:"site:thethao247.vn tennis",golf:"site:thethao247.vn golf",basketball:"site:thethao247.vn bóng rổ",badminton:"site:thethao247.vn cầu lông",volleyball:"site:thethao247.vn bóng chuyền",martial:"site:thethao247.vn võ thuật"};
+ const q=queryMap[category]||"site:thethao247.vn";
+ const googleUrl="https://news.google.com/rss/search?q="+encodeURIComponent(q)+"&hl=vi&gl=VN&ceid=VN%3Avi";
+ const google=await fetchText(googleUrl,5200);
+ if(google.ok&&validFeed(google.text)){chosen={body:google.text,upstream:"google-news-rss-fallback"};}
+}
 if(!chosen){const statuses=results.map(r=>r.kind+":"+r.status).join(",");return response(JSON.stringify({ok:false,error:"upstream unavailable",category,attempts:statuses,mirror:mirrorStatus}),502,{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","Retry-After":"30"});}
   const result=addHeaders(chosen.body,category,chosen.upstream);ctx.waitUntil(caches.default.put(cacheKey,result.clone()).catch(()=>{}));if(request.method==="HEAD")return new Response(null,{status:200,headers:result.headers});return result;
  }

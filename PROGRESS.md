@@ -1,3 +1,9 @@
+
+
+## Hotfix gateway dự phòng Google News RSS — 2026-10-24
+- Log CI đã xác nhận upstream gốc trả RSS HTTP 503 và HTML HTTP 403; RSS Amplifier mirror trả HTTP 402. Vì vậy gateway không thể chỉ dựa vào ba nguồn đó.
+- Đã deploy hotfix Worker có fallback cuối qua Google News RSS search theo từng danh mục `site:thethao247.vn`, chỉ chấp nhận khi response là RSS/Atom có item; response vẫn được cache 5 phút. Đây là fallback để giữ danh sách bài hoạt động khi origin bị chặn, không phải bằng chứng upstream gốc đã hồi phục.
+- CI tiếp tục kiểm tra HTTP thật cho bốn danh mục Trang chủ, Thể thao, Bóng đá và Bóng đá Việt Nam. Chỉ chấp nhận APK mới khi tất cả endpoint trả RSS có item và build/test pass.
 # TIẾN ĐỘ MỚI NHẤT — NM7 IPTV MOBILE 1.10.152 — CACHED GATEWAY + FAST READER — 2026-10-24
 
 ## Chẩn đoán gốc từ video mới

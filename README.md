@@ -15,6 +15,12 @@
 - [Feature branch](https://github.com/cnktvpc/NM7-IPTV/tree/rebuild/reader-only-from-stable-142-20261023)
 - [Official Thể Thao 247 RSS index](https://thethao247.vn/rss.html)
 - [Latest build workflow](https://github.com/cnktvpc/NM7-IPTV/actions/workflows/nm7-mobile-reader-only-v149.yml?query=branch%3Arebuild%2Freader-only-from-stable-142-20261023)
+
+## Hotfix gateway dự phòng Google News RSS — 2026-10-24
+- Log CI đã xác nhận upstream gốc trả RSS HTTP 503 và HTML HTTP 403; RSS Amplifier mirror trả HTTP 402. Vì vậy gateway không thể chỉ dựa vào ba nguồn đó.
+- Đã deploy hotfix Worker có fallback cuối qua Google News RSS search theo từng danh mục `site:thethao247.vn`, chỉ chấp nhận khi response là RSS/Atom có item; response vẫn được cache 5 phút. Đây là fallback để giữ danh sách bài hoạt động khi origin bị chặn, không phải bằng chứng upstream gốc đã hồi phục.
+- CI tiếp tục kiểm tra HTTP thật cho bốn danh mục Trang chủ, Thể thao, Bóng đá và Bóng đá Việt Nam. Chỉ chấp nhận APK mới khi tất cả endpoint trả RSS có item và build/test pass.
+
 ---
 
 # NM7 IPTV Mobile 1.10.149 — IPTV/Reader return fix on verified 1.10.142 baseline
