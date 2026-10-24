@@ -37,6 +37,9 @@ checks = [
      "updateCategorySelection()" in reader),
     ("Adjacent categories are prefetched without rebuilding the visible page",
      "prefetchAdjacentFeeds" in reader and "prefetchedFeeds" in reader),
+    ("Thumbnails are sampled to display size and held in a bounded cache",
+     "thumbnailCache" in reader and "MAX_READER_THUMBNAILS" in reader and
+     "inSampleSize = calculateThumbnailSampleSize" in reader),
     ("Page switches invalidate stale asynchronous feed responses",
      "Invalidate any request for the page being left" in reader and
      "A completed request for the page being swiped away" in reader),

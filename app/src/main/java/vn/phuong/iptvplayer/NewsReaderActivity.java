@@ -104,6 +104,9 @@ public final class NewsReaderActivity extends Activity {
     // Keep rendered pages (including decoded thumbnails and exact ScrollView instances) so
     // category navigation feels like a pager instead of rebuilding the entire list every time.
     private final LinkedHashMap<String, FeedPage> feedPages = new LinkedHashMap<>(8, 0.75f, true);
+    // Small LRU of downsampled list thumbnails keeps pager caching from retaining full-size images.
+    private final LinkedHashMap<String, Bitmap> thumbnailCache = new LinkedHashMap<>(48, 0.75f, true);
+    private static final int MAX_READER_THUMBNAILS = 40;
     private final Set<String> prefetchedFeeds = new HashSet<>();
     private final Map<String, Integer> feedScrollPositions = new HashMap<>();
     private final Set<String> pluginCategoriesLoading = new HashSet<>();
@@ -952,25 +955,74 @@ public final class NewsReaderActivity extends Activity {
 
     private void loadThumbnail(String url, ImageView target) {
         target.setTag(url);
+        Bitmap cached = thumbnailCache.get(url);
+        if (cached != null && !cached.isRecycled()) {
+            target.setImageBitmap(cached);
+            return;
+        }
+        final int requestedWidth = dp(104);
+        final int requestedHeight = dp(86);
         io.execute(() -> {
-            HttpURLConnection conn = null;
-            try {
-                conn = (HttpURLConnection) new URL(url).openConnection();
-                conn.setConnectTimeout(7000);
-                conn.setReadTimeout(9000);
-                conn.setRequestProperty("User-Agent", userAgent());
-                conn.setInstanceFollowRedirects(true);
-                try (InputStream in = conn.getInputStream()) {
-                    Bitmap bitmap = BitmapFactory.decodeStream(in);
-                    if (bitmap != null) main.post(() -> {
-                        if (url.equals(target.getTag())) target.setImageBitmap(bitmap);
-                    });
+            Bitmap bitmap = decodeThumbnail(url, requestedWidth, requestedHeight);
+            if (bitmap == null) return;
+            main.post(() -> {
+                thumbnailCache.put(url, bitmap);
+                while (thumbnailCache.size() > MAX_READER_THUMBNAILS) {
+                    java.util.Iterator<Map.Entry<String, Bitmap>> it = thumbnailCache.entrySet().iterator();
+                    if (!it.hasNext()) break;
+                    it.next();
+                    it.remove();
                 }
-            } catch (Exception ignored) {
-            } finally {
-                if (conn != null) conn.disconnect();
-            }
+                if (url.equals(target.getTag())) target.setImageBitmap(bitmap);
+            });
         });
+    }
+
+    private Bitmap decodeThumbnail(String url, int requestedWidth, int requestedHeight) {
+        HttpURLConnection conn = null;
+        try {
+            conn = (HttpURLConnection) new URL(url).openConnection();
+            conn.setConnectTimeout(7000);
+            conn.setReadTimeout(9000);
+            conn.setRequestProperty("User-Agent", userAgent());
+            conn.setInstanceFollowRedirects(true);
+            try (InputStream in = conn.getInputStream(); ByteArrayOutputStream bytes = new ByteArrayOutputStream()) {
+                byte[] buffer = new byte[8192];
+                int count;
+                int total = 0;
+                while ((count = in.read(buffer)) != -1) {
+                    total += count;
+                    if (total > 8 * 1024 * 1024) return null;
+                    bytes.write(buffer, 0, count);
+                }
+                byte[] imageData = bytes.toByteArray();
+                BitmapFactory.Options bounds = new BitmapFactory.Options();
+                bounds.inJustDecodeBounds = true;
+                BitmapFactory.decodeByteArray(imageData, 0, imageData.length, bounds);
+                if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null;
+
+                BitmapFactory.Options options = new BitmapFactory.Options();
+                options.inSampleSize = calculateThumbnailSampleSize(bounds, requestedWidth, requestedHeight);
+                options.inPreferredConfig = Bitmap.Config.RGB_565;
+                options.inDither = true;
+                return BitmapFactory.decodeByteArray(imageData, 0, imageData.length, options);
+            }
+        } catch (Exception ignored) {
+            return null;
+        } finally {
+            if (conn != null) conn.disconnect();
+        }
+    }
+
+    private int calculateThumbnailSampleSize(BitmapFactory.Options bounds, int requestedWidth, int requestedHeight) {
+        int sample = 1;
+        int width = Math.max(1, requestedWidth);
+        int height = Math.max(1, requestedHeight);
+        while ((bounds.outWidth / (sample * 2)) >= width
+                && (bounds.outHeight / (sample * 2)) >= height) {
+            sample *= 2;
+        }
+        return Math.max(1, sample);
     }
 
     private void openArticlePage(String url) {
