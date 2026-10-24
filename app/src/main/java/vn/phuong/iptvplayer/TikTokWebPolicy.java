@@ -26,6 +26,20 @@ public final class TikTokWebPolicy {
         }
     }
 
+    /**
+     * Rewrites Android WebView's embedded-app marker into a normal mobile-browser UA.
+     * Keep the actual Chromium/device tokens so responsive rendering still matches the phone.
+     */
+    public static String normalizeMobileUserAgent(String userAgent) {
+        if (userAgent == null) return "";
+        return userAgent.replace("; wv", "").replace(" Version/4.0", "");
+    }
+
+    /** HTTP(S) links stay inside NM7; all custom URI schemes must be consumed by the app. */
+    public static boolean shouldStayInWebView(String rawUrl) {
+        return isWebUrl(rawUrl);
+    }
+
     /** Identifies TikTok-owned domains without treating look-alike hostnames as TikTok. */
     public static boolean isTikTokUrl(String rawUrl) {
         if (!isWebUrl(rawUrl)) return false;
