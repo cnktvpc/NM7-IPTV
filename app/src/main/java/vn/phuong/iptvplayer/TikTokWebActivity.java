@@ -16,6 +16,8 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.view.WindowInsets;
+import android.view.WindowInsetsController;
 import android.webkit.CookieManager;
 import android.webkit.PermissionRequest;
 import android.webkit.SslErrorHandler;
@@ -32,12 +34,6 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowCompat;
-import androidx.core.view.WindowInsetsCompat;
-import androidx.core.view.WindowInsetsControllerCompat;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -71,7 +67,7 @@ public final class TikTokWebActivity extends Activity {
         // This Activity opts into explicit insets handling. Target SDK 36 uses
         // edge-to-edge by default; padding the content by real system insets prevents
         // TikTok's own top navigation from being drawn underneath the Android status bar.
-        WindowCompat.setDecorFitsSystemWindows(window, false);
+        setDecorFitsSystemWindows(false);
         window.setStatusBarColor(Color.BLACK);
         window.setNavigationBarColor(Color.BLACK);
         window.getDecorView().setSystemUiVisibility(0);
@@ -79,10 +75,7 @@ public final class TikTokWebActivity extends Activity {
             window.setNavigationBarContrastEnforced(false);
             window.setStatusBarContrastEnforced(false);
         }
-        WindowInsetsControllerCompat systemBars =
-                new WindowInsetsControllerCompat(window, window.getDecorView());
-        systemBars.setAppearanceLightStatusBars(false);
-        systemBars.setAppearanceLightNavigationBars(false);
+        setLightSystemBarIcons(false);
 
         buildContent();
         configureWebView();
@@ -98,10 +91,25 @@ public final class TikTokWebActivity extends Activity {
         root = new FrameLayout(this);
         root.setBackgroundColor(Color.BLACK);
         root.setClipToPadding(false);
-        ViewCompat.setOnApplyWindowInsetsListener(root, (view, insets) -> {
-            Insets bars = insets.getInsets(
-                    WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
-            view.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+        root.setOnApplyWindowInsetsListener((view, insets) -> {
+            int left;
+            int top;
+            int right;
+            int bottom;
+            if (Build.VERSION.SDK_INT >= 30) {
+                android.graphics.Insets bars = insets.getInsets(
+                        WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
+                left = bars.left;
+                top = bars.top;
+                right = bars.right;
+                bottom = bars.bottom;
+            } else {
+                left = insets.getSystemWindowInsetLeft();
+                top = insets.getSystemWindowInsetTop();
+                right = insets.getSystemWindowInsetRight();
+                bottom = insets.getSystemWindowInsetBottom();
+            }
+            view.setPadding(left, top, right, bottom);
             return insets;
         });
 
@@ -159,7 +167,7 @@ public final class TikTokWebActivity extends Activity {
         root.addView(errorPanel, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         setContentView(root);
-        ViewCompat.requestApplyInsets(root);
+        root.requestApplyInsets();
     }
 
     private void configureWebView() {
@@ -339,21 +347,24 @@ public final class TikTokWebActivity extends Activity {
         progress.setVisibility(View.GONE);
         root.addView(view, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
-        WindowInsetsControllerCompat controller = new WindowInsetsControllerCompat(getWindow(), root);
-        controller.setAppearanceLightStatusBars(false);
-        controller.setAppearanceLightNavigationBars(false);
-        controller.setSystemBarsBehavior(
-                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
-        controller.hide(WindowInsetsCompat.Type.systemBars());
-        root.setSystemUiVisibility(
-                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                        | View.SYSTEM_UI_FLAG_FULLSCREEN
-                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                        | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
-        ViewCompat.requestApplyInsets(root);
+        setDecorFitsSystemWindows(false);
+        if (Build.VERSION.SDK_INT >= 30) {
+            WindowInsetsController controller = getWindow().getInsetsController();
+            if (controller != null) {
+                controller.setSystemBarsBehavior(
+                        WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+                controller.hide(WindowInsets.Type.systemBars());
+            }
+        } else {
+            root.setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+        }
+        root.requestApplyInsets();
         if (requestedOrientation != ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED) {
             setRequestedOrientation(requestedOrientation);
         }
@@ -366,13 +377,14 @@ public final class TikTokWebActivity extends Activity {
         fullscreenView = null;
         fullscreenCallback = null;
         root.removeView(oldView);
-        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        setDecorFitsSystemWindows(false);
         root.setSystemUiVisibility(previousSystemUiVisibility);
-        WindowInsetsControllerCompat controller = new WindowInsetsControllerCompat(getWindow(), root);
-        controller.setAppearanceLightStatusBars(false);
-        controller.setAppearanceLightNavigationBars(false);
-        controller.show(WindowInsetsCompat.Type.systemBars());
-        ViewCompat.requestApplyInsets(root);
+        if (Build.VERSION.SDK_INT >= 30) {
+            WindowInsetsController controller = getWindow().getInsetsController();
+            if (controller != null) controller.show(WindowInsets.Type.systemBars());
+        }
+        setLightSystemBarIcons(false);
+        root.requestApplyInsets();
         setRequestedOrientation(previousRequestedOrientation);
         if (callback != null) callback.onCustomViewHidden();
     }
@@ -441,6 +453,31 @@ public final class TikTokWebActivity extends Activity {
             progress.setVisibility(View.GONE);
             errorPanel.setVisibility(View.VISIBLE);
         });
+    }
+
+    private void setDecorFitsSystemWindows(boolean fits) {
+        if (Build.VERSION.SDK_INT >= 30) {
+            getWindow().setDecorFitsSystemWindows(fits);
+        }
+        // Older Android versions use decor fitting by default; the inset listener above
+        // still adds status/navigation padding for consistent layout.
+    }
+
+    private void setLightSystemBarIcons(boolean light) {
+        if (Build.VERSION.SDK_INT >= 30) {
+            WindowInsetsController controller = getWindow().getInsetsController();
+            if (controller != null) {
+                int mask = WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+                        | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;
+                controller.setSystemBarsAppearance(light ? mask : 0, mask);
+            }
+        } else {
+            int flags = getWindow().getDecorView().getSystemUiVisibility();
+            int mask = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+            if (Build.VERSION.SDK_INT >= 26) mask |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+            getWindow().getDecorView().setSystemUiVisibility(
+                    light ? flags | mask : flags & ~mask);
+        }
     }
 
     private int dp(int value) {
