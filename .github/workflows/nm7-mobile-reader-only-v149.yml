@@ -121,8 +121,8 @@ jobs:
           feed_file="$(mktemp)"
           trap 'rm -f "$feed_file"' EXIT
           curl --retry 1 --retry-delay 2 --connect-timeout 4 --max-time 18 -fsS "$base/rss/football" -o "$feed_file"
-          grep -Eiq '<(rss|feed|rdf:RDF)\\b' "$feed_file"
-          grep -Eiq '<(item|entry)\\b' "$feed_file"
+          grep -Eiq '<(rss|feed|rdf:RDF)([[:space:]>])' "$feed_file"
+          grep -Eiq '<(item|entry)([[:space:]>])' "$feed_file"
           test "$(wc -c < "$feed_file")" -gt 250
 
       - name: Check Mobile lifecycle regression guards
