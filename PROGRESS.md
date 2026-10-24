@@ -1,25 +1,27 @@
-# TIẾN ĐỘ MỚI NHẤT — NM7 IPTV MOBILE 1.10.151 — NEWS SOURCE RECOVERY — 2026-10-24
+# TIẾN ĐỘ MỚI NHẤT — NM7 IPTV MOBILE 1.10.151 — NEWS SOURCE RECOVERY — CI SUCCESS — 2026-10-24
 
-## Kết quả hiện tại
+## Trạng thái cuối
 - **Nhánh thử nghiệm:** `rebuild/reader-only-from-stable-142-20261023`.
-- **Candidate:** 1.10.151 / versionCode 167, dựng trên source baseline 1.10.142 commit `4fc8b187db7e48591e1bcb11969436a56d27d06a`.
-- **Code SHA đang build:** [`945c6a73c9a52b52b367cb6a1e15bdf01c036b6d`](https://github.com/cnktvpc/NM7-IPTV/commit/945c6a73c9a52b52b367cb6a1e15bdf01c036b6d).
-- **GitHub Actions:** [Run 40066396996 — 1.10.151 News Source Recovery](https://github.com/cnktvpc/NM7-IPTV/actions/runs/40066396996). Workflow đã vượt qua các bước kiểm tra cấu hình phiên bản, Reader integration, bảo vệ YouTube và lifecycle; build/test tiếp tục theo dõi đến khi có kết quả cuối.
-- **APK mới:** chưa ghi kết quả/đường dẫn ở thời điểm cập nhật này; sẽ bổ sung sau khi artifact upload thành công.
-- **Stable không đổi:** `stable/mobile-1.10.142` còn SHA `7500feb0a2755148e1a40ca12a1037380253bc46`; chưa merge/promote candidate.
-- **Phạm vi:** nguồn báo và Reader; không cố ý thay đổi YouTube/SmartTube hoặc playlist mặc định. Candidate dựa trên đúng mã nền 1.10.142.
+- **Candidate:** 1.10.151 / versionCode 167, từ source baseline NM7 Mobile 1.10.142 commit `4fc8b187db7e48591e1bcb11969436a56d27d06a`.
+- **Code SHA đã build:** [`945c6a73c9a52b52b367cb6a1e15bdf01c036b6d`](https://github.com/cnktvpc/NM7-IPTV/commit/945c6a73c9a52b52b367cb6a1e15bdf01c036b6d).
+- **GitHub Actions:** [Run 40066396996 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/40066396996).
+- **APK:** [NM7-IPTV-Mobile-1.10.151-NEWS-SOURCES](https://github.com/cnktvpc/NM7-IPTV/actions/runs/40066396996/artifacts/12549890920), artifact ID `12549890920`, 44,029,080 bytes, hết hạn 2026-11-23. SHA-256 archive digest: `a920fabb0fa924743f113ed6550a0bf92dc362463e966ca9a46360566275af69`.
+- **Kiểm thử:** Reader-focused unit tests PASS; build Mobile APK PASS; full Mobile unit-test suite PASS; upload artifact PASS; không có bước lỗi trong lượt build cuối.
+- **Stable không đổi:** `stable/mobile-1.10.142` vẫn ở SHA `7500feb0a2755148e1a40ca12a1037380253bc46`; chưa merge/promote candidate.
+- **Lưu ý:** CI chứng minh mã biên dịch và test vượt qua; chưa thể thay thế kiểm tra trực tiếp trên điện thoại, nên cần xác nhận nguồn TT247 tải bài thực tế trên thiết bị.
 
 ## Phân tích lỗi Thể Thao 247
-- Video người dùng gửi cho thấy tab **Bóng đá** bị kẹt ở trạng thái “Đang tải tin” rồi hiện nút thử lại.
-- Trước sửa, tab bóng đá chỉ thử `https://thethao247.vn/bong-da.rss`; fallback HTML trả về trang chủ chung thay vì danh mục bóng đá.
-- Đối chiếu danh mục RSS chính thức thấy có các feed riêng cho Bóng đá Việt Nam, Bóng đá quốc tế, Ngoại hạng Anh, World Cup, La Liga, Cúp C1/C2, Bóng đá Đức và nhiều môn thể thao. Feed `bong-da.rss` trả về lỗi 503 trong lần xác minh trực tuyến; do đó không nên coi đó là nguồn duy nhất.
-- Candidate mới thử các feed bóng đá thay thế rồi chuyển sang trang HTML chuyên mục chính thức; ghép bài trùng lặp một lần, mở rộng selector lấy link bài và dùng timeout ngắn hơn với host này.
-- Thể Thao 247 có các tab bổ sung: Bóng đá Việt Nam, V-League, Đội tuyển Quốc gia, Bóng đá quốc tế, Ngoại hạng Anh, World Cup 2026, La Liga, Cúp C1/C2, Bóng đá Đức, Nhận định, Chuyển nhượng, Tennis, Golf, Bóng rổ, Cầu lông, Bóng chuyền và Võ thuật.
+- Video người dùng gửi cho thấy tab **Bóng đá** bị kẹt ở “Đang tải tin” rồi hiện nút thử lại.
+- Trước sửa, tab bóng đá chỉ thử `https://thethao247.vn/bong-da.rss`; fallback HTML có thể quay về trang chủ chung thay vì danh mục bóng đá.
+- Đối chiếu RSS index chính thức, nguồn có feed riêng cho Bóng đá Việt Nam, Bóng đá quốc tế, Ngoại hạng Anh, World Cup, La Liga, C1/C2, bóng đá Đức, Tennis, Golf, Bóng rổ, Cầu lông, Bóng chuyền và nhiều môn khác. Lần kiểm tra trực tuyến gặp HTTP 503 ở `bong-da.rss`; vì vậy không nên phụ thuộc duy nhất vào feed đó.
+- Candidate thử các RSS bóng đá thay thế rồi chuyển sang trang HTML chuyên mục chính thức; chống trùng bài, mở rộng selector link bài và rút ngắn timeout cho hostname này để tăng khả năng chuyển sang fallback.
+- Thêm các tab TT247: Bóng đá Việt Nam, V-League, Đội tuyển Quốc gia, Bóng đá quốc tế, Ngoại hạng Anh, World Cup 2026, La Liga, Cúp C1/C2, Bóng đá Đức, Nhận định, Chuyển nhượng, Tennis, Golf, Bóng rổ, Cầu lông, Bóng chuyền, Võ thuật.
 
 ## Mở rộng nguồn báo như SuperOK
-- Bổ sung vào catalog để người dùng có thể cài từ mục **Quản lý nguồn đọc**: Znews, GameK, Tuổi Trẻ Cười, Emdep, Mực Tím, Sức khỏe & Đời sống (các nguồn thấy trong video), cùng VietNamNet, VietnamPlus và VOV.
-- GameK và Sức khỏe & Đời sống có các tab RSS theo nhóm nội dung; nguồn không có RSS dùng bộ trích xuất HTML và vẫn mở bài theo domain gốc.
-- Cập nhật test router chuyên mục Thể Thao 247 và verifier CI để khóa các nguồn mới, fallback RSS/HTML, version 1.10.151 và giữ nguyên chuỗi YouTube/SmartTube.
+- Bổ sung các nguồn có trong video: **Znews, GameK, Tuổi Trẻ Cười, Emdep, Mực Tím, Sức khỏe & Đời sống**; bổ sung thêm **VietNamNet, VietnamPlus, VOV**. Các nguồn ở trong danh mục nguồn báo để cài/bật từ “Quản lý nguồn đọc”.
+- GameK và Sức khỏe & Đời sống có RSS theo từng nhóm chủ đề; nguồn trang chủ dùng fallback HTML khi RSS không khai báo hoặc không trả nội dung.
+- Đã thêm test route cho TT247, verifier kiểm tra fallback/source catalog/version, đồng thời kiểm tra giữ nguyên chuỗi YouTube/SmartTube so với baseline.
+- **Build xong:** [CI run 40066396996](https://github.com/cnktvpc/NM7-IPTV/actions/runs/40066396996) — all required steps succeeded. [APK artifact](https://github.com/cnktvpc/NM7-IPTV/actions/runs/40066396996/artifacts/12549890920).
 
 
 ## Thay đổi cho vuốt/chuyển tab
