@@ -20,12 +20,12 @@ android {
         val ttKey = (project.findProperty("tiktokClientKey") as String?)
             ?: System.getenv("TIKTOK_CLIENT_KEY") ?: ""
         val ttApi = (project.findProperty("tiktokApiBaseUrl") as String?)
-            ?: System.getenv("TIKTOK_API_BASE_URL") ?: ""
+            ?: System.getenv("TIKTOK_API_BASE_URL") ?: "https://nm7-tiktok-open-auth.phuongnm7-iptv.workers.dev"
         fun quoteBuildConfig(value: String): String =
             "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
         buildConfigField("String", "TIKTOK_CLIENT_KEY", quoteBuildConfig(ttKey))
         buildConfigField("String", "TIKTOK_API_BASE_URL", quoteBuildConfig(ttApi))
-        buildConfigField("String", "TIKTOK_REDIRECT_URI", quoteBuildConfig("https://open-platform.tiktokapis.com/callback"))
+        buildConfigField("String", "TIKTOK_REDIRECT_URI", quoteBuildConfig("https://nm7-tiktok-open-auth.phuongnm7-iptv.workers.dev/callback"))
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         manifestPlaceholders["applicationClass"] = "vn.phuong.iptvplayer.MobileNm7Application"
