@@ -285,8 +285,7 @@ jobs:
           cp app/build/outputs/apk/mobile/debug/*.apk dist/mobile/
           cd dist/mobile && sha256sum *.apk > SHA256SUMS.txt
 
-      - name: Run full Mobile unit-test suite (non-blocking; build-only request)
-        continue-on-error: true
+      - name: Run full Mobile unit-test suite (blocking regression gate)
         run: |
           set -euxo pipefail
           gradle --no-daemon --console=plain \
