@@ -1917,8 +1917,9 @@ public final class NewsReaderActivity extends Activity {
             feeds.add("https://thethao247.vn/the-thao-24h.rss");
         }
         Exception lastFailure = null;
+        Set<String> attemptedFeeds = new HashSet<>();
         for (String url : feeds) {
-            if (containsIgnoreCase(feeds.subList(0, feeds.indexOf(url)), url)) continue;
+            if (!attemptedFeeds.add(url.toLowerCase(Locale.ROOT))) continue;
             try {
                 for (Article article : parseFeed(url, source.name)) addUniqueArticle(accumulated, article);
             } catch (Exception e) {
@@ -1939,7 +1940,7 @@ public final class NewsReaderActivity extends Activity {
                 if (lastFailure == null) lastFailure = e;
             }
             // Preserve a fast response when the first official source already gave a complete list.
-            if (accumulated.size() >= 12) break;
+            if (accumulated.size() >= 12 && !"Bóng đá".equals(category)) break;
         }
         if (!accumulated.isEmpty()) return new ArrayList<>(accumulated.values());
         if (lastFailure != null) {
@@ -1947,11 +1948,6 @@ public final class NewsReaderActivity extends Activity {
                     + safeError(lastFailure), lastFailure);
         }
         return Collections.emptyList();
-    }
-
-    private static boolean containsIgnoreCase(List<String> values, String candidate) {
-        for (String value : values) if (value.equalsIgnoreCase(candidate)) return true;
-        return false;
     }
 
     private List<Article> loadArticlesWithFallback(Source source, String feedUrl, String category) throws Exception {
@@ -2121,7 +2117,9 @@ public final class NewsReaderActivity extends Activity {
         Elements links = document.select(
                 "article a[href],.item-news a[href],.item-news-common a[href],.news-item a[href]," +
                 ".news-card a[href],.box-category-link-title a[href],.title-news a[href]," +
-                ".news-title a[href],.story-title a[href],h1 a[href],h2 a[href],h3 a[href]");
+                ".news-title a[href],.story-title a[href],.item-title a[href],.article-title a[href]," +
+                ".box-item a[href],.list-news a[href],.post-title a[href],.title a[href]," +
+                "h1 a[href],h2 a[href],h3 a[href]");
         if (links.size() < 5) links = document.select("a[href]");
 
         LinkedHashMap<String, Article> unique = new LinkedHashMap<>();
