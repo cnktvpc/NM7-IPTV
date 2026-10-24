@@ -1,4 +1,22 @@
-# TRẠNG THÁI CUỐI — NM7 IPTV MOBILE 1.10.152 — 2026-10-24
+# CẬP NHẬT TIẾN ĐỘ — 2026-10-24 (13:53 +07)
+
+## Trạng thái xác nhận
+- **Candidate build workflow #54: SUCCESS** — https://github.com/cnktvpc/NM7-IPTV/actions/runs/40070653204
+- Candidate commit: `2758a8b671ca236b93202e3fe7107081d0278c7d`.
+- **Live gateway smoke-test:** PASS cho 4 tab Thể Thao 247 (Trang chủ, Thể thao, Bóng đá, Bóng đá Việt Nam); response RSS/XML có item.
+- **Reader unit tests:** PASS. **Full Mobile unit tests:** PASS. **APK build/upload:** PASS.
+- Candidate APK artifact: https://github.com/cnktvpc/NM7-IPTV/actions/runs/40070653204/artifacts/12551506352
+- Artifact `NM7-IPTV-Mobile-1.10.152-FAST-NEWS-READER`, ZIP 44,029,544 bytes; SHA-256 `70cc905753a5d2040d4fd6cbc3b160bcfba7750ab24f70614df94708baf386af`.
+- **Latest failed run #456 is a separate legacy workflow** `.github/workflows/android-mobile-final.yml` (run ID 40071014079) at current branch HEAD; it returned no jobs. It is not the candidate workflow #54 and does not invalidate the artifact already built by #54. It must not be reported as a candidate build success/failure interchangeably.
+- **Stable protected:** `stable/mobile-1.10.142` remains at `7500feb0a2755148e1a40ca12a1037380253bc46`; no promotion/merge was made.
+- **Remaining validation:** install the candidate APK on the user's device and confirm live article loading and switching speed. CI verifies gateway response shape/items but cannot certify every device/network condition.
+
+## Root causes and fixes recorded
+1. TT247 RSS origin returned HTTP 503, category HTML 403; prior RSS mirror returned 402. Gateway fallback was expanded and made parallel, with provider diagnostics on failure.
+2. The category router had a duplicate switch label; removed and added a route regression assertion.
+3. Full Mobile tests found the mini-player layout declared `texture_view` despite the SurfaceView regression contract. Changed it to `surface_view`; full tests are now blocking rather than `continue-on-error`.
+
+---
 
 - **GitHub Actions run #54: SUCCESS:** https://github.com/cnktvpc/NM7-IPTV/actions/runs/40070653204
 - Commit: `2758a8b671ca236b93202e3fe7107081d0278c7d`.
