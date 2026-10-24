@@ -63,6 +63,17 @@ public class ReaderFeedCategoryRouterTest {
                 "https://example.com/bong-da/ngoai-hang-anh.html"));
     }
 
+    @Test public void theThao247UsesOfficialCategoryFallbackPages() {
+        assertEquals("https://thethao247.vn/bong-da-quoc-te-c2/",
+                ReaderFeedCategoryRouter.htmlPageUrl("thethao247", "Bóng đá", "https://thethao247.vn/"));
+        assertEquals("https://thethao247.vn/bong-da-viet-nam-c1/",
+                ReaderFeedCategoryRouter.htmlPageUrl("thethao247", "Bóng đá Việt Nam", "https://thethao247.vn/"));
+        assertEquals("https://thethao247.vn/ngoai-hang-anh-c8/",
+                ReaderFeedCategoryRouter.htmlPageUrl("thethao247", "Ngoại hạng Anh", "https://thethao247.vn/"));
+        assertEquals("https://thethao247.vn/the-thao-c5/",
+                ReaderFeedCategoryRouter.htmlPageUrl("thethao247", "Thể thao", "https://thethao247.vn/"));
+    }
+
     @Test public void categoryRouterLeavesOtherPublishersUnchanged() {
         assertEquals("https://vnexpress.net/the-thao",
                 ReaderFeedCategoryRouter.htmlPageUrl("vnexpress", "Thể thao", "https://vnexpress.net/the-thao"));
