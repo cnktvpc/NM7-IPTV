@@ -1,25 +1,30 @@
 # TIẾN ĐỘ — NM7 IPTV MOBILE 1.10.143 TIKTOK — 24/10/2026
 
-## Phạm vi và baseline
-- Baseline được yêu cầu: `cnktvpc/NM7-IPTV`, nhánh `stable/mobile-1.10.142`, version 1.10.142 / versionCode 158; nhánh stable không bị sửa.
-- Nhánh phát triển: `feature/tiktok-in-app-mobile-1.10.142-20261024`.
-- Phiên bản ứng viên: 1.10.143 / versionCode 159, giữ nguyên applicationId để cài nâng cấp trên 1.10.142.
+## Baseline và thay đổi
+- Dùng baseline `cnktvpc/NM7-IPTV` / `stable/mobile-1.10.142`, version 1.10.142 / code 158. Stable không bị sửa.
+- Nhánh tính năng `feature/tiktok-in-app-mobile-1.10.142-20261024`; candidate versionName 1.10.143 / versionCode 159; giữ nguyên applicationId.
+- Thêm `TikTokWebActivity` tải website TikTok chính thức trong Android WebView bên trong APK NM7, không cần cài riêng TikTok.
+- Đưa mục TikTok vào `HomeTabBar`, xử lý cookie/DOM storage/JavaScript, lịch sử Back, file chooser ảnh/video và xin quyền camera/micro khi trang yêu cầu. TLS errors bị từ chối; external app schemes không tự mở.
+- Thêm HTML5 fullscreen callback, ẩn/tháo system UI và khôi phục orientation/system UI; Back thoát fullscreen trước rồi mới điều hướng lùi.
+- Khi vào TikTok, tạm dừng/release phiên IPTV/YouTube để tránh âm thanh nền.
+- Thêm `TikTokWebPolicy` và 4 kiểm tra URL/scheme/domain; đăng ký Activity trong manifest.
+- Thêm workflow riêng `.github/workflows/tiktok-mobile-build.yml`, chỉ chạy khi app/build configuration thay đổi. Workflow build APK, upload artifact trước unit test, rồi chạy `TikTokWebPolicyTest`.
 
-## Đã triển khai
-- Thêm `TikTokWebActivity` dùng Android WebView tải website TikTok mobile chính thức trong cùng APK NM7.
-- Thêm tab TikTok vào `HomeTabBar` hiện có, để không yêu cầu cài thêm ứng dụng.
-- Xử lý Back: duyệt lùi lịch sử web TikTok trước, sau đó quay về NM7.
-- Cấu hình JavaScript/DOM storage/cookies cho website; giữ link web và trang đăng nhập trong Activity; không bỏ qua lỗi TLS. Hỗ trợ file chooser ảnh/video và xin quyền camera/micro khi trang yêu cầu.
-- Khi chuyển qua TikTok, yêu cầu suspend/dừng phiên YouTube/IPTV đang phát để tránh âm thanh nền.
-- Thêm `TikTokWebPolicy` và unit tests cho URL chính thức, miền TikTok, hostname giả mạo, scheme nguy hiểm và URL có credentials.
-- Đăng ký `TikTokWebActivity` trong manifest và tăng phiên bản ứng viên lên 1.10.143 / code 159.
-- Thêm workflow riêng `.github/workflows/tiktok-mobile-build.yml` để build APK và chạy unit test policy mà không sửa workflow hiện hành của stable; upload APK trước khi test để dễ kiểm tra artifact nếu test thất bại.
+## CI cuối — PASS
 
-## CI / việc còn xác nhận
-- Workflow riêng bắt đầu chạy tại [run 40055965798](https://github.com/cnktvpc/NM7-IPTV/actions/runs/40055965798); tại thời điểm ghi mục này đang ở bước cài Android SDK. Cần xác minh kết quả build/test và xử lý lỗi nếu phát sinh.
-- Cần tạo PR nháp về `stable/mobile-1.10.142`; chưa merge.
-- Chưa thử APK trên điện thoại vật lý. TikTok có thể hạn chế đăng nhập/captcha trong WebView; phải xác nhận vuốt feed, đăng nhập, phát video, Back, xoay màn hình và không phát nền trên thiết bị thật trước khi phát hành.
-- Không sửa NM7 TV Web, NM7 TV Android hoặc nhánh stable.
+- App-source commit: `81271a7ce017bc2a6c86464d163dcb5476822968`.
+- Push build: https://github.com/cnktvpc/NM7-IPTV/actions/runs/40056406116 — SUCCESS.
+- PR build: https://github.com/cnktvpc/NM7-IPTV/actions/runs/40056408785 — SUCCESS.
+- Gradle assemble APK: PASS; artifact upload: PASS; `TikTokWebPolicyTest`: PASS.
+- Artifact: `NM7-IPTV-Mobile-1.10.143-TIKTOK-INTEGRATED`, ID `12545577289`, tải ZIP: https://github.com/cnktvpc/NM7-IPTV/actions/runs/40056406116/artifacts/12545577289. ZIP chứa APK + `SHA256SUMS.txt`, hạn lưu đến 23/11/2026.
+- Phát hiện/sửa lỗi trong CI: các lời gọi timer WebView phải dùng instance `webView.resumeTimers()/pauseTimers()`, không gọi static; bổ sung callback fullscreen trước lần build cuối.
+- PR #3: https://github.com/cnktvpc/NM7-IPTV/pull/3, draft; chưa merge.
+
+## Còn phải kiểm tra bằng thiết bị thật
+- Chưa có xác nhận test trên điện thoại vật lý. Kiểm tra vuốt feed, đăng nhập/captcha, video, upload, fullscreen, Back/rotation và dừng âm thanh nền trước khi merge.
+- TikTok có thể hạn chế một số luồng đăng nhập trong WebView; không coi unit test là bằng chứng cho đăng nhập hoặc phát video thực tế.
+- APK `mobileDebug` có thể được ký bằng debug key khác so với bản đã cài; nếu báo xung đột chữ ký, không gỡ bản đang dùng trước khi sao lưu dữ liệu.
+- NM7 TV Web, NM7 TV Android và nhánh stable 1.10.142 không bị thay đổi.
 
 ---
 
