@@ -72,12 +72,15 @@ jobs:
               if not build.is_file() or not manifest.is_file():
                   raise SystemExit('TikTok SDK module missing: '+module)
               text=build.read_text()
-              package=re.search(r'\\bpackage\\s*=\\s*["\\']([^"\\']+)["\\']',manifest.read_text()).group(1)
-              if not re.search(r'\\bnamespace\\s',text):
-                  text=re.sub(r'(android\\s*\\{)',r'\\1\\n    namespace "'+package+'"',text,1)
-              text=text.replace('apply from: "${rootDir}/deploy.gradle"','')
+              match=re.search(r'package\s*=\s*"([^"]+)"', manifest.read_text())
+              if not match:
+                  raise SystemExit('TikTok SDK manifest package missing: '+module)
+              package=match.group(1)
+              if not re.search(r'namespace\s', text):
+                  text=re.sub(r'(android\s*\{)', r'\1\n    namespace "'+package+'"', text, 1)
+              text=text.replace('apply from: "' + chr(36) + '{rootDir}/deploy.gradle"', '')
               if 'buildFeatures' not in text:
-                  text=re.sub(r'(android\\s*\\{)',r'\\1\\n    buildFeatures { buildConfig true }',text,1)
+                  text=re.sub(r'(android\s*\{)', r'\1\n    buildFeatures { buildConfig true }', text, 1)
               build.write_text(text)
           PY
 
