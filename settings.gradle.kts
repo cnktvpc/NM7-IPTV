@@ -13,6 +13,8 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         maven { url = uri("https://jitpack.io") }
+        // Official TikTok OpenSDK repository.
+        maven { url = uri("https://artifact.bytedance.com/repository/AwemeOpenSDK") }
     }
 }
 
