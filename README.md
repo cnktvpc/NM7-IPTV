@@ -1,12 +1,20 @@
-# NM7 IPTV Mobile — latest Reader candidate status (2026-10-23)
+# NM7 IPTV Mobile — Smooth Reader candidate 1.10.150 (2026-10-24)
 
-- **Candidate:** 1.10.149 / versionCode 165; isolated branch `rebuild/reader-only-from-stable-142-20261023`.
-- **Latest code commit:** [`dc01ba47011e5f9e9c0ffe12c1ce187d5a95e8ac`](https://github.com/cnktvpc/NM7-IPTV/commit/dc01ba47011e5f9e9c0ffe12c1ce187d5a95e8ac).
-- **GitHub Actions:** [run 39936793798 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39936793798). Reader-focused tests, APK build, full Mobile unit-test suite and artifact upload all passed.
-- **APK artifact:** [NM7-IPTV-Mobile-1.10.149-READER-BASELINE142](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39936793798/artifacts/12494138308), artifact ID `12494138308`, 44,021,005 bytes, expires 2026-11-22. SHA-256 archive digest: `60b9c29a074b051558ac137daa52fa30490a3bfdc85b4e2660bbb74095096e10`.
-- **Extraction regression resolved in CI:** the requested/feed headline is a fallback matching key; a sole semantic `<article>` is accepted only when it has substantive content and is not link-heavy. Multi-article pages still require matching to avoid neighboring-story contamination.
-- **Remaining release gate:** manually verify the exact CafeF article (title, summary, hero image, paragraphs and order) on device and retest YouTube Back/mini-player behavior. Keep this candidate isolated until the user confirms.
-- **Stable protected:** `stable/mobile-1.10.142` remains unchanged. The legacy `android-mobile-final.yml` still fails immediately with no jobs; it is separate from the successful Reader-only build.
+- **Candidate:** `1.10.150` / versionCode `166`; isolated branch `rebuild/reader-only-from-stable-142-20261023`.
+- **Built code SHA:** [`240b2875dce64f92479a2e9dfaf44bd04bed53ee`](https://github.com/cnktvpc/NM7-IPTV/commit/240b2875dce64f92479a2e9dfaf44bd04bed53ee), based on verified 1.10.142 source commit `4fc8b187db7e48591e1bcb11969436a56d27d06a`.
+- **GitHub Actions:** [run 40048625858 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/40048625858). Reader-focused unit tests, APK build, full Mobile unit-test suite, and artifact upload all succeeded.
+- **APK artifact:** [NM7-IPTV-Mobile-1.10.150-SMOOTH-READER](https://github.com/cnktvpc/NM7-IPTV/actions/runs/40048625858/artifacts/12542926072), artifact ID `12542926072`, 44,021,024 bytes, expires 2026-11-23. SHA-256 archive digest: `7d8c66b5dab31493d0936b3fb0fc64974daff9e4ce61fd6f9f49c86aa26e7d80`.
+- **Smooth Reader changes:** horizontal swipes move the current and neighbor pages together with the finger; cached category views keep their rows, thumbnails, and scroll state; neighbor categories are prefetched; stale network responses cannot replace the newly selected category; thumbnail images are downsampled and held in a bounded LRU cache.
+- **24h categories:** added official HTML listing tabs for [Ngoại Hạng Anh](https://www.24h.com.vn/bong-da-ngoai-hang-anh-c149.html), [Thế giới](https://www.24h.com.vn/the-gioi-24h-c415e7888.html), [Kinh doanh](https://www.24h.com.vn/kinh-doanh-c161.html), and [Giải trí](https://www.24h.com.vn/giai-tri-c731.html). The list-page HTML route is used for EPL rather than assuming a dedicated RSS feed.
+- **Manual acceptance remains:** install the artifact and test fast left/right swipes, swipe-back to cached categories, 24h Ngoại Hạng Anh article availability, article title/summary/image/body correctness, and existing YouTube Back/mini-player and IPTV playback. CI does not prove runtime behavior on the user's device.
+- **Stable protected:** `stable/mobile-1.10.142` remains at SHA `7500feb0a2755148e1a40ca12a1037380253bc46`. The candidate has not been merged/promoted.
+
+## Relevant links
+
+- [Feature branch](https://github.com/cnktvpc/NM7-IPTV/tree/rebuild/reader-only-from-stable-142-20261023)
+- [Latest build and test run](https://github.com/cnktvpc/NM7-IPTV/actions/runs/40048625858)
+- [Latest code commit](https://github.com/cnktvpc/NM7-IPTV/commit/240b2875dce64f92479a2e9dfaf44bd04bed53ee)
+- [README history / earlier Reader return and extraction fixes](https://github.com/cnktvpc/NM7-IPTV/blob/rebuild/reader-only-from-stable-142-20261023/README.md)
 
 ---
 
