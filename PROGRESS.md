@@ -1,20 +1,41 @@
-# TIẾN ĐỘ MỚI NHẤT — NM7 IPTV MOBILE 1.10.149 — CI ĐÃ PASS — 2026-10-23
+# TIẾN ĐỘ MỚI NHẤT — NM7 IPTV MOBILE 1.10.150 — SMOOTH READER — CI PASS — 2026-10-24
 
-## Trạng thái
+## Kết quả hiện tại
 - **Nhánh thử nghiệm:** `rebuild/reader-only-from-stable-142-20261023`.
-- **Candidate:** 1.10.149 / versionCode 165; dựng từ đúng source baseline 1.10.142 commit `4fc8b187db7e48591e1bcb11969436a56d27d06a`.
-- **Code sửa extraction mới nhất:** [`dc01ba47011e5f9e9c0ffe12c1ce187d5a95e8ac`](https://github.com/cnktvpc/NM7-IPTV/commit/dc01ba47011e5f9e9c0ffe12c1ce187d5a95e8ac).
-- **GitHub Actions:** [Run 39936793798 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39936793798). Reader-focused unit tests, APK build, full Mobile unit-test suite và upload artifact đều PASS.
-- **APK:** [NM7-IPTV-Mobile-1.10.149-READER-BASELINE142](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39936793798/artifacts/12494138308), artifact ID `12494138308`, 44,021,005 bytes, hết hạn 2026-11-22. SHA-256 archive digest: `60b9c29a074b051558ac137daa52fa30490a3bfdc85b4e2660bbb74095096e10`.
-- **Lỗi CI đã xử lý:** run `39936098214` fail 3 bài test ReaderArticleExtractor vì bộ trích xuất từ chối trang có một thẻ `<article>` hợp lệ khi metadata tiêu đề bị thiếu. Đã bổ sung fallback dùng tiêu đề yêu cầu/RSS làm khóa đối chiếu dự phòng; chỉ chấp nhận một thẻ `<article>` duy nhất khi có nội dung thực chất và không quá nhiều liên kết. Trang có nhiều bài vẫn phải đối chiếu tiêu đề/tóm tắt để tránh lấy nhầm bài kế bên.
-- **Phạm vi được bảo vệ:** không sửa logic YouTube/SmartTube ngoài chuỗi baseline, không đổi nguồn playlist mặc định, không thay đổi chức năng ngoài Reader và hai lỗi điều hướng Reader/IPTV đã xác định.
-- **Stable branch:** `stable/mobile-1.10.142` vẫn nguyên SHA `7500feb0a2755148e1a40ca12a1037380253bc46`; không merge/promote candidate khi chưa có xác nhận test thiết bị.
-- **Ghi chú workflow:** `android-mobile-final.yml` riêng biệt vẫn thất bại tức thời không có jobs; workflow này không tạo APK candidate. Kết quả build thật là workflow Reader-only run `39936793798`.
-- **Cần xác nhận trên thiết bị:** mở lại đúng bài CafeF trong video, kiểm tra tiêu đề, tóm tắt, ảnh đầu bài, nội dung và thứ tự đoạn; sau đó kiểm tra lại YouTube Back/mini-player. CI PASS không thay thế kiểm thử runtime với nguồn bài báo thật.
+- **Candidate:** 1.10.150 / versionCode 166, dựng trên đúng source baseline 1.10.142 commit `4fc8b187db7e48591e1bcb11969436a56d27d06a`.
+- **Code SHA được build:** [`240b2875dce64f92479a2e9dfaf44bd04bed53ee`](https://github.com/cnktvpc/NM7-IPTV/commit/240b2875dce64f92479a2e9dfaf44bd04bed53ee).
+- **GitHub Actions:** [Run 40048625858 — SUCCESS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/40048625858). Reader-focused unit tests, build APK, full Mobile unit-test suite và upload artifact đều PASS.
+- **APK:** [NM7-IPTV-Mobile-1.10.150-SMOOTH-READER](https://github.com/cnktvpc/NM7-IPTV/actions/runs/40048625858/artifacts/12542926072), artifact ID `12542926072`, 44,021,024 bytes, hết hạn 2026-11-23. SHA-256 archive digest: `7d8c66b5dab31493d0936b3fb0fc64974daff9e4ce61fd6f9f49c86aa26e7d80`.
+- **Stable không đổi:** `stable/mobile-1.10.142` còn nguyên SHA `7500feb0a2755148e1a40ca12a1037380253bc46`; chưa merge/promote candidate.
+- **Phạm vi:** chỉ sửa Reader, route chuyên mục báo và các regression guard liên quan; không cố ý thay đổi YouTube/SmartTube, nguồn playlist mặc định, hay phần IPTV ngoài việc giữ nguyên phiên player khi chuyển tab.
 
-## Liên kết liên quan
-- [README mới nhất](https://github.com/cnktvpc/NM7-IPTV/blob/rebuild/reader-only-from-stable-142-20261023/README.md)
-- [Workflow build/test](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39936793798)
+## Thay đổi cho vuốt/chuyển tab
+1. Vuốt ngang giờ kéo trang hiện tại và trang lân cận cùng lúc theo ngón tay; animation hoàn tất khi nhấc tay, không đợi nhấc tay mới đổi trang.
+2. Lưu các view chuyên mục đã dùng (tối đa 5 trang hoạt động), bao gồm danh sách đã render và vị trí cuộn; vuốt quay lại không dựng lại toàn bộ trang nếu đã có cache.
+3. Tải trước hai chuyên mục liền kề và tiếp tục prefetch khi di chuyển qua các tab cache.
+4. Dùng tọa độ chạm raw/screen trong lúc view được translate để tránh sai lệch khoảng vuốt.
+5. Vô hiệu hóa request cũ khi đổi tab/nguồn, và kiểm tra trạng thái trước khi animation kết thúc, để phản hồi trễ hoặc swipe cũ không ghi đè lần chọn tab mới.
+6. Giảm áp lực bộ nhớ ảnh: tạo bitmap thumbnail bằng `inSampleSize`/RGB_565 và giữ tối đa 40 ảnh trong LRU cache.
+7. Khi refresh lỗi, giữ các tin đang hiển thị thay vì xóa trang đang dùng trước khi có kết quả mới.
+
+## Bổ sung chuyên mục 24h
+- Thêm các tab **Ngoại Hạng Anh**, **Thế giới**, **Kinh doanh**, **Giải trí** vào catalog 24h bằng HTML listing route chính thức.
+- Ngoại Hạng Anh dùng [trang chuyên mục chính thức](https://www.24h.com.vn/bong-da-ngoai-hang-anh-c149.html); không giả định nguồn này có RSS riêng. Router cho phép URL bài bóng đá cùng site vì một số bài EPL sử dụng route bóng đá chung.
+- Bổ sung test định tuyến kiểm tra route EPL và bảo đảm router các chuyên mục còn lại không bị thay đổi.
+
+## Kiểm tra và phát hành
+- **Reader integration / bảo vệ YouTube baseline:** PASS.
+- **Reader-focused unit tests:** PASS.
+- **Build Mobile 1.10.150:** PASS.
+- **Full Mobile unit-test suite:** PASS.
+- **Upload APK artifact:** PASS.
+- Các workflow legacy riêng `android-mobile-final.yml` và `nm7-mobile-reader-only-stable142.yml` có thể vẫn báo fail vì cấu hình/phiên bản kỳ vọng cũ; không nhầm các run đó với workflow candidate đã PASS nêu trên.
+- **Cần người dùng test thiết bị thật:** so sánh độ mượt vuốt trái/phải, vuốt về tab đã truy cập, nội dung tab 24h Ngoại Hạng Anh, ảnh/tiêu đề/nội dung bài đọc, và kiểm tra lại YouTube Back/mini-player cùng phát IPTV. Không khẳng định các test runtime này đã được thực hiện tự động.
+
+## Liên kết
+- [README](https://github.com/cnktvpc/NM7-IPTV/blob/rebuild/reader-only-from-stable-142-20261023/README.md)
+- [Workflow build/test PASS](https://github.com/cnktvpc/NM7-IPTV/actions/runs/40048625858)
+- [APK artifact](https://github.com/cnktvpc/NM7-IPTV/actions/runs/40048625858/artifacts/12542926072)
 - [Nhánh thử nghiệm](https://github.com/cnktvpc/NM7-IPTV/tree/rebuild/reader-only-from-stable-142-20261023)
 
 ---
