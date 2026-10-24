@@ -1,3 +1,28 @@
+# TIẾN ĐỘ — NM7 IPTV MOBILE 1.10.143 TIKTOK — 24/10/2026
+
+## Phạm vi và baseline
+- Baseline được yêu cầu: `cnktvpc/NM7-IPTV`, nhánh `stable/mobile-1.10.142`, version 1.10.142 / versionCode 158; nhánh stable không bị sửa.
+- Nhánh phát triển: `feature/tiktok-in-app-mobile-1.10.142-20261024`.
+- Phiên bản ứng viên: 1.10.143 / versionCode 159, giữ nguyên applicationId để cài nâng cấp trên 1.10.142.
+
+## Đã triển khai
+- Thêm `TikTokWebActivity` dùng Android WebView tải website TikTok mobile chính thức trong cùng APK NM7.
+- Thêm tab TikTok vào `HomeTabBar` hiện có, để không yêu cầu cài thêm ứng dụng.
+- Xử lý Back: duyệt lùi lịch sử web TikTok trước, sau đó quay về NM7.
+- Cấu hình JavaScript/DOM storage/cookies cho website; giữ link web và trang đăng nhập trong Activity; không bỏ qua lỗi TLS. Hỗ trợ file chooser ảnh/video và xin quyền camera/micro khi trang yêu cầu.
+- Khi chuyển qua TikTok, yêu cầu suspend/dừng phiên YouTube/IPTV đang phát để tránh âm thanh nền.
+- Thêm `TikTokWebPolicy` và unit tests cho URL chính thức, miền TikTok, hostname giả mạo, scheme nguy hiểm và URL có credentials.
+- Đăng ký `TikTokWebActivity` trong manifest và tăng phiên bản ứng viên lên 1.10.143 / code 159.
+- Thêm workflow riêng `.github/workflows/tiktok-mobile-build.yml` để build APK và chạy unit test policy mà không sửa workflow hiện hành của stable; upload APK trước khi test để dễ kiểm tra artifact nếu test thất bại.
+
+## CI / việc còn xác nhận
+- Workflow riêng bắt đầu chạy tại [run 40055965798](https://github.com/cnktvpc/NM7-IPTV/actions/runs/40055965798); tại thời điểm ghi mục này đang ở bước cài Android SDK. Cần xác minh kết quả build/test và xử lý lỗi nếu phát sinh.
+- Cần tạo PR nháp về `stable/mobile-1.10.142`; chưa merge.
+- Chưa thử APK trên điện thoại vật lý. TikTok có thể hạn chế đăng nhập/captcha trong WebView; phải xác nhận vuốt feed, đăng nhập, phát video, Back, xoay màn hình và không phát nền trên thiết bị thật trước khi phát hành.
+- Không sửa NM7 TV Web, NM7 TV Android hoặc nhánh stable.
+
+---
+
 # CẬP NHẬT TIẾN ĐỘ — BUILD YOUTUBE MINIPLAYER 1.10.142 — 2026-10-22
 
 ## Kết quả kiểm tra
