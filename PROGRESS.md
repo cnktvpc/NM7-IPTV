@@ -6,14 +6,22 @@ Bản 1.10.143 không đạt: giao diện bị kéo giãn, thanh TikTok đè lê
 ## Thay đổi trong nhánh sửa
 - Baseline vẫn là `stable/mobile-1.10.142`; feature branch riêng `feature/tiktok-in-app-mobile-1.10.142-20261024`.
 - Candidate versionName 1.10.144 / versionCode 160.
-- Sửa status/nav bar bằng WindowInsetsCompat: nội dung nhận padding theo system bars/display cutout trên target SDK 36; cập nhật thanh biểu tượng khi vào/ra fullscreen; keyboard của trang đăng nhập dùng adjustResize.
+- Sửa status/nav bar bằng API WindowInsets/WindowInsetsController gốc của Android (không cần AndroidX Core): nội dung nhận padding theo system bars/display cutout trên target SDK 36; cập nhật thanh biểu tượng khi vào/ra fullscreen; keyboard của trang đăng nhập dùng adjustResize.
 - Sửa viewport WebView: tắt wide viewport và overview scaling, giữ text zoom 100%, chuẩn hóa UA sang mobile browser không mang marker `wv`.
 - Chặn app-specific URI schemes, bao gồm `tiktok://`, `intent://` và `market://`; không khởi chạy app ngoài từ handler điều hướng.
 - Thêm unit test cho UA và scheme policy; cập nhật workflow để build artifact `NM7-IPTV-Mobile-1.10.144-TIKTOK-INTEGRATED`.
 
+## CI cuối — PASS (24/10/2026)
+- Commit sửa giao diện: `5d1d49f5`.
+- Push CI: https://github.com/cnktvpc/NM7-IPTV/actions/runs/40058223797 — build APK PASS, upload artifact PASS, `TikTokWebPolicyTest` PASS.
+- PR CI: https://github.com/cnktvpc/NM7-IPTV/actions/runs/40058226294 — build APK PASS, upload artifact PASS, `TikTokWebPolicyTest` PASS.
+- Artifact: `NM7-IPTV-Mobile-1.10.144-TIKTOK-INTEGRATED`, ID `12546163912`, ZIP ~43 MB: https://github.com/cnktvpc/NM7-IPTV/actions/runs/40058223797/artifacts/12546163912. Hạn lưu đến 23/11/2026.
+- Lỗi build đầu do baseline không khai báo AndroidX Core đã được sửa bằng API WindowInsets/WindowInsetsController của Android platform; commit cuối build/test xanh.
+- Lưu ý: CI xanh không thay thế kiểm tra thiết bị. Chưa thể khẳng định vuốt, đăng nhập và bố cục thực tế hoàn hảo cho tới khi người dùng cài APK và xác nhận.
+
 ## Trạng thái
 - CI và APK 1.10.143 đã PASS trước đó nhưng bản đó không đạt yêu cầu UX người dùng; không coi đó là bản bàn giao.
-- Build/test cho 1.10.144 sẽ được đánh giá theo run mới sau commit mã sửa.
+- Build/test cho 1.10.144 đã PASS ở cả push và PR CI; artifact APK đã sẵn sàng tải.
 - Cần xác nhận trên thiết bị thật: giao diện không kéo giãn, nội dung TikTok nằm dưới status bar, chọn TikTok không bật app ngoài, feed swipe/video/Back/fullscreen và không phát âm thanh nền.
 - PR #3 vẫn là draft; không merge vào stable trước khi người dùng xác nhận bản sửa.
 - Không sửa NM7 TV Web hoặc NM7 TV Android.
