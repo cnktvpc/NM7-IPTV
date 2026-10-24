@@ -107,7 +107,7 @@ jobs:
               x=p.read_text(errors='ignore')
               def repl(m):
                   i=[0]
-                  def r(z): i[0]+=1; return '%' + str(i[0]) + '
+                  def r(z): i[0]+=1; return '%' + str(i[0]) + chr(36) + str(z.group(1))
                   return m.group(1)+tok.sub(r,m.group(3))+m.group(4)
               p.write_text(pat.sub(repl,x))
           PY
