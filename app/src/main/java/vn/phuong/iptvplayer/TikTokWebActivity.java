@@ -79,8 +79,10 @@ public final class TikTokWebActivity extends Activity {
             window.setNavigationBarContrastEnforced(false);
             window.setStatusBarContrastEnforced(false);
         }
-        new WindowInsetsControllerCompat(window, window.getDecorView())
-                .setAppearanceLightStatusBars(false);
+        WindowInsetsControllerCompat systemBars =
+                new WindowInsetsControllerCompat(window, window.getDecorView());
+        systemBars.setAppearanceLightStatusBars(false);
+        systemBars.setAppearanceLightNavigationBars(false);
 
         buildContent();
         configureWebView();
@@ -187,11 +189,8 @@ public final class TikTokWebActivity extends Activity {
         // TikTok's mobile website sometimes treats Android WebView as an app-launch
         // handoff. Use the same mobile browser UA without Android's "; wv" marker or
         // the legacy "Version/4.0" token so the feed stays in the embedded web surface.
-        String mobileUa = settings.getUserAgentString();
-        if (mobileUa != null) {
-            mobileUa = mobileUa.replace("; wv", "").replace(" Version/4.0", "");
-            settings.setUserAgentString(mobileUa);
-        }
+        String mobileUa = TikTokWebPolicy.normalizeMobileUserAgent(settings.getUserAgentString());
+        if (!mobileUa.isEmpty()) settings.setUserAgentString(mobileUa);
 
         CookieManager cookies = CookieManager.getInstance();
         cookies.setAcceptCookie(true);
@@ -342,6 +341,8 @@ public final class TikTokWebActivity extends Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         WindowInsetsControllerCompat controller = new WindowInsetsControllerCompat(getWindow(), root);
+        controller.setAppearanceLightStatusBars(false);
+        controller.setAppearanceLightNavigationBars(false);
         controller.setSystemBarsBehavior(
                 WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
         controller.hide(WindowInsetsCompat.Type.systemBars());
@@ -368,6 +369,8 @@ public final class TikTokWebActivity extends Activity {
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         root.setSystemUiVisibility(previousSystemUiVisibility);
         WindowInsetsControllerCompat controller = new WindowInsetsControllerCompat(getWindow(), root);
+        controller.setAppearanceLightStatusBars(false);
+        controller.setAppearanceLightNavigationBars(false);
         controller.show(WindowInsetsCompat.Type.systemBars());
         ViewCompat.requestApplyInsets(root);
         setRequestedOrientation(previousRequestedOrientation);

@@ -85,8 +85,8 @@ jobs:
       - name: Verify requested baseline and installable candidate version
         run: |
           set -euxo pipefail
-          grep -q 'versionName = "1.10.143"' app/build.gradle.kts
-          grep -q 'versionCode = 159' app/build.gradle.kts
+          grep -q 'versionName = "1.10.144"' app/build.gradle.kts
+          grep -q 'versionCode = 160' app/build.gradle.kts
           grep -q 'package vn.phuong.iptvplayer;' app/src/main/java/vn/phuong/iptvplayer/TikTokWebActivity.java
 
       - name: Patch SmartTube show_buffering resource collision
@@ -213,7 +213,7 @@ jobs:
       - name: Upload APK before running unit tests
         uses: actions/upload-artifact@v4
         with:
-          name: NM7-IPTV-Mobile-1.10.143-TIKTOK-INTEGRATED
+          name: NM7-IPTV-Mobile-1.10.144-TIKTOK-INTEGRATED
           path: dist/mobile/
           retention-days: 30
           if-no-files-found: error

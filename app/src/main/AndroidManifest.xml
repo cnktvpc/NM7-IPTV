@@ -22,7 +22,7 @@
         <provider android:name=".MobileNowPlayingHighlightProvider" android:authorities="${applicationId}.nowplayinghighlight" android:exported="false" android:initOrder="75" />
         <activity android:name=".PlayerActivity" android:exported="false" android:configChanges="keyboardHidden|orientation|screenSize" />
         <activity android:name=".YoutubeActivity" android:exported="false" android:configChanges="keyboardHidden|orientation|screenSize" />
-        <activity android:name=".TikTokWebActivity" android:exported="false" android:configChanges="keyboardHidden|orientation|screenSize" />
+        <activity android:name=".TikTokWebActivity" android:exported="false" android:configChanges="keyboardHidden|orientation|screenSize" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".SmartTubeHomeActivity" android:exported="false" android:launchMode="singleTop" android:configChanges="keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout|layoutDirection" />
 
         <!-- SmartTube phone UI only. -->

@@ -1,48 +1,22 @@
-# TIẾN ĐỘ — NM7 IPTV MOBILE 1.10.143 TIKTOK — 24/10/2026
+# TIẾN ĐỘ — SỬA TIKTOK TRONG NM7 MOBILE — BẢN 1.10.144
 
-## Baseline và thay đổi
-- Dùng baseline `cnktvpc/NM7-IPTV` / `stable/mobile-1.10.142`, version 1.10.142 / code 158. Stable không bị sửa.
-- Nhánh tính năng `feature/tiktok-in-app-mobile-1.10.142-20261024`; candidate versionName 1.10.143 / versionCode 159; giữ nguyên applicationId.
-- Thêm `TikTokWebActivity` tải website TikTok chính thức trong Android WebView bên trong APK NM7, không cần cài riêng TikTok.
-- Đưa mục TikTok vào `HomeTabBar`, xử lý cookie/DOM storage/JavaScript, lịch sử Back, file chooser ảnh/video và xin quyền camera/micro khi trang yêu cầu. TLS errors bị từ chối; external app schemes không tự mở.
-- Thêm HTML5 fullscreen callback, ẩn/tháo system UI và khôi phục orientation/system UI; Back thoát fullscreen trước rồi mới điều hướng lùi.
-- Khi vào TikTok, tạm dừng/release phiên IPTV/YouTube để tránh âm thanh nền.
-- Thêm `TikTokWebPolicy` và 4 kiểm tra URL/scheme/domain; đăng ký Activity trong manifest.
-- Thêm workflow riêng `.github/workflows/tiktok-mobile-build.yml`, chỉ chạy khi app/build configuration thay đổi. Workflow build APK, upload artifact trước unit test, rồi chạy `TikTokWebPolicyTest`.
+## Phản hồi người dùng
+Bản 1.10.143 không đạt: giao diện bị kéo giãn, thanh TikTok đè lên Android status bar và đường dẫn mở TikTok bên ngoài. Không merge hoặc phát hành lại 1.10.143 như một bản hoàn tất.
 
-## CI cuối — PASS
+## Thay đổi trong nhánh sửa
+- Baseline vẫn là `stable/mobile-1.10.142`; feature branch riêng `feature/tiktok-in-app-mobile-1.10.142-20261024`.
+- Candidate versionName 1.10.144 / versionCode 160.
+- Sửa status/nav bar bằng WindowInsetsCompat: nội dung nhận padding theo system bars/display cutout trên target SDK 36; cập nhật thanh biểu tượng khi vào/ra fullscreen; keyboard của trang đăng nhập dùng adjustResize.
+- Sửa viewport WebView: tắt wide viewport và overview scaling, giữ text zoom 100%, chuẩn hóa UA sang mobile browser không mang marker `wv`.
+- Chặn app-specific URI schemes, bao gồm `tiktok://`, `intent://` và `market://`; không khởi chạy app ngoài từ handler điều hướng.
+- Thêm unit test cho UA và scheme policy; cập nhật workflow để build artifact `NM7-IPTV-Mobile-1.10.144-TIKTOK-INTEGRATED`.
 
-- App-source commit: `81271a7ce017bc2a6c86464d163dcb5476822968`.
-- Push build: https://github.com/cnktvpc/NM7-IPTV/actions/runs/40056406116 — SUCCESS.
-- PR build: https://github.com/cnktvpc/NM7-IPTV/actions/runs/40056408785 — SUCCESS.
-- Gradle assemble APK: PASS; artifact upload: PASS; `TikTokWebPolicyTest`: PASS.
-- Artifact: `NM7-IPTV-Mobile-1.10.143-TIKTOK-INTEGRATED`, ID `12545577289`, tải ZIP: https://github.com/cnktvpc/NM7-IPTV/actions/runs/40056406116/artifacts/12545577289. ZIP chứa APK + `SHA256SUMS.txt`, hạn lưu đến 23/11/2026.
-- Phát hiện/sửa lỗi trong CI: các lời gọi timer WebView phải dùng instance `webView.resumeTimers()/pauseTimers()`, không gọi static; bổ sung callback fullscreen trước lần build cuối.
-- PR #3: https://github.com/cnktvpc/NM7-IPTV/pull/3, draft; chưa merge.
-
-## Còn phải kiểm tra bằng thiết bị thật
-- Chưa có xác nhận test trên điện thoại vật lý. Kiểm tra vuốt feed, đăng nhập/captcha, video, upload, fullscreen, Back/rotation và dừng âm thanh nền trước khi merge.
-- TikTok có thể hạn chế một số luồng đăng nhập trong WebView; không coi unit test là bằng chứng cho đăng nhập hoặc phát video thực tế.
-- APK `mobileDebug` có thể được ký bằng debug key khác so với bản đã cài; nếu báo xung đột chữ ký, không gỡ bản đang dùng trước khi sao lưu dữ liệu.
-- NM7 TV Web, NM7 TV Android và nhánh stable 1.10.142 không bị thay đổi.
-
----
-
-# CẬP NHẬT TIẾN ĐỘ — BUILD YOUTUBE MINIPLAYER 1.10.142 — 2026-10-22
-
-## Kết quả kiểm tra
-- Repository: `cnktvpc/NM7-IPTV`.
-- Stable branch: `stable/mobile-1.10.142` (đã tồn tại; không ghi đè stable branch cũ).
-- Build branch: `build/youtube-miniplayer-20261020`.
-- Commit: [4fc8b187db7e48591e1bcb11969436a56d27d06a](https://github.com/cnktvpc/NM7-IPTV/commit/4fc8b187db7e48591e1bcb11969436a56d27d06a).
-- Thay đổi commit: thêm `scripts/patch-mobile-v130-pull-refresh.py` vào `paths` trong workflow `.github/workflows/nm7-mobile-live-card-layout-v142.yml`; đây là sửa điều kiện kích hoạt CI, không thay đổi trực tiếp mã app.
-- [GitHub Actions run 39407088691](https://github.com/cnktvpc/NM7-IPTV/actions/runs/39407088691): build APK và upload artifact thành công; artifact ID `12258102908`.
-- Cảnh báo: bước `:app:testMobileDebugUnitTest` có lỗi nhưng được đặt `continue-on-error: true`, nên job tổng thể vẫn SUCCESS. Chưa xác nhận unit tests pass cho run này.
-- Kiểm thử thực tế YouTube MiniPlayer trên thiết bị: chưa có xác nhận mới từ lần build này.
-
-## Quyết định phát hành
-- Giữ nguyên stable baseline 1.10.142; không tuyên bố lỗi test đã được xử lý.
-- Để xác nhận bản MiniPlayer mới ổn định, cần lấy log lỗi unit-test, sửa nguyên nhân nếu có, chạy lại test không bỏ qua lỗi, rồi kiểm tra trên thiết bị: mở YouTube, thu nhỏ, Back, phóng to lại, chuyển tab IPTV/quay lại YouTube và xác nhận hình/tiếng.
+## Trạng thái
+- CI và APK 1.10.143 đã PASS trước đó nhưng bản đó không đạt yêu cầu UX người dùng; không coi đó là bản bàn giao.
+- Build/test cho 1.10.144 sẽ được đánh giá theo run mới sau commit mã sửa.
+- Cần xác nhận trên thiết bị thật: giao diện không kéo giãn, nội dung TikTok nằm dưới status bar, chọn TikTok không bật app ngoài, feed swipe/video/Back/fullscreen và không phát âm thanh nền.
+- PR #3 vẫn là draft; không merge vào stable trước khi người dùng xác nhận bản sửa.
+- Không sửa NM7 TV Web hoặc NM7 TV Android.
 
 ---
 
