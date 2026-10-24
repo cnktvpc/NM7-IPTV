@@ -4,7 +4,7 @@ compatibility_date = "2026-10-24"
 workers_dev = true
 
 [vars]
-TIKTOK_REDIRECT_URI = "https://open-platform.tiktokapis.com/callback"
+TIKTOK_REDIRECT_URI = "https://nm7-tiktok-open-auth.phuongnm7-iptv.workers.dev/callback"
 
 # Configure secrets with:
 # wrangler secret put TIKTOK_CLIENT_KEY
