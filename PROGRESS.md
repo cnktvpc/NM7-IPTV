@@ -19,7 +19,11 @@
 ## Chặn phát hành giả
 - Full For You feed, like/follow/comment và toàn bộ UI TikTok không được SDK/API công khai cung cấp. Bản này không tuyên bố có các khả năng đó.
 - Đăng nhập/video thật chưa hoạt động cho tới khi TikTok Developer app được cấu hình/duyệt, signing fingerprint được đăng ký, Worker được deploy với secrets và URL Worker được nhập trong ứng dụng.
-- Build/test hiện đang được theo dõi trên nhánh tính năng; không merge stable cho đến khi kết quả CI và thử nghiệm thiết bị xác nhận.
+- CI cuối **PASS** trên commit `146ca71a5b60b99b0d8e4bd0cbe0e4f6852656cb`: push run https://github.com/cnktvpc/NM7-IPTV/actions/runs/40062974954 và PR run https://github.com/cnktvpc/NM7-IPTV/actions/runs/40062977286.
+- APK build, signing check, artifact upload và `TikTokWebPolicyTest` đều PASS.
+- Artifact ZIP: https://github.com/cnktvpc/NM7-IPTV/actions/runs/40062974954/artifacts/12547707847 (ID `12547707847`, hết hạn 23/11/2026).
+- Worker có redirect URI, session secret và fingerprint APK. Còn thiếu secrets `TIKTOK_CLIENT_KEY` + `TIKTOK_CLIENT_SECRET`; đăng nhập/Display API thực tế chưa thể PASS cho đến khi cấu hình credential và quyền trên TikTok Developer Portal.
+- PR #3 vẫn draft; chưa merge stable.
 
 ---
 
