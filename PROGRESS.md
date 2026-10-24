@@ -1,30 +1,25 @@
-# TIẾN ĐỘ — SỬA TIKTOK TRONG NM7 MOBILE — BẢN 1.10.144
+# TIẾN ĐỘ — NM7 IPTV MOBILE 1.10.145 — TIKTOK OPENSDK (24/10/2026)
 
-## Phản hồi người dùng
-Bản 1.10.143 không đạt: giao diện bị kéo giãn, thanh TikTok đè lên Android status bar và đường dẫn mở TikTok bên ngoài. Không merge hoặc phát hành lại 1.10.143 như một bản hoàn tất.
+## Vì sao đổi hướng
+- Bản 1.10.144 WebView toàn trang không đáp ứng yêu cầu tích hợp; không dùng nó làm cơ sở phát hành.
+- TikTok OpenSDK Android 2.3.1 được tích hợp chính thức. SDK công khai cung cấp Login Kit/Share Kit, không có giao diện For You nhúng hoàn chỉnh.
+- Chọn hướng: native NM7 Activity + Login Kit + backend OAuth bảo mật + Display API cho video công khai gần đây của tài khoản đã cấp quyền. Không giả mạo feed For You và không nhúng Client Secret vào APK.
 
-## Thay đổi trong nhánh sửa
-- Baseline vẫn là `stable/mobile-1.10.142`; feature branch riêng `feature/tiktok-in-app-mobile-1.10.142-20261024`.
-- Candidate versionName 1.10.144 / versionCode 160.
-- Sửa status/nav bar bằng API WindowInsets/WindowInsetsController gốc của Android (không cần AndroidX Core): nội dung nhận padding theo system bars/display cutout trên target SDK 36; cập nhật thanh biểu tượng khi vào/ra fullscreen; keyboard của trang đăng nhập dùng adjustResize.
-- Sửa viewport WebView: tắt wide viewport và overview scaling, giữ text zoom 100%, chuẩn hóa UA sang mobile browser không mang marker `wv`.
-- Chặn app-specific URI schemes, bao gồm `tiktok://`, `intent://` và `market://`; không khởi chạy app ngoài từ handler điều hướng.
-- Thêm unit test cho UA và scheme policy; cập nhật workflow để build artifact `NM7-IPTV-Mobile-1.10.144-TIKTOK-INTEGRATED`.
+## Đã triển khai ở nhánh tính năng
+- Baseline: `stable/mobile-1.10.142`, không sửa nhánh stable.
+- Candidate versionName 1.10.145 / versionCode 161, applicationId giữ nguyên.
+- Thêm Maven repo TikTok OpenSDK chính thức và dependencies `tiktok-open-sdk-core` / `tiktok-open-sdk-auth` v2.3.1.
+- Thay điểm vào tab TikTok từ `TikTokWebActivity` sang `TikTokIntegrationActivity` native.
+- Tích hợp Login Kit qua Chrome Custom Tab, PKCE verifier, state check và callback Activity. Hiển thị video công khai gần đây trong ViewPager2 dọc bằng official individual-post player.
+- Opaque session token được mã hóa bằng AES-GCM/Android Keystore trên thiết bị; Worker đổi code ở server, refresh token và gọi TikTok Display API.
+- Worker source: `workers/tiktok-open-auth/index.js`; hướng dẫn secrets/triển khai: `workers/tiktok-open-auth/README.md`.
+- Màn hình trong app cho phép cấu hình Client Key và URL Worker; không yêu cầu đóng gói Client Secret vào APK.
+- Workflow in signing certificate fingerprints để đăng ký với TikTok Developer Portal, kiểm tra Node syntax của Worker và build APK 1.10.145.
 
-## CI cuối — PASS (24/10/2026)
-- Commit sửa giao diện: `5d1d49f5`.
-- Push CI: https://github.com/cnktvpc/NM7-IPTV/actions/runs/40058223797 — build APK PASS, upload artifact PASS, `TikTokWebPolicyTest` PASS.
-- PR CI: https://github.com/cnktvpc/NM7-IPTV/actions/runs/40058226294 — build APK PASS, upload artifact PASS, `TikTokWebPolicyTest` PASS.
-- Artifact: `NM7-IPTV-Mobile-1.10.144-TIKTOK-INTEGRATED`, ID `12546163912`, ZIP ~43 MB: https://github.com/cnktvpc/NM7-IPTV/actions/runs/40058223797/artifacts/12546163912. Hạn lưu đến 23/11/2026.
-- Lỗi build đầu do baseline không khai báo AndroidX Core đã được sửa bằng API WindowInsets/WindowInsetsController của Android platform; commit cuối build/test xanh.
-- Lưu ý: CI xanh không thay thế kiểm tra thiết bị. Chưa thể khẳng định vuốt, đăng nhập và bố cục thực tế hoàn hảo cho tới khi người dùng cài APK và xác nhận.
-
-## Trạng thái
-- CI và APK 1.10.143 đã PASS trước đó nhưng bản đó không đạt yêu cầu UX người dùng; không coi đó là bản bàn giao.
-- Build/test cho 1.10.144 đã PASS ở cả push và PR CI; artifact APK đã sẵn sàng tải.
-- Cần xác nhận trên thiết bị thật: giao diện không kéo giãn, nội dung TikTok nằm dưới status bar, chọn TikTok không bật app ngoài, feed swipe/video/Back/fullscreen và không phát âm thanh nền.
-- PR #3 vẫn là draft; không merge vào stable trước khi người dùng xác nhận bản sửa.
-- Không sửa NM7 TV Web hoặc NM7 TV Android.
+## Chặn phát hành giả
+- Full For You feed, like/follow/comment và toàn bộ UI TikTok không được SDK/API công khai cung cấp. Bản này không tuyên bố có các khả năng đó.
+- Đăng nhập/video thật chưa hoạt động cho tới khi TikTok Developer app được cấu hình/duyệt, signing fingerprint được đăng ký, Worker được deploy với secrets và URL Worker được nhập trong ứng dụng.
+- Build/test hiện đang được theo dõi trên nhánh tính năng; không merge stable cho đến khi kết quả CI và thử nghiệm thiết bị xác nhận.
 
 ---
 
