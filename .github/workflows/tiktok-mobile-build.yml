@@ -6,6 +6,7 @@ name: NM7 TikTok Mobile Build
       - "feature/tiktok-in-app-mobile-1.10.142-20261024"
     paths:
       - "app/**"
+      - "workers/**"
       - "gradle/**"
       - "gradle.properties"
       - "build.gradle.kts"
@@ -85,9 +86,13 @@ jobs:
       - name: Verify requested baseline and installable candidate version
         run: |
           set -euxo pipefail
-          grep -q 'versionName = "1.10.144"' app/build.gradle.kts
-          grep -q 'versionCode = 160' app/build.gradle.kts
-          grep -q 'package vn.phuong.iptvplayer;' app/src/main/java/vn/phuong/iptvplayer/TikTokWebActivity.java
+          grep -q 'versionName = "1.10.145"' app/build.gradle.kts
+          grep -q 'versionCode = 161' app/build.gradle.kts
+          grep -q 'package vn.phuong.iptvplayer;' app/src/main/java/vn/phuong/iptvplayer/TikTokIntegrationActivity.java
+          grep -q 'com.tiktok.open.sdk:tiktok-open-sdk-auth:2.3.1' app/build.gradle.kts
+          grep -q 'new AuthApi(this)' app/src/main/java/vn/phuong/iptvplayer/TikTokIntegrationActivity.java
+          grep -q 'TIKTOK_CLIENT_SECRET' workers/tiktok-open-auth/index.js
+          node --check workers/tiktok-open-auth/index.js
 
       - name: Patch SmartTube show_buffering resource collision
         run: |
@@ -213,12 +218,12 @@ jobs:
       - name: Upload APK before running unit tests
         uses: actions/upload-artifact@v4
         with:
-          name: NM7-IPTV-Mobile-1.10.144-TIKTOK-INTEGRATED
+          name: NM7-IPTV-Mobile-1.10.145-TIKTOK-OPENSDK
           path: dist/mobile/
           retention-days: 30
           if-no-files-found: error
 
-      - name: Run TikTok navigation policy tests
+      - name: Run TikTok integration policy tests
         run: |
           set -euxo pipefail
           gradle --no-daemon --console=plain \
