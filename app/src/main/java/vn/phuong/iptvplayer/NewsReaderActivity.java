@@ -101,6 +101,10 @@ public final class NewsReaderActivity extends Activity {
     // Keep feed results per source/category for the lifetime of this Activity so swiping
     // back to a visited category is instant and does not trigger another network load.
     private final Map<String, List<Article>> feedCache = new HashMap<>();
+    // Keep rendered pages (including decoded thumbnails and exact ScrollView instances) so
+    // category navigation feels like a pager instead of rebuilding the entire list every time.
+    private final LinkedHashMap<String, FeedPage> feedPages = new LinkedHashMap<>(8, 0.75f, true);
+    private final Set<String> prefetchedFeeds = new HashSet<>();
     private final Map<String, Integer> feedScrollPositions = new HashMap<>();
     private final Set<String> pluginCategoriesLoading = new HashSet<>();
     private LinearLayout root;
@@ -110,6 +114,7 @@ public final class NewsReaderActivity extends Activity {
     private FrameLayout content;
     private LinearLayout articleRows;
     private FeedScrollView feedScrollView;
+    private FeedPage currentFeedPage;
     private TextView status;
     private WebView articleWebView;
     private Mode mode = Mode.FEED;
@@ -182,6 +187,10 @@ public final class NewsReaderActivity extends Activity {
                     cats("Trang chủ", "https://www.24h.com.vn/upload/rss/trangchu24h.rss",
                             "Tin tức", "https://www.24h.com.vn/upload/rss/tintuctrongngay.rss",
                             "Bóng đá", "https://www.24h.com.vn/upload/rss/bongda.rss",
+                            "Ngoại Hạng Anh", "https://www.24h.com.vn/bong-da-ngoai-hang-anh-c149.html",
+                            "Thế giới", "https://www.24h.com.vn/the-gioi-24h-c415e7888.html",
+                            "Kinh doanh", "https://www.24h.com.vn/kinh-doanh-c161.html",
+                            "Giải trí", "https://www.24h.com.vn/giai-tri-c731.html",
                             "An ninh - Hình sự", "https://www.24h.com.vn/upload/rss/anninhhinhsu.rss",
                             "Thời trang", "https://www.24h.com.vn/upload/rss/thoitrang.rss",
                             "Thời trang Hi-tech", "https://www.24h.com.vn/upload/rss/thoitranghitech.rss",
@@ -295,9 +304,9 @@ public final class NewsReaderActivity extends Activity {
         buildToolbar();
         buildCategories();
         showArticleList();
-        if (refresh || articles.isEmpty()) loadFeed(refresh);
-        else {
-            renderArticleRows();
+        if (refresh || articles.isEmpty() || currentFeedPage == null || !currentFeedPage.rendered) {
+            loadFeed(refresh);
+        } else {
             restoreFeedScrollPosition();
         }
     }
@@ -370,23 +379,35 @@ public final class NewsReaderActivity extends Activity {
         ensurePluginCategories(source);
         for (String name : source.categories.keySet()) {
             TextView tab = text(name, 14, name.equals(categoryName) ? ORANGE : MUTED, name.equals(categoryName));
+            tab.setTag(name);
             tab.setGravity(Gravity.CENTER);
             tab.setPadding(dp(13), 0, dp(13), 0);
             tab.setSingleLine(true);
             categoryRow.addView(tab, new LinearLayout.LayoutParams(-2, -1));
-            tab.setOnClickListener(v -> {
-                rememberFeedScrollPosition();
-                categoryName = name;
-                searchQuery = "";
-                buildCategories();
-                loadFeed();
-            });
+            tab.setOnClickListener(v -> navigateToCategory(name));
         }
+        scrollSelectedCategoryIntoView(categoryName);
+    }
+
+    private void updateCategorySelection() {
+        for (int i = 0; i < categoryRow.getChildCount(); i++) {
+            View child = categoryRow.getChildAt(i);
+            if (!(child instanceof TextView)) continue;
+            TextView tab = (TextView) child;
+            String name = String.valueOf(tab.getTag());
+            boolean selected = categoryName.equals(name);
+            tab.setTextColor(selected ? ORANGE : MUTED);
+            tab.setTypeface(Typeface.DEFAULT, selected ? Typeface.BOLD : Typeface.NORMAL);
+        }
+    }
+
+    private void scrollSelectedCategoryIntoView(String name) {
         categoryScroller.post(() -> {
             for (int i = 0; i < categoryRow.getChildCount(); i++) {
                 View child = categoryRow.getChildAt(i);
-                if (child instanceof TextView && categoryName.equals(((TextView) child).getText().toString())) {
-                    int target = child.getLeft() - Math.max(0, (categoryScroller.getWidth() - child.getWidth()) / 2);
+                if (child instanceof TextView && name.equals(String.valueOf(child.getTag()))) {
+                    int target = child.getLeft() - Math.max(0,
+                            (categoryScroller.getWidth() - child.getWidth()) / 2);
                     categoryScroller.smoothScrollTo(Math.max(0, target), 0);
                     break;
                 }
@@ -394,27 +415,177 @@ public final class NewsReaderActivity extends Activity {
         });
     }
 
-    private void stepCategoryBySwipe(int direction) {
+    private String feedPageKey(String source, String category) {
+        return source + "\n" + category;
+    }
+
+    private final class FeedPage {
+        final String key;
+        final FeedScrollView scroll;
+        final LinearLayout rows;
+        final List<Article> items = new ArrayList<>();
+        boolean rendered;
+
+        FeedPage(String key, FeedScrollView scroll, LinearLayout rows) {
+            this.key = key;
+            this.scroll = scroll;
+            this.rows = rows;
+        }
+    }
+
+    private FeedPage obtainFeedPage(String key) {
+        FeedPage page = feedPages.get(key);
+        if (page != null) return page;
+
+        FeedScrollView scroll = new FeedScrollView(this);
+        scroll.setFillViewport(true);
+        scroll.setClipToPadding(false);
+        scroll.setPadding(0, dp(2), 0, dp(8));
+        LinearLayout rows = new LinearLayout(this);
+        rows.setOrientation(LinearLayout.VERTICAL);
+        scroll.addView(rows, new ScrollView.LayoutParams(-1, -2));
+        page = new FeedPage(key, scroll, rows);
+        TextView placeholder = text("Đang tải tin…", 14, MUTED, false);
+        placeholder.setGravity(Gravity.CENTER);
+        rows.addView(placeholder, new LinearLayout.LayoutParams(-1, dp(100)));
+        feedPages.put(key, page);
+        trimFeedPages();
+        return page;
+    }
+
+    private void trimFeedPages() {
+        String activeKey = feedPageKey(sourceId, categoryName);
+        while (feedPages.size() > 5) {
+            boolean removed = false;
+            java.util.Iterator<Map.Entry<String, FeedPage>> it = feedPages.entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry<String, FeedPage> entry = it.next();
+                if (entry.getKey().equals(activeKey)) continue;
+                FeedPage page = entry.getValue();
+                if (page.scroll.getParent() instanceof ViewGroup) {
+                    ((ViewGroup) page.scroll.getParent()).removeView(page.scroll);
+                }
+                it.remove();
+                removed = true;
+                break;
+            }
+            if (!removed) break;
+        }
+    }
+
+    private void showArticleList() {
+        content.removeAllViews();
+        FeedPage page = obtainFeedPage(feedPageKey(sourceId, categoryName));
+        currentFeedPage = page;
+        feedScrollView = page.scroll;
+        articleRows = page.rows;
+        articles.clear();
+        articles.addAll(page.items);
+        ViewGroup parent = page.scroll.getParent() instanceof ViewGroup
+                ? (ViewGroup) page.scroll.getParent() : null;
+        if (parent != null) parent.removeView(page.scroll);
+        content.addView(page.scroll, new FrameLayout.LayoutParams(-1, -1));
+        if (page.rendered) restoreFeedScrollPosition();
+    }
+
+    private String feedCacheKey(String source, String feedUrl, String category) {
+        return source + "\n" + category + "\n" + feedUrl;
+    }
+
+    private boolean sameArticles(List<Article> left, List<Article> right) {
+        if (left == right) return true;
+        if (left == null || right == null || left.size() != right.size()) return false;
+        for (int i = 0; i < left.size(); i++) {
+            Article a = left.get(i), b = right.get(i);
+            if (a == null || b == null || !TextUtils.equals(a.url, b.url)
+                    || !TextUtils.equals(a.title, b.title)) return false;
+        }
+        return true;
+    }
+
+    private void prefetchAdjacentFeeds(Source source, String activeCategory) {
+        if (source == null || source.jsPlugin || source.categories.size() < 2) return;
+        List<String> names = new ArrayList<>(source.categories.keySet());
+        int index = names.indexOf(activeCategory);
+        if (index < 0) return;
+        for (int offset : new int[]{-1, 1}) {
+            String category = names.get((index + offset + names.size()) % names.size());
+            String url = source.categories.get(category);
+            if (TextUtils.isEmpty(url)) continue;
+            String key = feedCacheKey(source.id, url, category);
+            List<Article> cached = feedCache.get(key);
+            if ((cached != null && !cached.isEmpty()) || !prefetchedFeeds.add(key)) continue;
+            io.execute(() -> {
+                List<Article> loaded = Collections.emptyList();
+                try { loaded = loadArticlesWithFallback(source, url, category); }
+                catch (Exception ignored) { }
+                final List<Article> completed = loaded == null
+                        ? Collections.emptyList() : new ArrayList<>(loaded);
+                main.post(() -> {
+                    prefetchedFeeds.remove(key);
+                    if (!completed.isEmpty()) feedCache.put(key, completed);
+                });
+            });
+        }
+    }
+
+    private void navigateToCategory(String name) {
+        rememberFeedScrollPosition();
+        categoryName = name;
+        searchQuery = "";
+        updateCategorySelection();
+        scrollSelectedCategoryIntoView(name);
+        showArticleList();
+        if (currentFeedPage != null && currentFeedPage.rendered && !currentFeedPage.items.isEmpty()) {
+            restoreFeedScrollPosition();
+            return;
+        }
+        loadFeed(false);
+    }
+
+    private void stepCategoryBySwipe(int direction, FeedScrollView outgoingPage) {
         rememberFeedScrollPosition();
         Source source = getSource(sourceId);
         List<String> names = new ArrayList<>(source.categories.keySet());
-        if (names.size() < 2) return;
+        if (names.size() < 2) {
+            outgoingPage.setTranslationX(0f);
+            outgoingPage.setAlpha(1f);
+            return;
+        }
         int current = names.indexOf(categoryName);
         if (current < 0) current = 0;
         int next = (current + direction + names.size()) % names.size();
         if (next == current) return;
+
+        if (outgoingPage.getParent() instanceof ViewGroup) {
+            ((ViewGroup) outgoingPage.getParent()).removeView(outgoingPage);
+        }
+        outgoingPage.setTranslationX(0f);
+        outgoingPage.setAlpha(1f);
         categoryName = names.get(next);
         searchQuery = "";
-        buildCategories();
-        loadFeed();
+        updateCategorySelection();
+        scrollSelectedCategoryIntoView(categoryName);
+        showArticleList();
+
+        FeedPage incomingPage = currentFeedPage;
+        if (incomingPage != null) {
+            incomingPage.scroll.setTranslationX(direction > 0 ? Math.max(1, content.getWidth()) : -Math.max(1, content.getWidth()));
+            incomingPage.scroll.setAlpha(0.92f);
+            incomingPage.scroll.animate().translationX(0f).alpha(1f).setDuration(145).start();
+        }
+        if (incomingPage != null && incomingPage.rendered && !incomingPage.items.isEmpty()) {
+            restoreFeedScrollPosition();
+            return;
+        }
+        loadFeed(false);
     }
 
     private final class FeedScrollView extends ScrollView {
         private float downX;
         private float downY;
+        private long downTime;
         private boolean horizontalSwipe;
-        private boolean categorySwipeDispatched;
-        private int swipeDirection;
 
         FeedScrollView(Context context) { super(context); }
 
@@ -423,16 +594,14 @@ public final class NewsReaderActivity extends Activity {
                 case MotionEvent.ACTION_DOWN:
                     downX = event.getX();
                     downY = event.getY();
+                    downTime = event.getEventTime();
                     horizontalSwipe = false;
-                    categorySwipeDispatched = false;
-                    swipeDirection = 0;
                     break;
                 case MotionEvent.ACTION_MOVE:
                     float dx = event.getX() - downX;
                     float dy = event.getY() - downY;
-                    if (Math.abs(dx) >= dp(28) && Math.abs(dx) > Math.abs(dy) * 1.25f) {
+                    if (Math.abs(dx) >= dp(20) && Math.abs(dx) > Math.abs(dy) * 1.15f) {
                         horizontalSwipe = true;
-                        swipeDirection = dx < 0 ? 1 : -1;
                         return true;
                     }
                     break;
@@ -447,45 +616,41 @@ public final class NewsReaderActivity extends Activity {
         @Override public boolean onTouchEvent(MotionEvent event) {
             final int action = event.getActionMasked();
             if (horizontalSwipe) {
+                if (action == MotionEvent.ACTION_MOVE) {
+                    float dx = event.getX() - downX;
+                    float width = Math.max(1, getWidth());
+                    float followX = Math.max(-width * 0.82f, Math.min(width * 0.82f, dx * 0.82f));
+                    setTranslationX(followX);
+                    setAlpha(1f - Math.min(0.12f, Math.abs(followX) / width * 0.12f));
+                    return true;
+                }
                 if (action == MotionEvent.ACTION_UP) {
-                    if (!categorySwipeDispatched && swipeDirection != 0) {
-                        categorySwipeDispatched = true;
-                        final int move = swipeDirection;
-                        post(() -> stepCategoryBySwipe(move));
+                    float dx = event.getX() - downX;
+                    long elapsed = Math.max(1L, event.getEventTime() - downTime);
+                    float velocity = Math.abs(dx) * 1000f / elapsed;
+                    float threshold = Math.max(dp(52), getWidth() * 0.16f);
+                    if (Math.abs(dx) >= threshold || (velocity >= dp(900) && Math.abs(dx) >= dp(24))) {
+                        final int direction = dx < 0 ? 1 : -1;
+                        float width = Math.max(1, getWidth());
+                        animate().translationX(direction > 0 ? -width : width)
+                                .alpha(0.88f).setDuration(95)
+                                .withEndAction(() -> stepCategoryBySwipe(direction, this)).start();
+                    } else {
+                        animate().translationX(0f).alpha(1f).setDuration(100).start();
                     }
                     horizontalSwipe = false;
                     return true;
                 }
                 if (action == MotionEvent.ACTION_CANCEL) {
                     horizontalSwipe = false;
+                    animate().translationX(0f).alpha(1f).setDuration(90).start();
                     return true;
                 }
                 return true;
             }
-            // Do not consume UP/CANCEL for vertical gestures: ScrollView needs them to
-            // calculate velocity and perform native fling scrolling.
+            // Keep native vertical fling/velocity handling when the gesture isn't horizontal.
             return super.onTouchEvent(event);
         }
-    }
-
-    private void showArticleList() {
-        content.removeAllViews();
-        FeedScrollView scroll = new FeedScrollView(this);
-        feedScrollView = scroll;
-        scroll.setFillViewport(true);
-        scroll.setClipToPadding(false);
-        scroll.setPadding(0, dp(2), 0, dp(8));
-        articleRows = new LinearLayout(this);
-        articleRows.setOrientation(LinearLayout.VERTICAL);
-        scroll.addView(articleRows, new ScrollView.LayoutParams(-1, -2));
-        content.addView(scroll, new FrameLayout.LayoutParams(-1, -1));
-        status = text("Đang tải tin…", 14, MUTED, false);
-        status.setGravity(Gravity.CENTER);
-        articleRows.addView(status, new LinearLayout.LayoutParams(-1, dp(100)));
-    }
-
-    private String feedCacheKey(String source, String feedUrl) {
-        return source + "\n" + feedUrl;
     }
 
     private String feedScrollKey() {
@@ -526,19 +691,25 @@ public final class NewsReaderActivity extends Activity {
         final String feedUrl = feed;
         final String selectedCategory = categoryName;
         final Source selectedSource = source;
-        final String cacheKey = feedCacheKey(source.id, feedUrl);
+        final String cacheKey = feedCacheKey(source.id, feedUrl, selectedCategory);
         final int token = ++requestToken;
         if (!forceRefresh) {
             List<Article> cached = feedCache.get(cacheKey);
             if (cached != null && !cached.isEmpty()) {
                 articles.clear();
                 articles.addAll(cached);
-                renderArticleRows();
-                restoreFeedScrollPosition();
+                if (currentFeedPage == null || !currentFeedPage.rendered
+                        || !sameArticles(currentFeedPage.items, cached)) {
+                    renderArticleRows();
+                } else {
+                    restoreFeedScrollPosition();
+                }
                 return;
             }
         }
-        showLoading("Đang tải tin từ " + source.name + "…");
+        boolean hasVisibleRows = currentFeedPage != null && currentFeedPage.rendered
+                && !currentFeedPage.items.isEmpty();
+        if (!hasVisibleRows) showLoading("Đang tải tin từ " + source.name + "…");
         io.execute(() -> {
             List<Article> loaded = Collections.emptyList();
             String error = null;
@@ -558,20 +729,31 @@ public final class NewsReaderActivity extends Activity {
                     feedCache.put(cacheKey, new ArrayList<>(result));
                 }
                 if (token != requestToken || mode != Mode.FEED) return;
+                if (message != null) {
+                    if (currentFeedPage != null && currentFeedPage.rendered
+                            && !currentFeedPage.items.isEmpty()) {
+                        articles.clear();
+                        articles.addAll(currentFeedPage.items);
+                        toast("Không làm mới được nguồn; đang giữ các tin đã tải.");
+                    } else {
+                        articles.clear();
+                        articles.addAll(result);
+                        showLoading(message + "\n\nBạn vẫn ở trong NM7; ứng dụng sẽ không tự mở trang chủ bên ngoài.");
+                    }
+                    return;
+                }
                 articles.clear();
                 articles.addAll(result);
-                if (message != null && articles.isEmpty()) {
-                    showLoading(message + "\n\nBạn vẫn ở trong NM7; ứng dụng sẽ không tự mở trang chủ bên ngoài.");
-                } else {
-                    renderArticleRows();
-                    restoreFeedScrollPosition();
-                }
+                renderArticleRows();
+                restoreFeedScrollPosition();
+                prefetchAdjacentFeeds(selectedSource, selectedCategory);
             });
         });
     }
 
     private void showLoading(String message) {
         if (articleRows == null) return;
+        if (currentFeedPage != null && currentFeedPage.rendered && !currentFeedPage.items.isEmpty()) return;
         articleRows.removeAllViews();
         status = text(message, 14, MUTED, false);
         status.setGravity(Gravity.CENTER);
@@ -597,6 +779,11 @@ public final class NewsReaderActivity extends Activity {
 
     private void renderArticleRows() {
         if (articleRows == null || mode != Mode.FEED) return;
+        if (currentFeedPage != null) {
+            currentFeedPage.items.clear();
+            currentFeedPage.items.addAll(articles);
+            currentFeedPage.rendered = true;
+        }
         articleRows.removeAllViews();
         List<Article> visible = new ArrayList<>();
         for (Article a : articles) {
@@ -876,7 +1063,7 @@ public final class NewsReaderActivity extends Activity {
                     categoryName = choices.get(which).categories.keySet().iterator().next();
                     searchQuery = "";
                     getPreferencesStore().edit().putString(KEY_SOURCE, sourceId).apply();
-                    renderFeed(true);
+                    renderFeed(false);
                 }).setNegativeButton("Đóng", null).show();
     }
 
