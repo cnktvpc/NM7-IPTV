@@ -20,7 +20,6 @@ final class ReaderFeedCategoryRouter {
                 case "World Cup 2026": return "https://thethao247.vn/world-cup";
                 case "V-League": return "https://thethao247.vn/v-league-c15/";
                 case "Đội tuyển Quốc gia": return "https://thethao247.vn/bong-da-viet-nam-c1/";
-                case "Nhận định bóng đá": return "https://thethao247.vn/nhan-dinh-bong-da/";
                 case "Chuyển nhượng": return "https://thethao247.vn/chuyen-nhuong/";
                 case "Bóng đá Tây Ban Nha - La Liga": return "https://thethao247.vn/bong-da-tay-ban-nha-la-liga-c9/";
                 case "Cúp C1": return "https://thethao247.vn/cup-c1-c13/";

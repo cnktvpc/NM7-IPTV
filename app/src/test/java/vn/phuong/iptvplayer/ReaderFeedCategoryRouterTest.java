@@ -72,6 +72,8 @@ public class ReaderFeedCategoryRouterTest {
                 ReaderFeedCategoryRouter.htmlPageUrl("thethao247", "Ngoại hạng Anh", "https://thethao247.vn/"));
         assertEquals("https://thethao247.vn/the-thao-c5/",
                 ReaderFeedCategoryRouter.htmlPageUrl("thethao247", "Thể thao", "https://thethao247.vn/"));
+        assertEquals("https://thethao247.vn/nhan-dinh-bong-da-c288/",
+                ReaderFeedCategoryRouter.htmlPageUrl("thethao247", "Nhận định bóng đá", "https://thethao247.vn/"));
     }
 
     @Test public void theThao247GatewayRoutesEveryOfficialCategory() {
