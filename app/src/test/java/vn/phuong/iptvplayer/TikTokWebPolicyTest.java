@@ -2,6 +2,7 @@ package vn.phuong.iptvplayer;
 
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -28,6 +29,27 @@ public final class TikTokWebPolicyTest {
         assertTrue(TikTokWebPolicy.isTikTokUrl("https://m.tiktok.com/"));
         assertFalse(TikTokWebPolicy.isTikTokUrl("https://www.tiktok.com.evil.example/"));
         assertFalse(TikTokWebPolicy.isTikTokUrl("https://tiktok.example/"));
+    }
+
+    @Test
+    public void normalizesWebViewUserAgentForMobileWebsiteRendering() {
+        String ua = "Mozilla/5.0 (Linux; Android 15; Device; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/134.0.0.0 Mobile Safari/537.36";
+        String mobile = TikTokWebPolicy.normalizeMobileUserAgent(ua);
+        assertFalse(mobile.contains("; wv"));
+        assertFalse(mobile.contains("Version/4.0"));
+        assertTrue(mobile.contains("Android 15"));
+        assertTrue(mobile.contains("Mobile Safari"));
+        assertEquals("", TikTokWebPolicy.normalizeMobileUserAgent(null));
+    }
+
+    @Test
+    public void keepsOnlyWebSchemesInsideNm7AndBlocksAppDeepLinks() {
+        assertTrue(TikTokWebPolicy.shouldStayInWebView("https://www.tiktok.com/foryou"));
+        assertTrue(TikTokWebPolicy.shouldStayInWebView("https://www.tiktok.com/login"));
+        assertFalse(TikTokWebPolicy.shouldStayInWebView("tiktok://user/profile"));
+        assertFalse(TikTokWebPolicy.shouldStayInWebView("intent://foryou#Intent;scheme=https;end"));
+        assertFalse(TikTokWebPolicy.shouldStayInWebView("market://details?id=com.zhiliaoapp.musically"));
+        assertFalse(TikTokWebPolicy.shouldStayInWebView("javascript:window.location='tiktok://home'"));
     }
 
     @Test
