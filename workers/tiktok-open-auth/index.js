@@ -161,6 +161,30 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
+    if (request.method === "GET" && url.pathname === "/.well-known/assetlinks.json") {
+      const fingerprint = String(env.TIKTOK_ANDROID_SHA256_FINGERPRINT || "").trim();
+      const statements = fingerprint ? [{
+        relation: ["delegate_permission/common.handle_all_urls"],
+        target: {
+          namespace: "android_app",
+          package_name: "vn.phuong.iptvplayer",
+          sha256_cert_fingerprints: [fingerprint],
+        },
+      }] : [];
+      return new Response(JSON.stringify(statements), {
+        headers: {
+          "content-type": "application/json; charset=utf-8",
+          "cache-control": "no-store",
+          ...CORS,
+        },
+      });
+    }
+    if (request.method === "GET" && url.pathname === "/callback") {
+      return new Response(
+        "<!doctype html><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>NM7 TikTok Login</title><main style=\"font-family:system-ui;padding:24px\"><h2>Quay lại NM7 IPTV</h2><p>Nếu ứng dụng chưa tự mở, quay lại NM7 để hoàn tất đăng nhập. Hãy xác minh Android App Links và SHA-256 đã đăng ký trong TikTok Developer Portal.</p></main>",
+        { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } }
+      );
+    }
     if (request.method === "GET" && url.pathname === "/health") {
       return json({ ok: true, configured: !!(env.TIKTOK_CLIENT_KEY && env.TIKTOK_CLIENT_SECRET && env.TIKTOK_SESSION_SECRET && env.TIKTOK_REDIRECT_URI) });
     }
