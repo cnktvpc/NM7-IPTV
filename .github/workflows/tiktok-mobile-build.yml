@@ -19,6 +19,7 @@ name: NM7 TikTok Mobile Build
       - "stable/mobile-1.10.142"
     paths:
       - "app/**"
+      - "workers/**"
       - "gradle/**"
       - "gradle.properties"
       - "build.gradle.kts"
@@ -33,7 +34,7 @@ permissions:
 
 jobs:
   build:
-    name: Build single-app NM7 Mobile with TikTok WebView
+    name: Build NM7 Mobile with official TikTok OpenSDK
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
@@ -214,6 +215,14 @@ jobs:
           cp app/build/outputs/apk/mobile/debug/*.apk dist/mobile/
           cd dist/mobile
           sha256sum *.apk > SHA256SUMS.txt
+
+      - name: Print Android signing fingerprints for TikTok Developer Portal registration
+        run: |
+          set -euxo pipefail
+          for apk in app/build/outputs/apk/mobile/debug/*.apk; do
+            echo "=== Signing certificate for $apk ==="
+            apksigner verify --print-certs "$apk"
+          done
 
       - name: Upload APK before running unit tests
         uses: actions/upload-artifact@v4
