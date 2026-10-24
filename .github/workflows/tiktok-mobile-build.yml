@@ -94,11 +94,16 @@ jobs:
           old='if (sig.hasMultipleSigners()) {'
           if text.count(old) != 2:
               raise SystemExit('Unexpected TikTok SignatureUtils.kt structure')
-          text=text.replace(old, 'if (sig == null) {\\n                emptyList()\\n            } else if (sig.hasMultipleSigners()) {')
+          replacement = """if (sig == null) {
+                  emptyList()
+              } else if (sig.hasMultipleSigners()) {"""
+          text=text.replace(old, replacement)
           text=text.replace('sig.apkContentsSigners.map {', '(sig.apkContentsSigners ?: emptyArray()).map {')
           text=text.replace('sig.signingCertificateHistory.map {', '(sig.signingCertificateHistory ?: emptyArray()).map {')
           if text.count('if (sig == null)') != 2:
               raise SystemExit('TikTok nullable signingInfo patch did not apply twice')
+          if 'sig.apkContentsSigners.map {' in text or 'sig.signingCertificateHistory.map {' in text:
+              raise SystemExit('Nullable signature array patch incomplete')
           path.write_text(text)
           PY
 
