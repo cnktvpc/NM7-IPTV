@@ -7,6 +7,7 @@ import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.text.InputType;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -16,6 +17,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -59,6 +61,7 @@ import okhttp3.Response;
  */
 public final class TikTokIntegrationActivity extends Activity {
     private static final String PREFS = "nm7_tiktok_oauth";
+    private static final String CONFIG_PREFS = "nm7_tiktok_integration_config";
     private static final String KEY_VERIFIER = "pkce_verifier";
     private static final String KEY_STATE = "oauth_state";
     private static final String SCOPE = "user.info.basic,video.list";
@@ -71,6 +74,7 @@ public final class TikTokIntegrationActivity extends Activity {
     private TextView profile;
     private Button connectButton;
     private Button reloadButton;
+    private Button configButton;
     private ProgressBar progress;
     private ViewPager2 pager;
     private VideoAdapter adapter;
@@ -138,6 +142,13 @@ public final class TikTokIntegrationActivity extends Activity {
         buttonsLp.topMargin = dp(4);
         root.addView(buttons, buttonsLp);
 
+        configButton = new Button(this);
+        configButton.setText("Cấu hình TikTok");
+        configButton.setOnClickListener(v -> showConfigurationDialog());
+        LinearLayout.LayoutParams configLp = matchWrap();
+        configLp.topMargin = dp(2);
+        root.addView(configButton, configLp);
+
         status = new TextView(this);
         status.setTextColor(0xffd5d5d5);
         status.setTextSize(12);
@@ -173,8 +184,8 @@ public final class TikTokIntegrationActivity extends Activity {
     }
 
     private void updateConfigurationUi() {
-        String clientKey = BuildConfig.TIKTOK_CLIENT_KEY;
-        String apiBase = BuildConfig.TIKTOK_API_BASE_URL;
+        String clientKey = configuredClientKey();
+        String apiBase = configuredApiBaseUrl();
         boolean hasClientKey = clientKey != null && !clientKey.trim().isEmpty();
         boolean hasApiBase = apiBase != null && !apiBase.trim().isEmpty();
         connectButton.setEnabled(true);
@@ -188,13 +199,13 @@ public final class TikTokIntegrationActivity extends Activity {
     }
 
     private void authorize() {
-        String clientKey = BuildConfig.TIKTOK_CLIENT_KEY == null ? "" : BuildConfig.TIKTOK_CLIENT_KEY.trim();
+        String clientKey = configuredClientKey();
         if (clientKey.isEmpty()) {
             showMessage("Cần cấu hình TikTok Developer",
                     "NM7 đã tích hợp TikTok OpenSDK chính thức, nhưng cần Client Key thuộc ứng dụng đã đăng ký và được TikTok cấp quyền. Client Secret không được nhúng vào APK.");
             return;
         }
-        if (BuildConfig.TIKTOK_API_BASE_URL == null || BuildConfig.TIKTOK_API_BASE_URL.trim().isEmpty()) {
+        if (configuredApiBaseUrl().isEmpty()) {
             showMessage("Thiếu backend OAuth",
                     "Để không lộ Client Secret, NM7 cần một Cloudflare Worker thực hiện đổi authorization code và gọi Display API. Hãy triển khai workers/tiktok-open-auth rồi build với -PtiktokApiBaseUrl=https://<worker-domain>.");
             return;
@@ -268,7 +279,7 @@ public final class TikTokIntegrationActivity extends Activity {
             status.setText("Không tạo được yêu cầu đổi OAuth code.");
             return;
         }
-        String url = trimSlash(BuildConfig.TIKTOK_API_BASE_URL) + "/api/tiktok/mobile/exchange";
+        String url = trimSlash(configuredApiBaseUrl()) + "/api/tiktok/mobile/exchange";
         setLoading(true, "Đang hoàn tất kết nối tài khoản TikTok…");
         Request request = new Request.Builder().url(url).post(RequestBody.create(JSON, body.toString())).build();
         http.newCall(request).enqueue(new Callback() {
@@ -315,7 +326,7 @@ public final class TikTokIntegrationActivity extends Activity {
             status.setText("Hãy kết nối tài khoản TikTok trước để lấy video công khai của chính tài khoản đó.");
             return;
         }
-        String base = BuildConfig.TIKTOK_API_BASE_URL == null ? "" : BuildConfig.TIKTOK_API_BASE_URL.trim();
+        String base = configuredApiBaseUrl();
         if (base.isEmpty()) {
             status.setText("Chưa cấu hình backend Display API.");
             return;
@@ -385,7 +396,68 @@ public final class TikTokIntegrationActivity extends Activity {
             status.setText(message);
             connectButton.setEnabled(!loading);
             reloadButton.setEnabled(!loading);
+            configButton.setEnabled(!loading);
         });
+    }
+
+    private String configuredClientKey() {
+        String saved = getSharedPreferences(CONFIG_PREFS, MODE_PRIVATE).getString("client_key", "");
+        if (saved != null && !saved.trim().isEmpty()) return saved.trim();
+        return BuildConfig.TIKTOK_CLIENT_KEY == null ? "" : BuildConfig.TIKTOK_CLIENT_KEY.trim();
+    }
+
+    private String configuredApiBaseUrl() {
+        String saved = getSharedPreferences(CONFIG_PREFS, MODE_PRIVATE).getString("api_base_url", "");
+        if (saved != null && !saved.trim().isEmpty()) return trimSlash(saved);
+        return trimSlash(BuildConfig.TIKTOK_API_BASE_URL == null ? "" : BuildConfig.TIKTOK_API_BASE_URL);
+    }
+
+    private void showConfigurationDialog() {
+        LinearLayout form = new LinearLayout(this);
+        form.setOrientation(LinearLayout.VERTICAL);
+        form.setPadding(dp(20), dp(8), dp(20), dp(4));
+        TextView keyLabel = new TextView(this);
+        keyLabel.setText("TikTok Client Key (không phải Client Secret)");
+        form.addView(keyLabel, matchWrap());
+        EditText keyInput = new EditText(this);
+        keyInput.setSingleLine(true);
+        keyInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+        keyInput.setText(configuredClientKey());
+        form.addView(keyInput, matchWrap());
+        TextView urlLabel = new TextView(this);
+        urlLabel.setText("URL Cloudflare Worker có HTTPS");
+        LinearLayout.LayoutParams urlLabelLp = matchWrap();
+        urlLabelLp.topMargin = dp(8);
+        form.addView(urlLabel, urlLabelLp);
+        EditText urlInput = new EditText(this);
+        urlInput.setSingleLine(true);
+        urlInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+        urlInput.setHint("https://<worker-domain>");
+        urlInput.setText(configuredApiBaseUrl());
+        form.addView(urlInput, matchWrap());
+
+        new AlertDialog.Builder(this)
+                .setTitle("Cấu hình kết nối TikTok")
+                .setView(form)
+                .setPositiveButton("Lưu", (dialog, which) -> {
+                    String key = keyInput.getText().toString().trim();
+                    String base = trimSlash(urlInput.getText().toString());
+                    if (!base.isEmpty()) {
+                        Uri uri = Uri.parse(base);
+                        if (!"https".equalsIgnoreCase(uri.getScheme()) || TextUtils.isEmpty(uri.getHost())) {
+                            showMessage("URL không hợp lệ", "Worker phải dùng URL HTTPS hợp lệ.");
+                            return;
+                        }
+                    }
+                    getSharedPreferences(CONFIG_PREFS, MODE_PRIVATE).edit()
+                            .putString("client_key", key)
+                            .putString("api_base_url", base)
+                            .apply();
+                    updateConfigurationUi();
+                    status.setText("Đã lưu cấu hình. Kết nối cần Client Key được đăng ký với package/signing certificate NM7 và Worker đã cấu hình secrets.");
+                })
+                .setNegativeButton("Hủy", (dialog, which) -> dialog.dismiss())
+                .show();
     }
 
     private void showMessage(String title, String message) {
