@@ -100,10 +100,16 @@ jobs:
           text=text.replace(old, replacement)
           text=text.replace('sig.apkContentsSigners.map {', '(sig.apkContentsSigners ?: emptyArray()).map {')
           text=text.replace('sig.signingCertificateHistory.map {', '(sig.signingCertificateHistory ?: emptyArray()).map {')
+          legacy='val sig = packageManager.getPackageInfo(pkgName, PackageManager.GET_SIGNATURES).signatures'
+          if text.count(legacy) != 2:
+              raise SystemExit('Unexpected TikTok legacy signatures structure')
+          text=text.replace(legacy, legacy + ' ?: emptyArray()')
           if text.count('if (sig == null)') != 2:
               raise SystemExit('TikTok nullable signingInfo patch did not apply twice')
           if 'sig.apkContentsSigners.map {' in text or 'sig.signingCertificateHistory.map {' in text:
               raise SystemExit('Nullable signature array patch incomplete')
+          if 'GET_SIGNATURES).signatures\n' in text:
+              raise SystemExit('Legacy signatures nullability patch incomplete')
           path.write_text(text)
           PY
 
