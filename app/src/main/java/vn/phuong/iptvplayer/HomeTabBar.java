@@ -123,7 +123,7 @@ public final class HomeTabBar {
     }
 
     private static void openTikTok(Activity activity) {
-        // Prevent audio from IPTV or SmartTube continuing under the TikTok feed.
+        // Stop IPTV/SmartTube audio before opening the native TikTok integration module.
         PlayerActivity.cancelYoutubeHandoff();
         SharedPlaybackSession.setTab(activity, SharedPlaybackSession.TAB_IPTV);
         MobileNm7Application.markTabSwitch();
@@ -133,7 +133,7 @@ public final class HomeTabBar {
         MobileInlinePlayerProviderV2.releaseForYoutube();
         PlayerActivity.releaseForYoutube();
 
-        Intent intent = new Intent(activity, TikTokWebActivity.class);
+        Intent intent = new Intent(activity, TikTokIntegrationActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
         startWithoutAnimation(activity, intent);
     }
