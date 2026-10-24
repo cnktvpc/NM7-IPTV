@@ -1,3 +1,10 @@
+
+
+## Root-cause follow-up — 2026-10-24 (gateway diagnostics)
+- Latest CI failures were at the real HTTP smoke test, before Android build. The live Worker could not obtain RSS/HTML from the publisher: direct feed returned 503 and category HTML 403; RSS Amplifier's direct RSS URL returned 402. These statuses are captured from GitHub Actions.
+- Worker hotfix now tries fallbacks concurrently instead of serially: RSS Amplifier feed, Google News RSS filtered by `site:thethao247.vn`, Bing News RSS with the same site/category filter, and RSS Amplifier's HTML page. It avoids sending a Thể Thao 247 Referer header to unrelated aggregator domains.
+- Failure responses include per-provider HTTP status, byte count and RSS validation details; successful responses remain edge-cached for 5 minutes. This makes the next failure actionable instead of a generic spinner.
+- Current deployed Worker script: `nm7-news-reader-api`; source of truth: `workers/nm7-news-reader-api/worker.js`. CI still must verify all four failing categories (home/sports/football/vietnam); the APK is not declared ready until gateway smoke checks and Android tests/build pass.
 # NM7 IPTV Mobile — Fast News Reader candidate 1.10.152 (2026-10-24)
 
 - **Candidate:** `1.10.152` / versionCode `168`; isolated branch `rebuild/reader-only-from-stable-142-20261023`.

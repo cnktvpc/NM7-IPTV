@@ -29,7 +29,7 @@ function validFeed(text){return /<(?:rss|feed|rdf:RDF)\b/i.test(text)&&/<(?:item
 async function fetchText(url,timeout=5200){
  const abort=new AbortController(); const timer=setTimeout(()=>abort.abort(),timeout);
  try{
-  const r=await fetch(url,{redirect:"follow",signal:abort.signal,headers:{"User-Agent":UA,"Accept":"application/rss+xml, application/atom+xml, application/xml, text/xml, text/html, */*","Accept-Language":"vi-VN,vi;q=0.9,en-US;q=0.7,en;q=0.5","Referer":"https://thethao247.vn/rss.html","Cache-Control":"no-cache"}});
+  const headers={"User-Agent":UA,"Accept":"application/rss+xml, application/atom+xml, application/xml, text/xml, text/html, */*","Accept-Language":"vi-VN,vi;q=0.9,en-US;q=0.7,en;q=0.5","Cache-Control":"no-cache"}; try{if(new URL(url).hostname.toLowerCase().endsWith("thethao247.vn"))headers["Referer"]="https://thethao247.vn/rss.html";}catch{} const r=await fetch(url,{redirect:"follow",signal:abort.signal,headers});
   if(!r.ok)return {ok:false,status:r.status,text:""};
   const text=await r.text(); if(!text||text.length>5*1024*1024)return {ok:false,status:502,text:""};
   return {ok:true,status:r.status,text};
@@ -70,22 +70,31 @@ export default {
   const results=await Promise.all(jobs);let chosen=null;
   for(const r of results){if(r.ok&&r.kind==="rss"&&validFeed(r.text)){chosen={body:r.text,upstream:r.url};break;}}
   if(!chosen){const html=results.find(r=>r.ok&&r.kind==="html");if(html){const body=htmlToRSS(html.text,cfg.page,category);if(body)chosen={body,upstream:"html:"+html.url};}}
-  let mirrorStatus="not-tried";if(!chosen&&["home","sports","football","vietnam","vleague","national","international","epl"].includes(category)){const mirror=await fetchText(MIRROR,5200);mirrorStatus="status="+mirror.status+",valid="+validFeed(mirror.text)+",bytes="+mirror.text.length;if(mirror.ok&&validFeed(mirror.text))chosen={body:mirror.text,upstream:"rssamplifier-cache"};}
-  if(!chosen && category==="vietnam"){
-  const backupUrls=["https://thethao247.vn/bong-da.rss","https://thethao247.vn/trang-chu.rss"];
-  for(const backupUrl of backupUrls){
-    const backup=await fetchText(backupUrl,5200);
-    if(backup.ok&&validFeed(backup.text)){chosen={body:backup.text,upstream:"fallback:"+backupUrl};break;}
+  let mirrorStatus="not-tried", aggregatorStatus="not-tried";
+  if(!chosen){
+    const queryMap={home:"site:thethao247.vn",sports:"site:thethao247.vn thể thao",football:"site:thethao247.vn bóng đá",vietnam:"site:thethao247.vn bóng đá Việt Nam",vleague:"site:thethao247.vn V-League",national:"site:thethao247.vn đội tuyển Việt Nam",international:"site:thethao247.vn bóng đá quốc tế",epl:"site:thethao247.vn Ngoại hạng Anh",worldcup:"site:thethao247.vn World Cup",laliga:"site:thethao247.vn La Liga",ucl:"site:thethao247.vn Cúp C1",uel:"site:thethao247.vn Europa League",bundesliga:"site:thethao247.vn Bundesliga",transfer:"site:thethao247.vn chuyển nhượng",prediction:"site:thethao247.vn nhận định bóng đá",tennis:"site:thethao247.vn tennis",golf:"site:thethao247.vn golf",basketball:"site:thethao247.vn bóng rổ",badminton:"site:thethao247.vn cầu lông",volleyball:"site:thethao247.vn bóng chuyền",martial:"site:thethao247.vn võ thuật"};
+    const q=queryMap[category]||"site:thethao247.vn";
+    const candidates=[
+      {kind:"rssamplifier-rss",url:MIRROR},
+      {kind:"google-news",url:"https://news.google.com/rss/search?q="+encodeURIComponent(q)+"&hl=vi&gl=VN&ceid=VN%3Avi"},
+      {kind:"bing-news",url:"https://www.bing.com/news/search?q="+encodeURIComponent(q)+"&format=RSS&setlang=vi-VN"},
+      {kind:"rssamplifier-html",url:"https://rssamplifier.com/thethao247-vn-7"}
+    ];
+    const backups=await Promise.all(candidates.map(async c=>({kind:c.kind,url:c.url,...await fetchText(c.url,5200)})));
+    aggregatorStatus=backups.map(x=>x.kind+":"+x.status+",bytes="+x.text.length+",rss="+validFeed(x.text)).join(";");
+    for(const backup of backups){
+      if(!backup.ok)continue;
+      if(validFeed(backup.text)){chosen={body:backup.text,upstream:backup.kind};break;}
+      if(backup.kind==="rssamplifier-html"){
+        const body=htmlToRSS(backup.text,backup.url,category);
+        if(body){chosen={body,upstream:"rssamplifier-html"};break;}
+      }
+    }
   }
-}
-if(!chosen){
- const queryMap={home:"site:thethao247.vn",sports:"site:thethao247.vn thể thao",football:"site:thethao247.vn bóng đá",vietnam:"site:thethao247.vn bóng đá Việt Nam",vleague:"site:thethao247.vn V-League",national:"site:thethao247.vn đội tuyển Việt Nam",international:"site:thethao247.vn bóng đá quốc tế",epl:"site:thethao247.vn Ngoại hạng Anh",worldcup:"site:thethao247.vn World Cup",laliga:"site:thethao247.vn La Liga",ucl:"site:thethao247.vn Cúp C1",uel:"site:thethao247.vn Europa League",bundesliga:"site:thethao247.vn Bundesliga",transfer:"site:thethao247.vn chuyển nhượng",prediction:"site:thethao247.vn nhận định bóng đá",tennis:"site:thethao247.vn tennis",golf:"site:thethao247.vn golf",basketball:"site:thethao247.vn bóng rổ",badminton:"site:thethao247.vn cầu lông",volleyball:"site:thethao247.vn bóng chuyền",martial:"site:thethao247.vn võ thuật"};
- const q=queryMap[category]||"site:thethao247.vn";
- const googleUrl="https://news.google.com/rss/search?q="+encodeURIComponent(q)+"&hl=vi&gl=VN&ceid=VN%3Avi";
- const google=await fetchText(googleUrl,5200);
- if(google.ok&&validFeed(google.text)){chosen={body:google.text,upstream:"google-news-rss-fallback"};}
-}
-if(!chosen){const statuses=results.map(r=>r.kind+":"+r.status).join(",");return response(JSON.stringify({ok:false,error:"upstream unavailable",category,attempts:statuses,mirror:mirrorStatus}),502,{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","Retry-After":"30"});}
+  if(!chosen){
+    const statuses=results.map(r=>r.kind+":"+r.status).join(",");
+    return response(JSON.stringify({ok:false,error:"upstream unavailable",category,attempts:statuses,aggregators:aggregatorStatus}),502,{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","Retry-After":"30"});
+  }
   const result=addHeaders(chosen.body,category,chosen.upstream);ctx.waitUntil(caches.default.put(cacheKey,result.clone()).catch(()=>{}));if(request.method==="HEAD")return new Response(null,{status:200,headers:result.headers});return result;
  }
 };

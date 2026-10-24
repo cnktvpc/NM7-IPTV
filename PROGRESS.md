@@ -1,5 +1,12 @@
 
 
+## Root-cause follow-up — 2026-10-24 (gateway diagnostics)
+- Latest CI failures were at the real HTTP smoke test, before Android build. The live Worker could not obtain RSS/HTML from the publisher: direct feed returned 503 and category HTML 403; RSS Amplifier's direct RSS URL returned 402. These statuses are captured from GitHub Actions.
+- Worker hotfix now tries fallbacks concurrently instead of serially: RSS Amplifier feed, Google News RSS filtered by `site:thethao247.vn`, Bing News RSS with the same site/category filter, and RSS Amplifier's HTML page. It avoids sending a Thể Thao 247 Referer header to unrelated aggregator domains.
+- Failure responses include per-provider HTTP status, byte count and RSS validation details; successful responses remain edge-cached for 5 minutes. This makes the next failure actionable instead of a generic spinner.
+- Current deployed Worker script: `nm7-news-reader-api`; source of truth: `workers/nm7-news-reader-api/worker.js`. CI still must verify all four failing categories (home/sports/football/vietnam); the APK is not declared ready until gateway smoke checks and Android tests/build pass.
+
+
 ## Hotfix gateway dự phòng Google News RSS — 2026-10-24
 - Log CI đã xác nhận upstream gốc trả RSS HTTP 503 và HTML HTTP 403; RSS Amplifier mirror trả HTTP 402. Vì vậy gateway không thể chỉ dựa vào ba nguồn đó.
 - Đã deploy hotfix Worker có fallback cuối qua Google News RSS search theo từng danh mục `site:thethao247.vn`, chỉ chấp nhận khi response là RSS/Atom có item; response vẫn được cache 5 phút. Đây là fallback để giữ danh sách bài hoạt động khi origin bị chặn, không phải bằng chứng upstream gốc đã hồi phục.
