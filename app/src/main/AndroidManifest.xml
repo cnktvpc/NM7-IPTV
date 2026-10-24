@@ -2,6 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET" />
+    <queries>
+        <package android:name="com.zhiliaoapp.musically" />
+        <package android:name="com.ss.android.ugc.trill" />
+    </queries>
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-feature android:name="android.hardware.camera.any" android:required="false" />
@@ -23,6 +27,22 @@
         <activity android:name=".PlayerActivity" android:exported="false" android:configChanges="keyboardHidden|orientation|screenSize" />
         <activity android:name=".YoutubeActivity" android:exported="false" android:configChanges="keyboardHidden|orientation|screenSize" />
         <activity android:name=".TikTokWebActivity" android:exported="false" android:configChanges="keyboardHidden|orientation|screenSize" android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".TikTokIntegrationActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="open-platform.tiktokapis.com"
+                    android:pathPrefix="/callback" />
+            </intent-filter>
+        </activity>
         <activity android:name=".SmartTubeHomeActivity" android:exported="false" android:launchMode="singleTop" android:configChanges="keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout|layoutDirection" />
 
         <!-- SmartTube phone UI only. -->
