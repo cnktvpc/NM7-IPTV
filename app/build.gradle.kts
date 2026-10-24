@@ -10,8 +10,18 @@ android {
         applicationId = "vn.phuong.iptvplayer"
         minSdk = 23
         targetSdk = 36
-        versionCode = 160
-        versionName = "1.10.144"
+        versionCode = 161
+        versionName = "1.10.145"
+
+        val ttKey = (project.findProperty("tiktokClientKey") as String?)
+            ?: System.getenv("TIKTOK_CLIENT_KEY") ?: ""
+        val ttApi = (project.findProperty("tiktokApiBaseUrl") as String?)
+            ?: System.getenv("TIKTOK_API_BASE_URL") ?: ""
+        fun quoteBuildConfig(value: String): String =
+            "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
+        buildConfigField("String", "TIKTOK_CLIENT_KEY", quoteBuildConfig(ttKey))
+        buildConfigField("String", "TIKTOK_API_BASE_URL", quoteBuildConfig(ttApi))
+        buildConfigField("String", "TIKTOK_REDIRECT_URI", quoteBuildConfig("https://open-platform.tiktokapis.com/callback"))
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         manifestPlaceholders["applicationClass"] = "vn.phuong.iptvplayer.MobileNm7Application"
@@ -82,6 +92,11 @@ dependencies {
     implementation("androidx.media3:media3-ui:$media3Version")
     implementation("androidx.media3:media3-datasource-okhttp:$media3Version")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    // Official TikTok Login Kit and core OpenSDK. Pin the SDK version for reproducible builds.
+    implementation("com.tiktok.open.sdk:tiktok-open-sdk-core:2.3.1")
+    implementation("com.tiktok.open.sdk:tiktok-open-sdk-auth:2.3.1")
+    // ViewPager2 provides a native vertical feed for the user's public TikTok videos.
+    implementation("androidx.viewpager2:viewpager2:1.1.0")
 
     // SmartTube's DroidApplication extends AndroidX MultiDexApplication.
     // Keep the dependency direct so the Mobile app compiler can resolve that superclass.
